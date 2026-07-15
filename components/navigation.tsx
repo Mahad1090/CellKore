@@ -6,9 +6,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_PRODUCTS } from '@/lib/mock-data'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/contexts/auth-context'
 
 export function Navigation() {
   const router = useRouter()
+  const { user, signOut } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
   const [wishlistCount, setWishlistCount] = useState(0)
@@ -79,12 +81,12 @@ export function Navigation() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-indigo-600 to-purple-600 border-b border-indigo-700 shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <div className="text-2xl font-bold text-primary">CellKore</div>
+            <div className="text-2xl font-bold text-white">CellKore</div>
           </Link>
 
           {/* Desktop Navigation */}
@@ -93,7 +95,7 @@ export function Navigation() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-foreground hover:text-primary transition-colors text-sm font-medium"
+                className="text-white hover:text-indigo-200 transition-colors text-sm font-medium"
               >
                 {link.label}
               </Link>
@@ -137,39 +139,61 @@ export function Navigation() {
           {/* Right Section - Search, Cart, Wishlist, Account */}
           <div className="flex items-center space-x-4">
             {/* Search Icon for Mobile */}
-            <button className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors">
+            <button className="lg:hidden p-2 hover:bg-indigo-700 rounded-lg transition-colors text-white">
               <Search className="w-5 h-5" />
             </button>
 
             {/* Wishlist */}
-            <Link href="/wishlist" className="relative p-2 hover:bg-muted rounded-lg transition-colors">
+            <Link href="/wishlist" className="relative p-2 hover:bg-indigo-700 rounded-lg transition-colors text-white">
               <Heart className="w-5 h-5" />
               {wishlistCount > 0 && (
-                <span className="absolute top-0 right-0 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute top-0 right-0 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {wishlistCount}
                 </span>
               )}
             </Link>
 
             {/* Cart */}
-            <Link href="/cart" className="relative p-2 hover:bg-muted rounded-lg transition-colors">
+            <Link href="/cart" className="relative p-2 hover:bg-indigo-700 rounded-lg transition-colors text-white">
               <ShoppingCart className="w-5 h-5" />
               {cartCount > 0 && (
-                <span className="absolute top-0 right-0 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="absolute top-0 right-0 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
             </Link>
 
-            {/* Account */}
-            <Link href="/account" className="hidden sm:inline-flex px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-opacity-90 transition-all text-sm font-medium">
-              Account
-            </Link>
+            {/* Account / Auth */}
+            {user ? (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="text-sm text-white">{user.email}</span>
+                <Button 
+                  onClick={() => signOut()}
+                  variant="outline"
+                  className="text-sm bg-white text-indigo-600 hover:bg-gray-100 border-white"
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="hidden sm:flex items-center gap-2">
+                <Link href="/auth/signin">
+                  <Button variant="ghost" className="text-sm text-white hover:bg-indigo-700">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button className="text-sm bg-white text-indigo-600 hover:bg-gray-100">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
+            )}
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+              className="md:hidden p-2 hover:bg-indigo-700 rounded-lg transition-colors text-white"
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5" />
@@ -182,24 +206,50 @@ export function Navigation() {
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden pb-4 border-t border-border">
+          <div className="md:hidden pb-4 border-t border-indigo-700 bg-indigo-600">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="block px-4 py-2 text-foreground hover:bg-muted transition-colors text-sm"
+                className="block px-4 py-2 text-white hover:bg-indigo-700 transition-colors text-sm"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/account"
-              className="block px-4 py-2 text-foreground hover:bg-muted transition-colors text-sm md:hidden"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Account
-            </Link>
+            {user ? (
+              <>
+                <div className="px-4 py-2 text-sm text-white">
+                  {user.email}
+                </div>
+                <button
+                  onClick={() => {
+                    signOut()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="block w-full text-left px-4 py-2 text-white hover:bg-indigo-700 transition-colors text-sm"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signin"
+                  className="block px-4 py-2 text-white hover:bg-indigo-700 transition-colors text-sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/auth/signup"
+                  className="block px-4 py-2 text-white hover:bg-indigo-700 transition-colors text-sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         )}
       </div>

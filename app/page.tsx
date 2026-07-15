@@ -10,7 +10,7 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-12 md:py-20">
+      <section className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to CellKore</h1>
@@ -18,10 +18,10 @@ export default function Home() {
               Your trusted destination for premium cell phones, accessories, and spare parts
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/products" className="px-8 py-3 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 transition font-semibold">
+              <Link href="/products" className="px-8 py-3 bg-white text-indigo-600 rounded-lg hover:bg-gray-100 transition font-semibold">
                 Shop Now
               </Link>
-              <Link href="/marketplace" className="px-8 py-3 border-2 border-secondary rounded-lg hover:bg-secondary hover:text-secondary-foreground transition font-semibold">
+              <Link href="/marketplace" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-indigo-600 transition font-semibold">
                 Visit Marketplace
               </Link>
             </div>
@@ -109,12 +109,12 @@ export default function Home() {
 
       {/* Call to Action */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-primary text-primary-foreground rounded-lg p-8 md:p-12 text-center">
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg p-8 md:p-12 text-center">
           <h2 className="text-3xl font-bold mb-4">Wholesale Program Available</h2>
           <p className="text-lg opacity-90 mb-6">
             Are you a business owner? Get bulk pricing and exclusive wholesale deals
           </p>
-          <Link href="/wholesale" className="inline-block px-8 py-3 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 transition font-semibold">
+          <Link href="/wholesale" className="inline-block px-8 py-3 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition font-semibold">
             Learn About Wholesale
           </Link>
         </div>
