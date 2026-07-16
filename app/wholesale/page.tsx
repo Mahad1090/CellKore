@@ -21,7 +21,7 @@ export default function WholesalePage() {
     <main className="min-h-screen bg-background">
       <Navigation />
 
-      <section className="bg-gradient-to-r from-primary to-[#073b31] text-white py-14 md:py-20 shadow-lg">
+      <section className="bg-gradient-to-r from-primary to-black text-white py-14 md:py-20 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
@@ -160,7 +160,7 @@ export default function WholesalePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gradient-to-r from-primary to-[#073b31] text-white rounded-lg p-8 md:p-10 shadow-lg">
+        <div className="bg-gradient-to-r from-primary to-black text-white rounded-lg p-8 md:p-10 shadow-lg">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">Need a larger lot or a custom mix?</h2>
           <p className="text-white/80 mb-6 max-w-2xl">
             Tell us the model, capacity, carrier, grade, and quantity you want, and we will prepare a dedicated wholesale quote.

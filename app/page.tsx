@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Star, Smartphone, Headphones, Wrench, SmartphoneCharging } from 'lucide-react'
 
 function getCategoryIcon(id: string) {
-  const iconClass = "w-10 h-10 transition-transform group-hover:scale-110 duration-300"
+  const iconClass = "w-10 h-10 transition-transform group-hover:scale-110 duration-300 text-primary"
   switch (id) {
     case 'iphone':
       return (
@@ -13,31 +13,92 @@ function getCategoryIcon(id: string) {
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`${iconClass} text-primary`}
+          strokeWidth="1.2"
+          className={iconClass}
         >
-          {/* Outer Bezel */}
-          <rect x="5" y="2" width="14" height="20" rx="3.5" />
-          {/* Inner Screen */}
-          <rect x="6.2" y="3.2" width="11.6" height="17.6" rx="2.2" strokeWidth="1" className="opacity-40" />
-          {/* Dynamic Island */}
-          <rect x="10.5" y="4.5" width="3" height="0.8" rx="0.4" fill="currentColor" stroke="none" />
-          {/* Home Indicator */}
-          <line x1="10" y1="19.5" x2="14" y2="19.5" strokeWidth="1.2" className="opacity-80" />
+          <rect x="5.5" y="2" width="13" height="20" rx="3.5" />
+          <rect x="6.7" y="3.2" width="10.6" height="17.6" rx="2.2" className="opacity-30" />
+          <rect x="10.2" y="4.5" width="3.6" height="0.8" rx="0.4" fill="currentColor" stroke="none" />
+          <circle cx="12" cy="18" r="0.6" fill="currentColor" stroke="none" />
         </svg>
       )
     case 'samsung':
-      return <SmartphoneCharging className={`${iconClass} text-accent`} />
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          className={iconClass}
+        >
+          <rect x="5.5" y="2" width="13" height="20" rx="1" />
+          <rect x="6.5" y="3" width="11" height="18" rx="0.5" className="opacity-30" />
+          <circle cx="12" cy="4.5" r="0.5" fill="currentColor" stroke="none" />
+          <path d="M16 12l2-2m-2 2l2 2m-2-2l-3 3v1.5h1.5l3-3" strokeWidth="1" />
+        </svg>
+      )
     case 'android':
-      return <Smartphone className={`${iconClass} text-emerald-700`} />
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          className={iconClass}
+        >
+          <rect x="5.5" y="2" width="13" height="20" rx="2.5" />
+          <rect x="7.5" y="4" width="4" height="4" rx="0.8" className="opacity-30" strokeWidth="1" />
+          <circle cx="15.5" cy="6" r="1.5" className="opacity-30" strokeWidth="1" />
+          <rect x="7.5" y="10" width="9" height="4" rx="0.8" className="opacity-30" strokeWidth="1" />
+          <circle cx="12" cy="3" r="0.4" fill="currentColor" stroke="none" />
+        </svg>
+      )
     case 'accessories':
-      return <Headphones className={`${iconClass} text-accent`} />
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          className={iconClass}
+        >
+          <path d="M3 14c0-4.97 4.03-9 9-9s9 4.03 9 9" />
+          <rect x="2" y="13" width="2.5" height="5" rx="1.2" fill="currentColor" stroke="none" />
+          <rect x="2" y="13" width="2.5" height="5" rx="1.2" />
+          <rect x="19.5" y="13" width="2.5" height="5" rx="1.2" fill="currentColor" stroke="none" />
+          <rect x="19.5" y="13" width="2.5" height="5" rx="1.2" />
+          <path d="M12 5v2m-3-2v1m6-1v1" className="opacity-40" />
+        </svg>
+      )
     case 'spare-parts':
-      return <Wrench className={`${iconClass} text-primary`} />
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          className={iconClass}
+        >
+          <rect x="5" y="5" width="14" height="14" rx="2" />
+          <rect x="9.5" y="9.5" width="5" height="5" rx="1" fill="currentColor" stroke="none" />
+          <rect x="9.5" y="9.5" width="5" height="5" rx="1" />
+          <path d="M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3M19 9h3m-3 6h3" className="opacity-50" strokeLinecap="round" />
+        </svg>
+      )
     default:
-      return <Smartphone className={`${iconClass} text-slate-400`} />
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          className={iconClass}
+        >
+          <rect x="7" y="4" width="11" height="17" rx="2" className="opacity-40" />
+          <rect x="4" y="7" width="11" height="15" rx="2" />
+          <line x1="9" y1="19" x2="10" y2="19" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      )
   }
 }
 
@@ -86,10 +147,12 @@ export default function Home() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {CATEGORIES.map((category) => (
             <Link key={category.id} href={`/products?category=${category.id}`}>
-              <div className="bg-card border border-border rounded-lg p-6 text-center hover:shadow-lg hover:border-primary transition cursor-pointer h-full flex flex-col items-center justify-center group">
-                <div className="mb-4 h-12 flex items-center justify-center">{getCategoryIcon(category.id)}</div>
-                <h3 className="font-semibold text-foreground text-sm">{category.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{category.count} items</p>
+              <div className="bg-card border border-border/80 rounded-2xl p-6 text-center shadow-sm hover:shadow-xl hover:border-primary -translate-y-0 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center group">
+                <div className="mb-4 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 group-hover:scale-105 transition-all duration-300">
+                  {getCategoryIcon(category.id)}
+                </div>
+                <h3 className="font-semibold text-foreground text-sm tracking-wide group-hover:text-primary transition-colors duration-300">{category.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1.5 font-light">{category.count} items</p>
               </div>
             </Link>
           ))}
@@ -160,7 +223,7 @@ export default function Home() {
 
       {/* Call to Action */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-gradient-to-r from-primary to-[#073b31] text-white rounded-lg p-8 md:p-12 text-center shadow-lg">
+        <div className="bg-gradient-to-r from-primary to-black text-white rounded-lg p-8 md:p-12 text-center shadow-lg">
           <h2 className="text-3xl font-bold mb-4 tracking-luxury uppercase">Wholesale Program Available</h2>
           <p className="text-lg opacity-90 mb-6 font-light">
             Are you a business owner? Get bulk pricing and exclusive wholesale deals

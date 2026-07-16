@@ -13,11 +13,11 @@ interface ThemePreset {
 
 const PRESETS: ThemePreset[] = [
   {
-    name: 'Emerald & Gold',
-    primary: '#0b5345',
-    accent: '#d4af37',
-    background: '#fbfaf7',
-    foreground: '#1a2c26',
+    name: 'Royal Blue & Black',
+    primary: '#115eb4',
+    accent: '#000000',
+    background: '#ffffff',
+    foreground: '#000000',
   },
   {
     name: 'Navy & Gold',
@@ -72,9 +72,9 @@ const PRESETS: ThemePreset[] = [
 
 export function ThemeSwitcher() {
   const [isOpen, setIsOpen] = useState(false)
-  const [activeTheme, setActiveTheme] = useState<string>('Emerald & Gold')
-  const [customPrimary, setCustomPrimary] = useState('#0b5345')
-  const [customAccent, setCustomAccent] = useState('#d4af37')
+  const [activeTheme, setActiveTheme] = useState<string>('Royal Blue & Black')
+  const [customPrimary, setCustomPrimary] = useState('#115eb4')
+  const [customAccent, setCustomAccent] = useState('#000000')
 
   // Apply theme variables to document root
   const applyTheme = (theme: ThemePreset) => {

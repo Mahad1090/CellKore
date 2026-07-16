@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingCart, Heart, Menu, X, Search } from 'lucide-react'
+import { ShoppingCart, Heart, Menu, X, Search, Home, Smartphone, Store, DollarSign, Package, Info, Mail, User } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ALL_PRODUCTS } from '@/lib/mock-data'
@@ -37,14 +37,26 @@ export function Navigation() {
     return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [mobileMenuOpen])
+
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/products', label: 'Products' },
-    { href: '/marketplace', label: 'Marketplace' },
-    { href: '/sell', label: 'Sell Your Phone' },
-    { href: '/wholesale', label: 'Wholesale' },
-    { href: '/about', label: 'About' },
-    { href: '/contact', label: 'Contact' },
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/products', label: 'Products', icon: Smartphone },
+    { href: '/marketplace', label: 'Marketplace', icon: Store },
+    { href: '/sell', label: 'Sell Your Phone', icon: DollarSign },
+    { href: '/wholesale', label: 'Wholesale', icon: Package },
+    { href: '/about', label: 'About', icon: Info },
+    { href: '/contact', label: 'Contact', icon: Mail },
   ]
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +95,7 @@ export function Navigation() {
   return (
     <div className="w-full">
       {/* Premium Announcement Bar (Seamless Moving Marquee) */}
-      <div className="w-full bg-[#073b31] border-b border-accent/20 overflow-hidden py-3 text-white">
+      <div className="w-full bg-black border-b border-accent/20 overflow-hidden py-3 text-white">
         <div className="relative flex overflow-hidden">
           <div className="animate-marquee whitespace-nowrap flex gap-16 text-[10px] tracking-[0.25em] font-sans uppercase font-medium">
             <span>Complimentary Express Delivery on All Orders</span>
@@ -103,12 +115,13 @@ export function Navigation() {
         </div>
       </div>
 
-      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(11,83,69,0.05)] text-foreground">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(11,83,69,0.05)] text-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 gap-4">
+          {/* Top Row: Menu Button (Left), Logo (Center), Actions (Right) */}
+          <div className="flex items-center justify-between min-h-[128px] md:min-h-[160px] py-4 gap-4">
             
-            {/* Left Block - Menu Trigger & Logo */}
-            <div className="flex items-center gap-3">
+            {/* Left Block - Menu Trigger */}
+            <div className="flex items-center w-1/3 justify-start">
               {/* Menu Button (Desktop & Mobile) */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -121,30 +134,21 @@ export function Navigation() {
                   <Menu className="w-4.5 h-4.5" />
                 )}
               </button>
+            </div>
 
-              {/* Logo */}
-              <Link href="/" className="flex-shrink-0 group">
-                <div className="text-2xl font-bold text-primary font-heading tracking-[0.12em] uppercase transition-all duration-300 group-hover:text-accent">
-                  Cell<span className="font-light text-accent italic group-hover:text-primary transition-all duration-300 lowercase">Kore</span>
-                </div>
+            {/* Center Block - Logo */}
+            <div className="flex items-center justify-center w-1/3">
+              <Link href="/" className="flex-shrink-0 group flex items-center">
+                <img
+                  src="/logo.jpeg"
+                  alt="CellKore Logo"
+                  className="h-28 md:h-36 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
+                />
               </Link>
             </div>
 
-            {/* Desktop Navigation Links */}
-            <div className="hidden md:flex md:items-center md:space-x-5 lg:space-x-6 xl:space-x-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="relative text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] font-medium tracking-[0.12em] lg:tracking-[0.18em] uppercase py-2 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
-            {/* Right Section - Search, Cart, Wishlist, Account */}
-            <div className="flex items-center space-x-2 lg:space-x-3">
+            {/* Right Block - Actions */}
+            <div className="flex items-center justify-end w-1/3 space-x-2 lg:space-x-3">
               {/* Compact Expanding Search Bar (Desktop) */}
               <div className="hidden xl:flex items-center max-w-[200px] mr-2">
                 <form onSubmit={handleSearchSubmit} className="w-full">
@@ -236,6 +240,21 @@ export function Navigation() {
               )}
             </div>
           </div>
+
+          {/* Bottom Row: Centered Navigation Options (Desktop Only) */}
+          <div className="hidden md:flex items-center justify-center py-4 border-t border-accent/10">
+            <div className="flex items-center space-x-6 lg:space-x-8 xl:space-x-12">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="relative text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] font-medium tracking-[0.12em] lg:tracking-[0.18em] uppercase py-1 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-accent after:transition-all after:duration-300 hover:after:w-full"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
 
       </nav>
@@ -250,49 +269,66 @@ export function Navigation() {
           />
           
           {/* Drawer Panel */}
-          <div className="fixed inset-y-0 left-0 max-w-sm w-full bg-[#073b31] border-r border-accent/30 shadow-[10px_0_30px_rgba(0,0,0,0.5)] p-8 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300">
+          <div className="fixed inset-y-0 left-0 max-w-sm w-full bg-white border-r border-border/60 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.15)] p-8 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300 overflow-y-auto no-scrollbar">
             <div>
               {/* Header */}
-              <div className="flex items-center justify-between pb-6 border-b border-accent/20">
-                <div className="text-2xl font-bold text-white font-heading tracking-[0.15em] uppercase">
-                  Cell<span className="font-light text-accent italic lowercase">Kore</span>
-                </div>
+              <div className="relative flex flex-col items-center justify-center pb-6 border-b border-border/60">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
+                  <img
+                    src="/logo.jpeg"
+                    alt="CellKore Logo"
+                    className="h-28 w-auto object-contain rounded"
+                  />
+                </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 hover:bg-[#094a3e] rounded-full transition-colors text-white/80 hover:text-accent cursor-pointer"
+                  className="absolute -top-2 right-0 p-2.5 bg-neutral-100 hover:bg-neutral-200 rounded-full transition-all duration-300 text-neutral-700 hover:text-black hover:rotate-90 cursor-pointer"
+                  aria-label="Close menu"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4.5 h-4.5" />
                 </button>
               </div>
 
               {/* Links */}
-              <nav className="mt-8 space-y-4">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="block py-3 text-white/95 hover:text-accent transition-all duration-300 text-xs font-medium tracking-[0.2em] uppercase border-b border-accent/10 hover:border-accent/40 pb-3"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    {link.label}
-                  </Link>
-                ))}
+              <nav className="mt-8 space-y-2">
+                {navLinks.map((link) => {
+                  const Icon = link.icon
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-neutral-100 transition-all duration-300 text-neutral-700 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <Icon className="w-4 h-4 text-neutral-400 group-hover:text-primary transition-colors duration-300" />
+                      <span className="group-hover:translate-x-1 transition-transform duration-300">
+                        {link.label}
+                      </span>
+                    </Link>
+                  )
+                })}
               </nav>
             </div>
 
             {/* Bottom / Auth Section */}
-            <div className="pt-6 border-t border-accent/20 mt-auto">
+            <div className="pt-6 border-t border-border/60 mt-auto">
               {user ? (
                 <div className="space-y-4">
-                  <div className="text-xs text-accent/80 font-light tracking-wider truncate mb-2">
-                    {user.email}
+                  <div className="flex items-center gap-3 bg-neutral-50 p-3 rounded-2xl border border-border/60">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <User className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest">Logged In As</p>
+                      <p className="text-xs text-neutral-800 font-medium truncate mt-0.5">{user.email}</p>
+                    </div>
                   </div>
                   <button
                     onClick={() => {
                       signOut()
                       setMobileMenuOpen(false)
                     }}
-                    className="w-full text-center py-3 bg-[#094a3e] hover:bg-[#0d6454] text-white text-xs font-semibold tracking-widest uppercase rounded-full cursor-pointer transition-all border border-accent/20"
+                    className="w-full text-center py-3 bg-white hover:bg-neutral-50 border border-border/80 text-foreground text-xs font-semibold tracking-widest uppercase rounded-full cursor-pointer transition-all"
                   >
                     Sign Out
                   </button>
@@ -301,14 +337,14 @@ export function Navigation() {
                 <div className="flex flex-col gap-3">
                   <Link
                     href="/auth/signin"
-                    className="w-full text-center py-3 border border-accent/20 hover:bg-[#094a3e] text-white text-xs font-semibold tracking-widest uppercase rounded-full"
+                    className="w-full text-center py-3 border border-border/80 hover:bg-neutral-50 text-foreground text-xs font-semibold tracking-widest uppercase rounded-full transition-all"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/auth/signup"
-                    className="w-full text-center py-3 bg-accent hover:opacity-95 text-primary text-xs font-bold tracking-widest uppercase rounded-full transition-all"
+                    className="w-full text-center py-3 bg-primary hover:opacity-95 text-white text-xs font-bold tracking-widest uppercase rounded-full transition-all"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign Up
