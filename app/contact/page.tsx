@@ -3,13 +3,30 @@
 import React, { useState } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { Phone, Mail, MapPin, Clock } from 'lucide-react'
+import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 export const prerender = false
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
+
+  const contactChannels = [
+    {
+      country: 'US',
+      label: 'United States',
+      whatsapp: '+1 (212) 555-0199',
+      email: 'usa@cellkore.com',
+      landline: '+1 (212) 555-0100',
+    },
+    {
+      country: 'Canada',
+      label: 'Canada',
+      whatsapp: '+1 (416) 555-0199',
+      email: 'canada@cellkore.com',
+      landline: '+1 (416) 555-0100',
+    },
+  ]
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,27 +50,70 @@ export default function ContactPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Contact Info Cards */}
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Phone className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-bold text-foreground mb-2">Phone</h3>
-            <p className="text-muted-foreground">1-800-CELL-CORE</p>
-            <p className="text-muted-foreground text-sm mt-1">Available 24/7</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Mail className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-bold text-foreground mb-2">Email</h3>
-            <p className="text-muted-foreground">support@cellkore.com</p>
-            <p className="text-muted-foreground text-sm mt-1">Response within 2 hours</p>
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <div className="bg-card border border-border rounded-lg p-6">
             <MapPin className="w-8 h-8 text-primary mb-4" />
             <h3 className="font-bold text-foreground mb-2">Headquarters</h3>
             <p className="text-muted-foreground">123 Tech Street</p>
             <p className="text-muted-foreground text-sm">Silicon Valley, CA 94025</p>
+          </div>
+
+          <div className="bg-card border border-border rounded-lg p-6">
+            <Phone className="w-8 h-8 text-primary mb-4" />
+            <h3 className="font-bold text-foreground mb-2">General Support</h3>
+            <p className="text-muted-foreground">1-800-CELL-CORE</p>
+            <p className="text-muted-foreground text-sm mt-1">Available 24/7</p>
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold mb-6 text-foreground">Country Contact Channels</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {contactChannels.map((channel) => (
+              <div key={channel.country} className="bg-card border border-border rounded-lg p-6">
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <div>
+                    <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-1">{channel.country}</p>
+                    <h3 className="text-xl font-bold text-foreground">{channel.label}</h3>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
+                    Regional support
+                  </span>
+                </div>
+
+                <div className="space-y-4 text-sm">
+                  <div className="flex items-start gap-3">
+                    <MessageCircle className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-foreground">WhatsApp</p>
+                      <a href={`https://wa.me/${channel.whatsapp.replace(/[^\d]/g, '')}`} className="text-primary hover:underline">
+                        {channel.whatsapp}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Mail className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-foreground">Email</p>
+                      <a href={`mailto:${channel.email}`} className="text-primary hover:underline">
+                        {channel.email}
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-foreground">Landline</p>
+                      <a href={`tel:${channel.landline}`} className="text-primary hover:underline">
+                        {channel.landline}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -172,7 +232,7 @@ export default function ContactPage() {
             { q: 'How can I track my order?', a: 'You can track your order using the tracking number sent to your email after purchase. You can also check status in your account.' },
             { q: 'What is your return policy?', a: 'We offer 30-day returns for all products. Items must be in original condition with all packaging and accessories.' },
             { q: 'Do you offer refurbished products?', a: 'Yes! We offer certified refurbished products with full warranty. All refurbished items go through rigorous testing.' },
-            { q: 'How do I contact customer support?', a: 'You can reach us via phone at 1-800-CELL-CORE, email at support@cellkore.com, or through our website contact form.' },
+            { q: 'How do I contact customer support?', a: 'You can reach us through the US or Canada WhatsApp, email, or landline details listed above, or through our website contact form.' },
           ].map((item, idx) => (
             <div key={idx} className="bg-card border border-border rounded-lg p-6">
               <h3 className="font-semibold text-foreground mb-2">{item.q}</h3>

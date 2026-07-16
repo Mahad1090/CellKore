@@ -140,6 +140,14 @@ export default function ProductDetailPage() {
               </span>
             </div>
 
+            {product.country && (
+              <div className="mb-4">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-foreground text-background">
+                  Available in {product.country === 'US' ? 'United States' : 'Canada'}
+                </span>
+              </div>
+            )}
+
             {/* Title */}
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{product.name}</h1>
 
@@ -173,6 +181,12 @@ export default function ProductDetailPage() {
 
             {/* Condition & Warranty */}
             <div className="bg-muted rounded-lg p-4 mb-6 space-y-2">
+              {product.country && (
+                <div>
+                  <span className="font-semibold text-foreground">Country: </span>
+                  <span className="text-muted-foreground">{product.country === 'US' ? 'United States' : 'Canada'}</span>
+                </div>
+              )}
               {product.condition && (
                 <div>
                   <span className="font-semibold text-foreground">Condition: </span>

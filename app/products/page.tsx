@@ -5,10 +5,18 @@ import { Footer } from '@/components/footer'
 import { ALL_PRODUCTS, CATEGORIES, Product } from '@/lib/mock-data'
 import Link from 'next/link'
 import { Star } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { Suspense, useState, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 export default function ProductsPage() {
+  return (
+    <Suspense fallback={<ProductsPageLoading />}>
+      <ProductsPageContent />
+    </Suspense>
+  )
+}
+
+function ProductsPageContent() {
   const searchParams = useSearchParams()
   const categoryParam = searchParams.get('category')
   const searchParam = searchParams.get('search')
@@ -204,6 +212,11 @@ export default function ProductsPage() {
                             {product.condition}
                           </div>
                         )}
+                        {product.country && (
+                          <div className="absolute top-2 left-2 translate-y-8 bg-foreground/90 text-background px-2 py-1 rounded text-xs font-semibold">
+                            {product.country === 'US' ? 'United States' : 'Canada'}
+                          </div>
+                        )}
                       </div>
 
                       {/* Product Info */}
@@ -249,6 +262,24 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      <Footer />
+    </main>
+  )
+}
+
+function ProductsPageLoading() {
+  return (
+    <main className="min-h-screen bg-background">
+      <Navigation />
+      <section className="bg-primary text-primary-foreground py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h1 className="text-3xl font-bold">Our Products</h1>
+          <p className="opacity-90 mt-2">Loading products...</p>
+        </div>
+      </section>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="h-64 rounded-lg border border-border bg-muted animate-pulse" />
+      </div>
       <Footer />
     </main>
   )

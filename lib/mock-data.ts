@@ -13,6 +13,7 @@ export interface Product {
   id: string
   name: string
   category: string
+  country?: 'US' | 'Canada'
   price: number
   originalPrice?: number
   image: string
@@ -24,6 +25,7 @@ export interface Product {
   condition?: 'new' | 'refurbished' | 'used'
   warranty?: string
   variants?: ProductVariant[]
+  specs?: Record<string, string>
   specifications?: {
     display?: Record<string, string>
     memory?: Record<string, string>
@@ -104,6 +106,7 @@ export const FEATURED_PRODUCTS: Product[] = [
     reviews: 342,
     inStock: true,
     condition: 'new',
+    country: 'US',
     description: 'Latest iPhone 15 Pro Max with advanced camera system',
     warranty: '1 Year Apple Care+',
     variants: [
@@ -179,6 +182,7 @@ export const FEATURED_PRODUCTS: Product[] = [
     reviews: 289,
     inStock: true,
     condition: 'new',
+    country: 'US',
     description: 'Galaxy S24 Ultra with stunning AMOLED display',
     warranty: '1 Year Samsung Care+',
     variants: [
@@ -241,6 +245,7 @@ export const FEATURED_PRODUCTS: Product[] = [
     reviews: 156,
     inStock: true,
     condition: 'refurbished',
+    country: 'Canada',
     description: 'Refurbished iPhone 14 Pro in excellent condition',
     specs: {
       'Storage': '128GB',
@@ -260,6 +265,7 @@ export const FEATURED_PRODUCTS: Product[] = [
     reviews: 198,
     inStock: true,
     condition: 'new',
+    country: 'Canada',
     description: 'Pixel 8 Pro with AI-powered camera',
     specs: {
       'Storage': '256GB',
@@ -309,6 +315,7 @@ export const ALL_PRODUCTS: Product[] = [
     reviews: 67,
     inStock: true,
     condition: 'used',
+    country: 'US',
     description: 'Used iPhone 13 Mini in good condition',
   },
   {
@@ -321,6 +328,7 @@ export const ALL_PRODUCTS: Product[] = [
     reviews: 112,
     inStock: true,
     condition: 'new',
+    country: 'Canada',
     description: 'Mid-range Samsung Galaxy A54',
   },
   {
@@ -333,6 +341,7 @@ export const ALL_PRODUCTS: Product[] = [
     reviews: 145,
     inStock: true,
     condition: 'new',
+    country: 'US',
     description: 'OnePlus 12 with flagship specs',
   },
   {
@@ -432,5 +441,88 @@ export const MARKETPLACES: Marketplace[] = [
     image: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=500&q=80',
     rating: 4.5,
     reviews: 198,
+  },
+]
+
+export interface WholesaleManifestRow {
+  id: string
+  model: string
+  capacity: string
+  carrier: string
+  grade: 'A' | 'B' | 'C' | 'D'
+  quantity: number
+}
+
+export interface WholesaleListing {
+  id: string
+  name: string
+  image: string
+  price: number
+  quantity: number
+  condition: 'New' | 'Refurbished' | 'Used'
+  description: string
+  manifestRows: WholesaleManifestRow[]
+}
+
+export const WHOLESALE_LISTINGS: WholesaleListing[] = [
+  {
+    id: 'wh-iphone-15-pro-max',
+    name: 'iPhone 15 Pro Max',
+    image: 'https://images.unsplash.com/photo-1592286927505-1def25115558?w=500&q=80',
+    price: 950,
+    quantity: 20,
+    condition: 'New',
+    description: 'High-demand flagship inventory with multiple storage and carrier splits.',
+    manifestRows: [
+      { id: 'wh-1', model: 'iPhone 15 Pro Max', capacity: '256GB', carrier: 'Unlocked', grade: 'A', quantity: 7 },
+      { id: 'wh-2', model: 'iPhone 15 Pro Max', capacity: '512GB', carrier: 'Unlocked', grade: 'A', quantity: 5 },
+      { id: 'wh-3', model: 'iPhone 15 Pro Max', capacity: '1TB', carrier: 'Unlocked', grade: 'A', quantity: 3 },
+      { id: 'wh-4', model: 'iPhone 15 Pro Max', capacity: '256GB', carrier: 'Verizon', grade: 'B', quantity: 5 },
+    ],
+  },
+  {
+    id: 'wh-iphone-14-pro',
+    name: 'iPhone 14 Pro',
+    image: 'https://images.unsplash.com/photo-1592286927505-1def25115558?w=500&q=80',
+    price: 650,
+    quantity: 18,
+    condition: 'Refurbished',
+    description: 'Refurbished wholesale lot with mixed grades for resale and replacement units.',
+    manifestRows: [
+      { id: 'wh-5', model: 'iPhone 14 Pro', capacity: '128GB', carrier: 'Unlocked', grade: 'B', quantity: 6 },
+      { id: 'wh-6', model: 'iPhone 14 Pro', capacity: '256GB', carrier: 'Unlocked', grade: 'B', quantity: 4 },
+      { id: 'wh-7', model: 'iPhone 14 Pro', capacity: '128GB', carrier: 'AT&T', grade: 'C', quantity: 5 },
+      { id: 'wh-8', model: 'iPhone 14 Pro', capacity: '256GB', carrier: 'T-Mobile', grade: 'C', quantity: 3 },
+    ],
+  },
+  {
+    id: 'wh-s24-ultra',
+    name: 'Samsung Galaxy S24 Ultra',
+    image: 'https://images.unsplash.com/photo-1610945415295-d9bbf7ce3f1c?w=500&q=80',
+    price: 1020,
+    quantity: 16,
+    condition: 'New',
+    description: 'Premium Android wholesale stock with strong margins and fast turnover.',
+    manifestRows: [
+      { id: 'wh-9', model: 'Samsung Galaxy S24 Ultra', capacity: '256GB', carrier: 'Unlocked', grade: 'A', quantity: 5 },
+      { id: 'wh-10', model: 'Samsung Galaxy S24 Ultra', capacity: '512GB', carrier: 'Unlocked', grade: 'A', quantity: 4 },
+      { id: 'wh-11', model: 'Samsung Galaxy S24 Ultra', capacity: '256GB', carrier: 'Verizon', grade: 'A', quantity: 3 },
+      { id: 'wh-12', model: 'Samsung Galaxy S24 Ultra', capacity: '512GB', carrier: 'AT&T', grade: 'B', quantity: 4 },
+    ],
+  },
+  {
+    id: 'wh-pixel-8-pro',
+    name: 'Google Pixel 8 Pro',
+    image: 'https://images.unsplash.com/photo-1511707267537-b85faf00021e?w=500&q=80',
+    price: 780,
+    quantity: 12,
+    condition: 'New',
+    description: 'Clean Android inventory for stores focused on AI camera devices.',
+    manifestRows: [
+      { id: 'wh-13', model: 'Google Pixel 8 Pro', capacity: '128GB', carrier: 'Unlocked', grade: 'A', quantity: 4 },
+      { id: 'wh-14', model: 'Google Pixel 8 Pro', capacity: '256GB', carrier: 'Unlocked', grade: 'A', quantity: 3 },
+      { id: 'wh-15', model: 'Google Pixel 8 Pro', capacity: '128GB', carrier: 'T-Mobile', grade: 'B', quantity: 3 },
+      { id: 'wh-16', model: 'Google Pixel 8 Pro', capacity: '256GB', carrier: 'AT&T', grade: 'B', quantity: 2 },
+    ],
   },
 ]

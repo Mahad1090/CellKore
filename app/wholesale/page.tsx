@@ -1,178 +1,173 @@
 'use client'
 
-import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
+import { Navigation } from '@/components/navigation'
+import { WHOLESALE_LISTINGS } from '@/lib/mock-data'
 import Link from 'next/link'
-import { Check, Package, TrendingUp, Users } from 'lucide-react'
+import { Package, Tag, Truck, ShieldCheck, Star } from 'lucide-react'
 
 export default function WholesalePage() {
+  const manifestRows = WHOLESALE_LISTINGS.flatMap((listing) =>
+    listing.manifestRows.map((row) => ({
+      ...row,
+      listingId: listing.id,
+      listingName: listing.name,
+      listingPrice: listing.price,
+      listingCondition: listing.condition,
+    })),
+  )
+
   return (
     <main className="min-h-screen bg-background">
       <Navigation />
 
-      {/* Header */}
-      <section className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-12 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">CellKore Wholesale</h1>
-          <p className="text-lg md:text-xl opacity-90 mb-8">
-            Partner with us for exclusive bulk pricing and business solutions
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="#contact-form" className="px-8 py-3 bg-secondary text-secondary-foreground rounded-lg hover:opacity-90 transition font-semibold">
-              Get Started
-            </Link>
-            <a href="#inventory" className="px-8 py-3 border-2 border-secondary rounded-lg hover:bg-secondary hover:text-secondary-foreground transition font-semibold">
-              View Inventory
-            </a>
+      <section className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-14 md:py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Bulk stock ready to move</h1>
+            <p className="text-lg md:text-xl opacity-90 mb-8">
+              Browse wholesale phones in the same card style as the home page, then open each lot for a full manifest.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <a href="#inventory" className="px-8 py-3 bg-white text-emerald-700 rounded-lg hover:bg-gray-100 transition font-semibold text-center">
+                View Stock
+              </a>
+              <a href="#manifest" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-emerald-700 transition font-semibold text-center">
+                View Manifest
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Benefits Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold mb-12 text-foreground text-center">Why Choose CellKore Wholesale?</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { icon: TrendingUp, title: 'Competitive Pricing', desc: 'Best bulk prices in the industry' },
-            { icon: Package, title: 'Large Inventory', desc: 'Thousands of devices in stock' },
-            { icon: Users, title: 'Dedicated Support', desc: 'Personal account managers' },
-            { icon: Check, title: 'Quality Guaranteed', desc: 'All products thoroughly tested' },
-          ].map((benefit, idx) => {
-            const Icon = benefit.icon
+            { icon: Package, title: 'Bulk Ready', desc: 'Stock organized for quick resale and replenishment.' },
+            { icon: Tag, title: 'Clear Pricing', desc: 'See price per lot before opening the detail page.' },
+            { icon: Truck, title: 'Fast Fulfillment', desc: 'Wholesale orders can move as soon as the lot is confirmed.' },
+            { icon: ShieldCheck, title: 'Condition Graded', desc: 'Every lot shows the condition up front.' },
+          ].map((item, idx) => {
+            const Icon = item.icon
             return (
-              <div key={idx} className="bg-card border border-border rounded-lg p-6 text-center">
-                <Icon className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">{benefit.title}</h3>
-                <p className="text-sm text-muted-foreground">{benefit.desc}</p>
+              <div key={idx} className="bg-card border border-border rounded-lg p-6">
+                <Icon className="w-10 h-10 text-primary mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.desc}</p>
               </div>
             )
           })}
         </div>
       </section>
 
-      {/* Inventory Section */}
       <section id="inventory" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-muted rounded-lg">
-        <h2 className="text-3xl font-bold mb-8 text-foreground">Wholesale Inventory</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-primary text-primary-foreground">
-              <tr>
-                <th className="px-6 py-3 text-left font-semibold">Product</th>
-                <th className="px-6 py-3 text-left font-semibold">Model</th>
-                <th className="px-6 py-3 text-left font-semibold">Condition</th>
-                <th className="px-6 py-3 text-left font-semibold">Qty Available</th>
-                <th className="px-6 py-3 text-left font-semibold">Unit Price (1-50)</th>
-                <th className="px-6 py-3 text-left font-semibold">Unit Price (50+)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { product: 'iPhone 15 Pro Max', model: '256GB', condition: 'New', qty: 250, price1: '$950', price2: '$900' },
-                { product: 'iPhone 15 Pro', model: '128GB', condition: 'New', qty: 180, price1: '$850', price2: '$800' },
-                { product: 'Samsung Galaxy S24 Ultra', model: '512GB', condition: 'New', qty: 200, price1: '$1,050', price2: '$1,000' },
-                { product: 'iPhone 14 Pro Max', model: '256GB', condition: 'Refurbished', qty: 320, price1: '$650', price2: '$600' },
-                { product: 'Google Pixel 8 Pro', model: '256GB', condition: 'New', qty: 150, price1: '$800', price2: '$750' },
-                { product: 'Samsung Galaxy A54', model: '128GB', condition: 'New', qty: 400, price1: '$350', price2: '$320' },
-              ].map((item, idx) => (
-                <tr key={idx} className="border-b border-border hover:bg-background transition">
-                  <td className="px-6 py-3 font-medium text-foreground">{item.product}</td>
-                  <td className="px-6 py-3 text-muted-foreground">{item.model}</td>
-                  <td className="px-6 py-3">
-                    <span className={`px-3 py-1 rounded text-xs font-semibold ${
-                      item.condition === 'New' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {item.condition}
-                    </span>
-                  </td>
-                  <td className="px-6 py-3 font-semibold text-foreground">{item.qty}</td>
-                  <td className="px-6 py-3 text-primary font-semibold">{item.price1}</td>
-                  <td className="px-6 py-3 text-accent font-bold">{item.price2}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-end justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground">Wholesale Inventory</h2>
+            <p className="text-muted-foreground mt-2">Cards show the lot image, price, quantity, and condition.</p>
+          </div>
+          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground bg-background border border-border rounded-full px-4 py-2">
+            <Star className="w-4 h-4 text-accent" />
+            Click any lot for full manifest
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-4">Prices subject to change. Contact sales for volume discounts beyond 50 units.</p>
-      </section>
 
-      {/* Contact Form */}
-      <section id="contact-form" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-foreground text-center">Get Your Wholesale Quote</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {WHOLESALE_LISTINGS.map((listing) => (
+            <Link key={listing.id} href={`/wholesale/${listing.id}`}>
+              <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg hover:border-primary transition h-full flex flex-col">
+                <div className="relative bg-white h-48 overflow-hidden">
+                  <img src={listing.image} alt={listing.name} className="w-full h-full object-cover hover:scale-105 transition" />
+                  <div className="absolute top-3 left-3 rounded-full bg-foreground/90 text-background px-3 py-1 text-xs font-semibold">
+                    {listing.condition}
+                  </div>
+                  <div className="absolute top-3 right-3 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-semibold">
+                    {listing.quantity} units
+                  </div>
+                </div>
 
-          <form className="bg-card border border-border rounded-lg p-8 space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Company Name*</label>
-                <input type="text" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
+                <div className="p-5 flex-1 flex flex-col">
+                  <h3 className="text-xl font-bold text-foreground mb-2">{listing.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{listing.description}</p>
+
+                  <div className="mt-auto space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Wholesale price</span>
+                      <span className="text-2xl font-bold text-primary">${listing.price}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Quantity</span>
+                      <span className="font-semibold text-foreground">{listing.quantity}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Condition</span>
+                      <span className="font-semibold text-foreground">{listing.condition}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Contact Name*</label>
-                <input type="text" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Email*</label>
-                <input type="email" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Phone*</label>
-                <input type="tel" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Business Type*</label>
-              <select required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background">
-                <option>Select...</option>
-                <option>Retail Store</option>
-                <option>Online Seller</option>
-                <option>Reseller</option>
-                <option>Corporate</option>
-                <option>Other</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Estimated Monthly Volume*</label>
-              <select required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background">
-                <option>Select...</option>
-                <option>10-50 units</option>
-                <option>50-100 units</option>
-                <option>100-500 units</option>
-                <option>500+ units</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Message</label>
-              <textarea rows={4} className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
-            </div>
-
-            <button type="submit" className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
-              Request Quote
-            </button>
-          </form>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-muted rounded-lg">
-        <h2 className="text-3xl font-bold mb-8 text-foreground text-center">Wholesale FAQ</h2>
-        <div className="max-w-3xl mx-auto space-y-6">
-          {[
-            { q: 'What is the minimum order?', a: 'Minimum order is 10 units. Contact us for bulk customizations.' },
-            { q: 'Do you offer payment terms?', a: 'Yes! Net 30 and Net 60 terms available for qualified businesses.' },
-            { q: 'What about warranties?', a: 'All devices come with standard manufacturer warranty. Extended warranties available.' },
-            { q: 'How fast can you ship?', a: 'Most orders ship within 24-48 hours. Expedited shipping available.' },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-card border border-border rounded-lg p-6">
-              <h3 className="font-semibold text-foreground mb-2">{item.q}</h3>
-              <p className="text-muted-foreground">{item.a}</p>
-            </div>
+            </Link>
           ))}
+        </div>
+      </section>
+
+      <section id="manifest" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="p-6 border-b border-border flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Wholesale Manifest</h2>
+              <p className="text-sm text-muted-foreground">This list combines the lots into a manifest-style view like your reference screen.</p>
+            </div>
+            <div className="text-sm text-muted-foreground bg-muted rounded-full px-4 py-2">
+              {manifestRows.length} manifest rows
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted text-foreground">
+                <tr>
+                  <th className="px-6 py-3 text-left font-semibold">Model</th>
+                  <th className="px-6 py-3 text-left font-semibold">Capacity</th>
+                  <th className="px-6 py-3 text-left font-semibold">Carrier</th>
+                  <th className="px-6 py-3 text-left font-semibold">Grade</th>
+                  <th className="px-6 py-3 text-left font-semibold">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {manifestRows.map((row) => (
+                  <tr key={row.id} className="border-t border-border hover:bg-muted/60 transition">
+                    <td className="px-6 py-3">
+                      <Link href={`/wholesale/${row.listingId}`} className="font-medium text-primary hover:underline">
+                        {row.model}
+                      </Link>
+                    </td>
+                    <td className="px-6 py-3 text-muted-foreground">{row.capacity}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{row.carrier}</td>
+                    <td className="px-6 py-3">
+                      <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                        {row.grade}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3 font-semibold text-foreground">{row.quantity}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        <div className="bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-lg p-8 md:p-10">
+          <h2 className="text-2xl md:text-3xl font-bold mb-3">Need a larger lot or a custom mix?</h2>
+          <p className="text-white/80 mb-6 max-w-2xl">
+            Tell us the model, capacity, carrier, grade, and quantity you want, and we will prepare a dedicated wholesale quote.
+          </p>
+          <a href="/contact" className="inline-block px-6 py-3 bg-white text-slate-900 rounded-lg hover:bg-slate-100 transition font-semibold">
+            Request Wholesale Quote
+          </a>
         </div>
       </section>
 
