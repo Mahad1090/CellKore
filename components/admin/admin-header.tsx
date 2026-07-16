@@ -26,12 +26,12 @@ export function AdminHeader() {
           onClick={() => setShowDropdown(!showDropdown)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-700 transition"
         >
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <User className="w-4 h-4 text-white" />
           </div>
           <div className="text-left">
-            <p className="text-sm font-medium text-white">{adminUser?.full_name}</p>
-            <p className="text-xs text-slate-400 capitalize">{adminUser?.role}</p>
+            <p className="text-sm font-medium text-white">{adminUser?.name}</p>
+            <p className="text-xs text-slate-400 capitalize">Administrator</p>
           </div>
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </button>

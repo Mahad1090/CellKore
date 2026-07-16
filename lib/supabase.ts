@@ -35,6 +35,18 @@ const createFallbackSupabaseClient = () => ({
 			error: null,
 		}),
 	},
+	from: (table: string) => ({
+		select: (columns?: string) => ({
+			order: (column: string, options?: any) => ({
+				limit: (count: number) => Promise.resolve({ data: [], error: null })
+			}),
+			limit: (count: number) => Promise.resolve({ data: [], error: null }),
+			single: () => Promise.resolve({ data: null, error: null })
+		}),
+		insert: (values: any) => Promise.resolve({ data: null, error: null }),
+		update: (values: any) => Promise.resolve({ data: null, error: null }),
+		delete: () => Promise.resolve({ data: null, error: null })
+	})
 })
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)

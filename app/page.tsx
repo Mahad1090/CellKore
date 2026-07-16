@@ -2,7 +2,44 @@ import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { CATEGORIES, FEATURED_PRODUCTS } from '@/lib/mock-data'
 import Link from 'next/link'
-import { Star } from 'lucide-react'
+import { Star, Smartphone, Headphones, Wrench, SmartphoneCharging } from 'lucide-react'
+
+function getCategoryIcon(id: string) {
+  const iconClass = "w-10 h-10 transition-transform group-hover:scale-110 duration-300"
+  switch (id) {
+    case 'iphone':
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`${iconClass} text-primary`}
+        >
+          {/* Outer Bezel */}
+          <rect x="5" y="2" width="14" height="20" rx="3.5" />
+          {/* Inner Screen */}
+          <rect x="6.2" y="3.2" width="11.6" height="17.6" rx="2.2" strokeWidth="1" className="opacity-40" />
+          {/* Dynamic Island */}
+          <rect x="10.5" y="4.5" width="3" height="0.8" rx="0.4" fill="currentColor" stroke="none" />
+          {/* Home Indicator */}
+          <line x1="10" y1="19.5" x2="14" y2="19.5" strokeWidth="1.2" className="opacity-80" />
+        </svg>
+      )
+    case 'samsung':
+      return <SmartphoneCharging className={`${iconClass} text-accent`} />
+    case 'android':
+      return <Smartphone className={`${iconClass} text-emerald-700`} />
+    case 'accessories':
+      return <Headphones className={`${iconClass} text-accent`} />
+    case 'spare-parts':
+      return <Wrench className={`${iconClass} text-primary`} />
+    default:
+      return <Smartphone className={`${iconClass} text-slate-400`} />
+  }
+}
 
 export default function Home() {
   return (
@@ -10,18 +47,18 @@ export default function Home() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white py-12 md:py-20">
+      <section className="bg-gradient-to-r from-primary to-accent text-white py-12 md:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to CellKore</h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-luxury uppercase">Welcome to CellKore</h1>
+            <p className="text-lg md:text-xl opacity-90 mb-8 font-light">
               Your trusted destination for premium cell phones, accessories, and spare parts
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/products" className="px-8 py-3 bg-white text-indigo-600 rounded-lg hover:bg-gray-100 transition font-semibold">
+              <Link href="/products" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold">
                 Shop Now
               </Link>
-              <Link href="/marketplace" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-indigo-600 transition font-semibold">
+              <Link href="/marketplace" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-primary transition font-semibold">
                 Visit Marketplace
               </Link>
             </div>
@@ -31,12 +68,12 @@ export default function Home() {
 
       {/* Categories Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="text-3xl font-bold mb-8 text-foreground">Shop by Category</h2>
+        <h2 className="text-3xl font-bold mb-8 text-foreground tracking-luxury uppercase">Shop by Category</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {CATEGORIES.map((category) => (
             <Link key={category.id} href={`/products?category=${category.id}`}>
-              <div className="bg-card border border-border rounded-lg p-6 text-center hover:shadow-lg hover:border-primary transition cursor-pointer h-full flex flex-col items-center justify-center">
-                <div className="text-4xl mb-2">{category.icon}</div>
+              <div className="bg-card border border-border rounded-lg p-6 text-center hover:shadow-lg hover:border-primary transition cursor-pointer h-full flex flex-col items-center justify-center group">
+                <div className="mb-4 h-12 flex items-center justify-center">{getCategoryIcon(category.id)}</div>
                 <h3 className="font-semibold text-foreground text-sm">{category.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{category.count} items</p>
               </div>
@@ -47,7 +84,7 @@ export default function Home() {
 
       {/* Featured Products */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-muted rounded-lg">
-        <h2 className="text-3xl font-bold mb-8 text-foreground">Featured Products</h2>
+        <h2 className="text-3xl font-bold mb-8 text-foreground tracking-luxury uppercase">Featured Products</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURED_PRODUCTS.slice(0, 6).map((product) => (
             <Link key={product.id} href={`/products/${product.id}`}>
@@ -97,7 +134,7 @@ export default function Home() {
                   </div>
 
                   {/* Stock Status */}
-                  <div className="text-xs font-semibold text-green-600">
+                  <div className="text-xs font-semibold text-primary">
                     {product.inStock ? 'In Stock' : 'Out of Stock'}
                   </div>
                 </div>
@@ -109,12 +146,12 @@ export default function Home() {
 
       {/* Call to Action */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg p-8 md:p-12 text-center">
-          <h2 className="text-3xl font-bold mb-4">Wholesale Program Available</h2>
-          <p className="text-lg opacity-90 mb-6">
+        <div className="bg-gradient-to-r from-primary to-[#073b31] text-white rounded-lg p-8 md:p-12 text-center shadow-lg">
+          <h2 className="text-3xl font-bold mb-4 tracking-luxury uppercase">Wholesale Program Available</h2>
+          <p className="text-lg opacity-90 mb-6 font-light">
             Are you a business owner? Get bulk pricing and exclusive wholesale deals
           </p>
-          <Link href="/wholesale" className="inline-block px-8 py-3 bg-white text-emerald-600 rounded-lg hover:bg-gray-100 transition font-semibold">
+          <Link href="/wholesale" className="inline-block px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold">
             Learn About Wholesale
           </Link>
         </div>

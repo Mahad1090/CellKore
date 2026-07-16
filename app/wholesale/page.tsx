@@ -21,19 +21,19 @@ export default function WholesalePage() {
     <main className="min-h-screen bg-background">
       <Navigation />
 
-      <section className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white py-14 md:py-20">
+      <section className="bg-gradient-to-r from-primary to-[#073b31] text-white py-14 md:py-20 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Bulk stock ready to move</h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-luxury uppercase font-heading">Bulk stock ready to move</h1>
+            <p className="text-lg md:text-xl opacity-90 mb-8 font-light">
               Browse wholesale phones in the same card style as the home page, then open each lot for a full manifest.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#inventory" className="px-8 py-3 bg-white text-emerald-700 rounded-lg hover:bg-gray-100 transition font-semibold text-center">
+              <a href="#inventory" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold text-center">
                 View Stock
               </a>
-              <a href="#manifest" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-emerald-700 transition font-semibold text-center">
+              <a href="#manifest" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-primary transition font-semibold text-center">
                 View Manifest
               </a>
             </div>
@@ -160,12 +160,12 @@ export default function WholesalePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gradient-to-r from-slate-900 to-slate-700 text-white rounded-lg p-8 md:p-10">
+        <div className="bg-gradient-to-r from-primary to-[#073b31] text-white rounded-lg p-8 md:p-10 shadow-lg">
           <h2 className="text-2xl md:text-3xl font-bold mb-3">Need a larger lot or a custom mix?</h2>
           <p className="text-white/80 mb-6 max-w-2xl">
             Tell us the model, capacity, carrier, grade, and quantity you want, and we will prepare a dedicated wholesale quote.
           </p>
-          <a href="/contact" className="inline-block px-6 py-3 bg-white text-slate-900 rounded-lg hover:bg-slate-100 transition font-semibold">
+          <a href="/contact" className="inline-block px-6 py-3 bg-white text-primary rounded-lg hover:bg-slate-100 transition font-semibold">
             Request Wholesale Quote
           </a>
         </div>

@@ -53,7 +53,7 @@ export function SignInForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
             placeholder="you@example.com"
           />
         </div>
@@ -68,19 +68,19 @@ export function SignInForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
             placeholder="••••••••"
           />
         </div>
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all" disabled={loading}>
+        <Button type="submit" className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all" disabled={loading}>
           {loading ? 'Signing in...' : 'Sign In'}
         </Button>
       </form>
 
       <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-8">
         Don't have an account?{' '}
-        <Link href="/auth/signup" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+        <Link href="/auth/signup" className="text-primary hover:text-accent hover:underline font-medium">
           Sign up
         </Link>
       </p>

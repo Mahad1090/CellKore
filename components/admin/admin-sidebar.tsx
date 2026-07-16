@@ -76,7 +76,7 @@ export function AdminSidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-slate-700">
         <Link href="/admin/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">CK</span>
           </div>
           <span className="text-lg font-bold text-white">Admin</span>
@@ -95,7 +95,7 @@ export function AdminSidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition ${
                 isActive
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'text-slate-300 hover:bg-slate-700'
               }`}
             >

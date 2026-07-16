@@ -9,21 +9,21 @@ const actions = [
     description: 'Create a new product listing',
     href: '/admin/products/new',
     icon: Plus,
-    color: 'bg-blue-600 hover:bg-blue-700',
+    color: 'bg-primary hover:opacity-90',
   },
   {
     title: 'Manage Categories',
     description: 'View and edit all categories',
     href: '/admin/categories',
     icon: Edit,
-    color: 'bg-purple-600 hover:bg-purple-700',
+    color: 'bg-accent hover:opacity-90',
   },
   {
     title: 'View Orders',
     description: 'Check recent orders and status',
     href: '/admin/orders',
     icon: Eye,
-    color: 'bg-green-600 hover:bg-green-700',
+    color: 'bg-emerald-800 hover:opacity-90',
   },
 ]
 

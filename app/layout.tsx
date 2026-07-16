@@ -1,8 +1,25 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
+import { Cormorant_Garamond, Jost } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
 import { AdminProvider } from '@/contexts/admin-context'
+
+const cormorant = Cormorant_Garamond({
+  variable: '--font-heading',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  display: 'swap',
+  preload: true,
+})
+
+const jost = Jost({
+  variable: '--font-body',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  display: 'swap',
+  preload: true,
+})
 
 export const metadata: Metadata = {
   title: 'CellKore - Premium Cell Phone Sales',
@@ -41,8 +58,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
-      <body className="antialiased">
+    <html lang="en" className={`${cormorant.variable} ${jost.variable} bg-background`}>
+      <body className="font-sans antialiased">
         <AuthProvider>
           <AdminProvider>
             {children}

@@ -55,7 +55,7 @@ export function RecentActivity() {
           description: `New product: ${product.name}`,
           timestamp: product.created_at,
           icon: <Package className="w-4 h-4" />,
-          color: 'bg-blue-900/30 text-blue-400',
+          color: 'bg-emerald-950/50 text-emerald-400',
         })
       })
 
@@ -66,7 +66,7 @@ export function RecentActivity() {
           description: `New order for $${order.total_amount}`,
           timestamp: order.created_at,
           icon: <ShoppingCart className="w-4 h-4" />,
-          color: 'bg-green-900/30 text-green-400',
+          color: 'bg-green-950/50 text-green-400',
         })
       })
 
@@ -77,7 +77,7 @@ export function RecentActivity() {
           description: `Contact from ${inquiry.email}`,
           timestamp: inquiry.submitted_at,
           icon: <MessageSquare className="w-4 h-4" />,
-          color: 'bg-purple-900/30 text-purple-400',
+          color: 'bg-amber-950/50 text-amber-400',
         })
       })
 

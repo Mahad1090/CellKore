@@ -46,8 +46,8 @@ export function DashboardStats({ stats }: { stats: Stats }) {
       <StatCard
         title="Total Products"
         value={stats.totalProducts}
-        icon={<Package className="w-6 h-6 text-blue-400" />}
-        color="bg-blue-900/30"
+        icon={<Package className="w-6 h-6 text-emerald-400" />}
+        color="bg-emerald-900/30"
         trend="↑ 12 this month"
       />
       <StatCard
@@ -60,8 +60,8 @@ export function DashboardStats({ stats }: { stats: Stats }) {
       <StatCard
         title="Categories"
         value={stats.totalCategories}
-        icon={<Tag className="w-6 h-6 text-purple-400" />}
-        color="bg-purple-900/30"
+        icon={<Tag className="w-6 h-6 text-amber-400" />}
+        color="bg-amber-900/30"
       />
       <StatCard
         title="Marketplaces"
@@ -72,8 +72,8 @@ export function DashboardStats({ stats }: { stats: Stats }) {
       <StatCard
         title="Orders"
         value={stats.totalOrders}
-        icon={<ShoppingCart className="w-6 h-6 text-pink-400" />}
-        color="bg-pink-900/30"
+        icon={<ShoppingCart className="w-6 h-6 text-emerald-400" />}
+        color="bg-emerald-900/30"
       />
       <StatCard
         title="Wholesale Listings"
@@ -84,8 +84,8 @@ export function DashboardStats({ stats }: { stats: Stats }) {
       <StatCard
         title="Sell Requests"
         value={stats.totalSellRequests}
-        icon={<Phone className="w-6 h-6 text-cyan-400" />}
-        color="bg-cyan-900/30"
+        icon={<Phone className="w-6 h-6 text-amber-400" />}
+        color="bg-amber-900/30"
       />
       <StatCard
         title="Pending Inquiries"

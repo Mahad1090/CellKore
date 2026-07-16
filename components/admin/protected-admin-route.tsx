@@ -47,8 +47,8 @@ export function ProtectedAdminRoute({ children }: { children: ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-900">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg mb-4">
-            <div className="w-6 h-6 border-3 border-blue-300 border-t-white rounded-full animate-spin" />
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-lg mb-4">
+            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
           <p className="text-slate-400">Loading...</p>
         </div>

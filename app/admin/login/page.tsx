@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-lg mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-primary rounded-lg mb-4">
             <Lock className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Admin Panel</h1>
@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="admin@cellkore.com"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
                 />
               </div>
             </div>
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition"
                 />
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-2.5 bg-primary hover:opacity-90 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -103,7 +103,7 @@ export default function AdminLoginPage() {
           {/* Footer */}
           <p className="text-center text-sm text-slate-400 mt-6">
             Back to{' '}
-            <Link href="/" className="text-blue-400 hover:text-blue-300 transition">
+            <Link href="/" className="text-primary hover:text-accent transition">
               CellKore
             </Link>
           </p>

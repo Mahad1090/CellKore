@@ -279,7 +279,7 @@ export function SignUpForm() {
           We've sent a confirmation link to your email address. Please click the link to complete your registration.
         </p>
         <Link href="/auth/signin">
-          <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all">
+          <Button className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all">
             Go to Sign In
           </Button>
         </Link>
@@ -309,7 +309,7 @@ export function SignUpForm() {
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
             placeholder="John Doe"
           />
         </div>
@@ -324,7 +324,7 @@ export function SignUpForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
             placeholder="you@example.com"
           />
         </div>
@@ -340,10 +340,10 @@ export function SignUpForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
             placeholder="••••••••"
           />
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-light">
             Must be at least 6 characters
           </p>
         </div>
@@ -357,7 +357,7 @@ export function SignUpForm() {
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             required
-            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
           >
             {countries.map((c) => (
               <option key={c.code} value={c.code}>
@@ -381,23 +381,23 @@ export function SignUpForm() {
               value={phone}
               onChange={handlePhoneChange}
               required
-              className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-r-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="flex-1 px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-r-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-light"
               placeholder="1234567890"
             />
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-light">
             Format: {countries.find(c => c.code === country)?.name}
           </p>
         </div>
 
-        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-all" disabled={loading}>
+        <Button type="submit" className="w-full bg-primary hover:opacity-90 text-white font-semibold py-3 rounded-xl transition-all" disabled={loading}>
           {loading ? 'Creating account...' : 'Sign Up'}
         </Button>
       </form>
 
       <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-8">
         Already have an account?{' '}
-        <Link href="/auth/signin" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+        <Link href="/auth/signin" className="text-primary hover:text-accent hover:underline font-medium">
           Sign in
         </Link>
       </p>
