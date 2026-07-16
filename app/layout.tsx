@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
+import { AdminProvider } from '@/contexts/admin-context'
 
 export const metadata: Metadata = {
   title: 'CellKore - Premium Cell Phone Sales',
@@ -43,7 +44,9 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="antialiased">
         <AuthProvider>
-          {children}
+          <AdminProvider>
+            {children}
+          </AdminProvider>
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
