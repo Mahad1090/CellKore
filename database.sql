@@ -302,6 +302,38 @@ create table newsletter_subscribers (
 );
 
 -- =====================================================================
+-- AUTH TRIGGERS
+-- Automatically create user record in custom users table when user signs up via Supabase Auth
+-- =====================================================================
+
+-- Function to handle new user creation
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  -- Only insert if the users table exists and the user doesn't already exist
+  if exists (select 1 from information_schema.tables where table_name = 'users') then
+    insert into public.users (id, full_name, email, phone, country, password_hash)
+    values (
+      new.id,
+      coalesce(new.raw_user_meta_data->>'full_name', 'User'),
+      new.email,
+      new.raw_user_meta_data->>'phone',
+      new.raw_user_meta_data->>'country',
+      '' -- password_hash is required but Supabase Auth handles password separately
+    )
+    on conflict (id) do nothing;
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger that calls the function
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+-- =====================================================================
 -- OPTIONAL: Row Level Security (recommended for Supabase)
 -- Uncomment and customize policies before going to production.
 -- =====================================================================

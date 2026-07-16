@@ -12,6 +12,7 @@ export interface AuthResponse {
 
 export async function signUp(email: string, password: string, fullName?: string, phone?: string, country?: string): Promise<AuthResponse> {
   try {
+    console.log('Attempting signup with:', { email, fullName, phone, country })
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -23,6 +24,8 @@ export async function signUp(email: string, password: string, fullName?: string,
         }
       }
     })
+
+    console.log('Signup response:', { data, error })
 
     if (error) {
       return {
@@ -36,6 +39,7 @@ export async function signUp(email: string, password: string, fullName?: string,
       user: data.user
     }
   } catch (error) {
+    console.error('Signup error:', error)
     return {
       success: false,
       error: { message: 'An unexpected error occurred' }
