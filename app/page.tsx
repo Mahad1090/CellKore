@@ -45,20 +45,34 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-background">
       <Navigation />
-
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-accent text-white py-12 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative text-white w-full aspect-video max-h-[500px] overflow-hidden flex items-center justify-center">
+        {/* Background Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        >
+          <source src="/hero_banner_video.mp4" type="video/mp4" />
+        </video>
+        {/* Premium dark gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/50 to-primary/40 z-10"></div>
+        
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-luxury uppercase">Welcome to CellKore</h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8 font-light">
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-luxury uppercase drop-shadow-md animate-fade-in">
+              Welcome to CellKore
+            </h1>
+            <p className="text-lg md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm">
               Your trusted destination for premium cell phones, accessories, and spare parts
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/products" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold">
+              <Link href="/products" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold shadow-lg hover:scale-105 active:scale-95 duration-200">
                 Shop Now
               </Link>
-              <Link href="/marketplace" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-primary transition font-semibold">
+              <Link href="/marketplace" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-primary transition font-semibold shadow-lg hover:scale-105 active:scale-95 duration-200">
                 Visit Marketplace
               </Link>
             </div>
