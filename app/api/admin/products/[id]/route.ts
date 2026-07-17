@@ -50,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: Params) {
 			description: payload.description || null,
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,
+			lot_quantity: payload.lot_quantity ?? null,
 		})
 		.eq('id', id)
 	if (error) return NextResponse.json({ error: error.message }, { status: 500 })

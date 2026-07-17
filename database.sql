@@ -93,6 +93,7 @@ create table products (
   location text,
   description text,
   is_wholesale boolean not null default false,
+  lot_quantity int,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

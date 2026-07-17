@@ -11,6 +11,7 @@
 
 -- Human-readable order reference (CK-YYYY-NNNNN) + gift options
 alter table orders add column if not exists reference text unique;
+alter table products add column if not exists lot_quantity integer;
 alter table orders add column if not exists is_gift boolean not null default false;
 alter table orders add column if not exists gift_recipient_name text;
 alter table orders add column if not exists gift_recipient_phone text;

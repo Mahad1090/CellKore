@@ -18,7 +18,7 @@ const DEFAULT_SPEC_KEYS = [
 const CUSTOM_KEY = '__custom__'
 
 interface SpecRow {
-	key: string // one of DEFAULT_SPEC_KEYS or CUSTOM_KEY
+	key: string
 	customKey: string
 	value: string
 }
@@ -36,7 +36,7 @@ interface ImageRow {
 	is_primary: boolean
 }
 
-export interface ProductFormValue {
+export interface WholesaleFormValue {
 	id?: string
 	name: string
 	sku: string
@@ -46,16 +46,16 @@ export interface ProductFormValue {
 	base_price: string
 	location: string
 	description: string
-	is_wholesale: boolean
 	is_active: boolean
 	specs: SpecRow[]
 	variants: VariantRow[]
 	marketplaces: MarketplaceType[]
 	images: ImageRow[]
 	wholesale_colors: string
+	lot_quantity: string
 }
 
-export const EMPTY_PRODUCT: ProductFormValue = {
+export const EMPTY_WHOLESALE: WholesaleFormValue = {
 	name: '',
 	sku: '',
 	brand: '',
@@ -64,16 +64,16 @@ export const EMPTY_PRODUCT: ProductFormValue = {
 	base_price: '',
 	location: '',
 	description: '',
-	is_wholesale: false,
 	is_active: true,
 	specs: [],
 	variants: [],
 	marketplaces: ['US'],
 	images: [],
 	wholesale_colors: '',
+	lot_quantity: '',
 }
 
-export function productToForm(product: any): ProductFormValue {
+export function wholesaleToForm(product: any): WholesaleFormValue {
 	return {
 		id: product.id,
 		name: product.name ?? '',
@@ -84,7 +84,6 @@ export function productToForm(product: any): ProductFormValue {
 		base_price: String(product.base_price ?? ''),
 		location: product.location ?? '',
 		description: product.description ?? '',
-		is_wholesale: product.is_wholesale ?? false,
 		is_active: product.is_active ?? true,
 		specs: (product.product_specifications ?? []).map((s: any) => ({
 			key: DEFAULT_SPEC_KEYS.includes(s.spec_name) ? s.spec_name : CUSTOM_KEY,
@@ -102,6 +101,7 @@ export function productToForm(product: any): ProductFormValue {
 			.sort((a: any, b: any) => a.sort_order - b.sort_order)
 			.map((img: any) => ({ image_url: img.image_url, sort_order: img.sort_order, is_primary: img.is_primary })),
 		wholesale_colors: (product.wholesale_variant_colors ?? []).map((c: any) => c.color).join(', '),
+		lot_quantity: String(product.lot_quantity ?? ''),
 	}
 }
 
@@ -109,7 +109,7 @@ function specName(row: SpecRow): string {
 	return row.key === CUSTOM_KEY ? row.customKey.trim() : row.key
 }
 
-export function formToPayload(form: ProductFormValue) {
+export function formToWholesalePayload(form: WholesaleFormValue) {
 	return {
 		name: form.name.trim(),
 		sku: form.sku.trim() || null,
@@ -119,8 +119,9 @@ export function formToPayload(form: ProductFormValue) {
 		base_price: Number(form.base_price),
 		location: form.location.trim() || null,
 		description: form.description.trim() || null,
-		is_wholesale: form.is_wholesale,
+		is_wholesale: true,
 		is_active: form.is_active,
+		lot_quantity: Number(form.lot_quantity),
 		specifications: form.specs
 			.filter((s) => specName(s) && s.value.trim())
 			.map((s) => ({ spec_name: specName(s), spec_value: s.value.trim() })),
@@ -136,17 +137,11 @@ export function formToPayload(form: ProductFormValue) {
 		images: form.images
 			.filter((img) => img.image_url.trim())
 			.map((img, index) => ({ ...img, sort_order: index })),
-		wholesale_colors: form.is_wholesale
-			? form.wholesale_colors.split(',').map((c) => c.trim()).filter(Boolean)
-			: [],
+		wholesale_colors: form.wholesale_colors.split(',').map((c) => c.trim()).filter(Boolean),
 	}
 }
 
-/**
- * Auto-SKU: parses brand, name, first variant color, and storage capacity into
- * a standardized SKU, e.g. CK-IPH15-BL-128.
- */
-function generateSku(form: ProductFormValue): string {
+function generateSku(form: WholesaleFormValue): string {
 	const compact = (value: string, length: number) =>
 		value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length)
 
@@ -160,12 +155,12 @@ function generateSku(form: ProductFormValue): string {
 	const storage = form.specs.find((s) => specName(s) === 'Storage Capacity')?.value ?? ''
 	const storagePart = storage.replace(/[^0-9]/g, '')
 
-	return ['CK', `${brandPart}${namePart}` || 'ITEM', colorPart, storagePart]
+	return ['CK', `LOT-${brandPart}${namePart}` || 'LOT', colorPart, storagePart]
 		.filter(Boolean)
 		.join('-')
 }
 
-export function ProductFormModal({
+export function WholesaleFormModal({
 	open,
 	initial,
 	categories,
@@ -173,13 +168,13 @@ export function ProductFormModal({
 	onSaved,
 }: {
 	open: boolean
-	initial: ProductFormValue
+	initial: WholesaleFormValue
 	categories: Category[]
 	onClose: () => void
 	onSaved: () => void
 }) {
 	const { toast } = useToast()
-	const [form, setForm] = useState<ProductFormValue>(initial)
+	const [form, setForm] = useState<WholesaleFormValue>(initial)
 	const [saving, setSaving] = useState(false)
 	const [uploading, setUploading] = useState(false)
 	const [uploadVariantColor, setUploadVariantColor] = useState('')
@@ -188,17 +183,25 @@ export function ProductFormModal({
 		setForm(initial)
 	}, [initial])
 
-	const set = <K extends keyof ProductFormValue>(field: K, value: ProductFormValue[K]) =>
+	const set = <K extends keyof WholesaleFormValue>(field: K, value: WholesaleFormValue[K]) =>
 		setForm((f) => ({ ...f, [field]: value }))
 
 	const save = async () => {
 		if (!form.name.trim() || !form.base_price || Number.isNaN(Number(form.base_price))) {
-			toast({ title: 'Missing fields', description: 'Product name and a numeric base price are required.', variant: 'error' })
+			toast({ title: 'Missing fields', description: 'Lot name and a numeric base price are required.', variant: 'error' })
 			return
 		}
+
+		// Lot Quantity validation
+		const qty = Number(form.lot_quantity)
+		if (!form.lot_quantity || Number.isNaN(qty) || qty < 1 || !Number.isInteger(qty)) {
+			toast({ title: 'Invalid Lot Quantity', description: 'Lot Quantity is required and must be a positive whole number (minimum 1).', variant: 'error' })
+			return
+		}
+
 		setSaving(true)
 		try {
-			const payload = formToPayload(form)
+			const payload = formToWholesalePayload(form)
 			const res = await fetch(form.id ? `/api/admin/products/${form.id}` : '/api/admin/products', {
 				method: form.id ? 'PUT' : 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -206,7 +209,7 @@ export function ProductFormModal({
 			})
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error ?? 'Save failed')
-			toast({ title: form.id ? 'Product updated' : 'Product created', variant: 'success' })
+			toast({ title: form.id ? 'Wholesale lot updated' : 'Wholesale lot created', variant: 'success' })
 			onSaved()
 			onClose()
 		} catch (err) {
@@ -219,7 +222,7 @@ export function ProductFormModal({
 	const handleUpload = async (files: FileList | null) => {
 		if (!files || files.length === 0) return
 		if (!form.name.trim()) {
-			toast({ title: 'Name the product first', description: 'The product name is used for its storage folder.', variant: 'info' })
+			toast({ title: 'Name the lot first', description: 'The lot name is used for its storage folder.', variant: 'info' })
 			return
 		}
 		setUploading(true)
@@ -247,23 +250,23 @@ export function ProductFormModal({
 	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
 
 	return (
-		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
+		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Wholesale Lot' : 'Create Wholesale Lot'} wide>
 			<div className="space-y-8">
 				{/* Core fields */}
 				<div className="grid sm:grid-cols-2 gap-4">
 					<div className="sm:col-span-2">
-						<label className={label}>Name</label>
-						<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Max" />
+						<label className={label}>Lot Name</label>
+						<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Mixed Grade Lot" />
 					</div>
 					<div>
 						<label className={label}>SKU</label>
 						<div className="flex gap-2">
-							<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-IPH15-BL-128" />
+							<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-LOT-IPH15-25" />
 							<button
 								type="button"
 								onClick={() => set('sku', generateSku(form))}
 								className={`${adminButtonGhost} shrink-0 px-3.5`}
-								title="Auto-generate SKU from brand, name, color and storage"
+								title="Auto-generate SKU"
 							>
 								<Wand2 className="w-3.5 h-3.5" />
 								Auto
@@ -293,7 +296,7 @@ export function ProductFormModal({
 					</div>
 					<div>
 						<label className={label}>Base Price (USD)</label>
-						<input type="number" step="0.01" value={form.base_price} onChange={(e) => set('base_price', e.target.value)} className={adminInput} placeholder="999.00" />
+						<input type="number" step="0.01" value={form.base_price} onChange={(e) => set('base_price', e.target.value)} className={adminInput} placeholder="4999.00" />
 					</div>
 					<div>
 						<label className={label}>Location</label>
@@ -301,7 +304,7 @@ export function ProductFormModal({
 					</div>
 					<div className="sm:col-span-2">
 						<label className={label}>Description</label>
-						<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} />
+						<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} placeholder="Describe this wholesale lot..." />
 					</div>
 					<div className="flex items-center gap-6 sm:col-span-2">
 						<label className="flex items-center gap-2.5 cursor-pointer">
@@ -338,71 +341,34 @@ export function ProductFormModal({
 					</div>
 				</div>
 
-				{/* Specifications editor */}
-				<div>
-					<div className="flex items-center justify-between mb-3">
-						<label className={label}>Specifications</label>
-						<button
-							type="button"
-							onClick={() => set('specs', [...form.specs, { key: DEFAULT_SPEC_KEYS[0], customKey: '', value: '' }])}
-							className={`${adminButtonGhost} px-3.5 py-1.5`}
-						>
-							<Plus className="w-3 h-3" />
-							Add Spec
-						</button>
+				{/* Lot Details Panel (Lot Quantity and Lot Colors) */}
+				<div className="border border-border rounded-2xl p-5 space-y-5 bg-secondary/10">
+					<h4 className="text-[11px] font-bold uppercase tracking-wider text-foreground">Wholesale Lot Details</h4>
+					
+					<div>
+						<label className={label}>Lot Quantity *</label>
+						<input
+							type="number"
+							min={1}
+							step={1}
+							value={form.lot_quantity}
+							onChange={(e) => set('lot_quantity', e.target.value)}
+							className={adminInput}
+							placeholder="e.g. 25"
+						/>
+						<p className="text-[10px] text-muted-foreground mt-1.5 leading-normal">
+							Enter the total number of devices included in this wholesale lot.
+						</p>
 					</div>
-					<div className="space-y-2.5">
-						{form.specs.map((spec, index) => (
-							<div key={index} className="flex flex-wrap gap-2.5 items-center">
-								<select
-									value={spec.key}
-									onChange={(e) => {
-										const next = [...form.specs]
-										next[index] = { ...spec, key: e.target.value }
-										set('specs', next)
-									}}
-									className={`${adminInput} w-44 cursor-pointer`}
-								>
-									{DEFAULT_SPEC_KEYS.map((key) => (
-										<option key={key} value={key}>{key}</option>
-									))}
-									<option value={CUSTOM_KEY}>Custom Spec Key</option>
-								</select>
-								{spec.key === CUSTOM_KEY && (
-									<input
-										placeholder="Custom key"
-										value={spec.customKey}
-										onChange={(e) => {
-											const next = [...form.specs]
-											next[index] = { ...spec, customKey: e.target.value }
-											set('specs', next)
-										}}
-										className={`${adminInput} w-40`}
-									/>
-								)}
-								<input
-									placeholder="Value"
-									value={spec.value}
-									onChange={(e) => {
-										const next = [...form.specs]
-										next[index] = { ...spec, value: e.target.value }
-										set('specs', next)
-									}}
-									className={`${adminInput} flex-1 min-w-[140px]`}
-								/>
-								<button
-									type="button"
-									onClick={() => set('specs', form.specs.filter((_, i) => i !== index))}
-									className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-									aria-label="Remove specification"
-								>
-									<Trash2 className="w-4 h-4" />
-								</button>
-							</div>
-						))}
-						{form.specs.length === 0 && (
-							<p className="text-xs text-muted-foreground">No specifications yet — add display size, storage, cameras, and more.</p>
-						)}
+
+					<div>
+						<label className={label}>Lot Colors (comma-separated)</label>
+						<input
+							value={form.wholesale_colors}
+							onChange={(e) => set('wholesale_colors', e.target.value)}
+							className={adminInput}
+							placeholder="Black, Silver, Gold"
+						/>
 					</div>
 				</div>
 
@@ -489,7 +455,70 @@ export function ProductFormModal({
 					)}
 				</div>
 
-
+				{/* Specifications editor */}
+				<div>
+					<div className="flex items-center justify-between mb-3">
+						<label className={label}>Specifications</label>
+						<button
+							type="button"
+							onClick={() => set('specs', [...form.specs, { key: DEFAULT_SPEC_KEYS[0], customKey: '', value: '' }])}
+							className={`${adminButtonGhost} px-3.5 py-1.5`}
+						>
+							<Plus className="w-3 h-3" />
+							Add Spec
+						</button>
+					</div>
+					<div className="space-y-2.5">
+						{form.specs.map((spec, index) => (
+							<div key={index} className="flex flex-wrap gap-2.5 items-center">
+								<select
+									value={spec.key}
+									onChange={(e) => {
+										const next = [...form.specs]
+										next[index] = { ...spec, key: e.target.value }
+										set('specs', next)
+									}}
+									className={`${adminInput} w-44 cursor-pointer`}
+								>
+									{DEFAULT_SPEC_KEYS.map((key) => (
+										<option key={key} value={key}>{key}</option>
+									))}
+									<option value={CUSTOM_KEY}>Custom Spec Key</option>
+								</select>
+								{spec.key === CUSTOM_KEY && (
+									<input
+										placeholder="Custom key"
+										value={spec.customKey}
+										onChange={(e) => {
+											const next = [...form.specs]
+											next[index] = { ...spec, customKey: e.target.value }
+											set('specs', next)
+										}}
+										className={`${adminInput} w-40`}
+									/>
+								)}
+								<input
+									placeholder="Value"
+									value={spec.value}
+									onChange={(e) => {
+										const next = [...form.specs]
+										next[index] = { ...spec, value: e.target.value }
+										set('specs', next)
+									}}
+									className={`${adminInput} flex-1 min-w-[140px]`}
+								/>
+								<button
+									type="button"
+									onClick={() => set('specs', form.specs.filter((_, i) => i !== index))}
+									className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+									aria-label="Remove specification"
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
+							</div>
+						))}
+					</div>
+				</div>
 
 				{/* Image manager */}
 				<div>
@@ -533,7 +562,7 @@ export function ProductFormModal({
 									className={`p-2.5 rounded-full transition-all cursor-pointer ${
 										image.is_primary ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-muted'
 									}`}
-									title="Set as primary/thumbnail image"
+									title="Set as primary"
 								>
 									<Star className={`w-4 h-4 ${image.is_primary ? 'fill-current' : ''}`} />
 								</button>
@@ -547,7 +576,6 @@ export function ProductFormModal({
 											set('images', next)
 										}}
 										className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
-										aria-label="Move up"
 									>
 										▲
 									</button>
@@ -560,7 +588,6 @@ export function ProductFormModal({
 											set('images', next)
 										}}
 										className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
-										aria-label="Move down"
 									>
 										▼
 									</button>
@@ -591,7 +618,7 @@ export function ProductFormModal({
 					<button type="button" onClick={onClose} className={adminButtonGhost}>Cancel</button>
 					<button type="button" onClick={save} disabled={saving} className={adminButton}>
 						{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-						{saving ? 'Saving...' : 'Save Product'}
+						{saving ? 'Saving...' : 'Save Lot'}
 					</button>
 				</div>
 			</div>

@@ -51,6 +51,7 @@ export interface Product {
 	location: string | null
 	description: string | null
 	is_wholesale: boolean
+	lot_quantity?: number | null
 	is_active: boolean
 	created_at: string
 	updated_at: string

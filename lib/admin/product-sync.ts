@@ -11,6 +11,7 @@ export interface ProductPayload {
 	location?: string | null
 	description?: string | null
 	is_wholesale?: boolean
+	lot_quantity?: number | null
 	is_active?: boolean
 	specifications?: { spec_name: string; spec_value: string }[]
 	variants?: { id?: string; color: string | null; stock_quantity: number; price_adjustment: number }[]

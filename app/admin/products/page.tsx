@@ -33,7 +33,7 @@ function ProductsContent() {
 	const [editing, setEditing] = useState<ProductFormValue | null>(null)
 
 	const load = useCallback(() => {
-		fetch('/api/admin/products')
+		fetch('/api/admin/products?wholesale=false')
 			.then((res) => res.json())
 			.then((json) => setProducts(json.products ?? []))
 			.catch(() => setProducts([]))
@@ -121,7 +121,7 @@ function ProductsContent() {
 					<table className="w-full text-sm min-w-[760px]">
 						<thead>
 							<tr className="bg-secondary text-left">
-								{['Product', 'SKU', 'Category', 'Price', 'Stock', 'Type', 'Status', ''].map((h) => (
+								{['Product', 'SKU', 'Category', 'Price', 'Stock', 'Status', ''].map((h) => (
 									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
 								))}
 							</tr>
@@ -156,11 +156,7 @@ function ProductsContent() {
 												{(product.product_variants ?? []).length === 0 ? '—' : stock}
 											</span>
 										</td>
-										<td className="px-5 py-3.5">
-											<span className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60">
-												{product.is_wholesale ? 'Wholesale' : 'Retail'}
-											</span>
-										</td>
+
 										<td className="px-5 py-3.5">
 											<span
 												className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${

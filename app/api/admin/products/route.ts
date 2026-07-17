@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
 			description: payload.description || null,
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,
+			lot_quantity: payload.lot_quantity ?? null,
 		})
 		.select('id')
 		.single()
