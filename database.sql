@@ -346,3 +346,85 @@ alter table orders enable row level security;
 alter table order_items enable row level security;
 alter table sell_phone_requests enable row level security;
 alter table repair_requests enable row level security;
+
+
+
+
+-- =====================================================================
+-- Run this in Supabase (Project > SQL Editor > New query) after
+-- database.sql. It lets the public "Sell Your Phone" and "Contact Us"
+-- forms insert rows using the anon key, without opening up read/update/
+-- delete access to visitors.
+-- =====================================================================
+
+-- sell_phone_requests already has RLS enabled in database.sql, but has
+-- no policies yet, which means (with RLS on) NO ONE can insert until a
+-- policy explicitly allows it.
+alter table sell_phone_requests enable row level security;
+
+drop policy if exists "public can submit sell requests" on sell_phone_requests;
+create policy "public can submit sell requests"
+  on sell_phone_requests
+  for insert
+  to anon
+  with check (true);
+
+-- contact_inquiries did not have RLS enabled at all in database.sql.
+-- Turning it on + adding an insert-only policy keeps it available to
+-- the contact form while preventing visitors from reading, editing, or
+-- deleting other people's inquiries.
+alter table contact_inquiries enable row level security;
+
+drop policy if exists "public can submit contact inquiries" on contact_inquiries;
+create policy "public can submit contact inquiries"
+  on contact_inquiries
+  for insert
+  to anon
+  with check (true);
+
+-- Note: you (the project owner) can still see every row in the
+-- Supabase Table Editor regardless of these policies, since Studio
+-- uses your service role, which bypasses RLS.
+
+-- =====================================================================
+-- Fix: sell_phone_requests.condition was using the "product_condition"
+-- enum ('new' | 'used' | 'refurbished'), which is meant for the
+-- marketplace `products` table. The "Sell Your Phone" form actually
+-- sends 'excellent' | 'good' | 'fair' | 'poor', which that enum
+-- rejects with: invalid input value for enum product_condition.
+--
+-- Run ONLY this file in Supabase (Project > SQL Editor > New query).
+-- Do NOT re-run the full database.sql — your tables already exist.
+--
+-- This script is safe to run more than once.
+-- =====================================================================
+
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'device_condition') then
+    create type device_condition as enum ('excellent', 'good', 'fair', 'poor');
+  end if;
+end$$;
+
+-- Only alter the column if it isn't already device_condition.
+do $$
+begin
+  if (
+    select data_type
+    from information_schema.columns
+    where table_name = 'sell_phone_requests' and column_name = 'condition'
+  ) <> 'USER-DEFINED'
+  or (
+    select udt_name
+    from information_schema.columns
+    where table_name = 'sell_phone_requests' and column_name = 'condition'
+  ) <> 'device_condition' then
+    -- If sell_phone_requests already has rows whose condition isn't one
+    -- of 'excellent'/'good'/'fair'/'poor', this cast will fail. If that
+    -- happens, delete/fix those rows first, or replace the USING clause
+    -- with a CASE mapping old values to new ones.
+    alter table sell_phone_requests
+      alter column condition type device_condition
+      using condition::text::device_condition;
+  end if;
+end$$;
