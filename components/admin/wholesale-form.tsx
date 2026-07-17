@@ -44,7 +44,6 @@ export interface WholesaleFormValue {
 	category_id: string
 	condition: ProductCondition
 	base_price: string
-	location: string
 	description: string
 	is_active: boolean
 	specs: SpecRow[]
@@ -62,7 +61,6 @@ export const EMPTY_WHOLESALE: WholesaleFormValue = {
 	category_id: '',
 	condition: 'new',
 	base_price: '',
-	location: '',
 	description: '',
 	is_active: true,
 	specs: [],
@@ -82,7 +80,6 @@ export function wholesaleToForm(product: any): WholesaleFormValue {
 		category_id: product.category_id ?? '',
 		condition: product.condition ?? 'new',
 		base_price: String(product.base_price ?? ''),
-		location: product.location ?? '',
 		description: product.description ?? '',
 		is_active: product.is_active ?? true,
 		specs: (product.product_specifications ?? []).map((s: any) => ({
@@ -117,7 +114,6 @@ export function formToWholesalePayload(form: WholesaleFormValue) {
 		category_id: form.category_id || null,
 		condition: form.condition,
 		base_price: Number(form.base_price),
-		location: form.location.trim() || null,
 		description: form.description.trim() || null,
 		is_wholesale: true,
 		is_active: form.is_active,
@@ -298,10 +294,6 @@ export function WholesaleFormModal({
 						<label className={label}>Base Price (USD)</label>
 						<input type="number" step="0.01" value={form.base_price} onChange={(e) => set('base_price', e.target.value)} className={adminInput} placeholder="4999.00" />
 					</div>
-					<div>
-						<label className={label}>Location</label>
-						<input value={form.location} onChange={(e) => set('location', e.target.value)} className={adminInput} placeholder="Miami, FL" />
-					</div>
 					<div className="sm:col-span-2">
 						<label className={label}>Description</label>
 						<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} placeholder="Describe this wholesale lot..." />
@@ -316,21 +308,20 @@ export function WholesaleFormModal({
 
 				{/* Marketplaces */}
 				<div>
-					<label className={label}>Marketplaces</label>
+					<label className={label}>Marketplace</label>
 					<div className="flex gap-4">
 						{(['US', 'CA'] as MarketplaceType[]).map((market) => (
-							<label key={market} className="flex items-center gap-2.5 px-4 py-2.5 border border-border rounded-full cursor-pointer hover:border-primary transition-colors">
+							<label
+								key={market}
+								className={`flex items-center gap-2.5 px-4 py-2.5 border rounded-full cursor-pointer transition-colors ${
+									form.marketplaces[0] === market ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'
+								}`}
+							>
 								<input
-									type="checkbox"
-									checked={form.marketplaces.includes(market)}
-									onChange={(e) =>
-										set(
-											'marketplaces',
-											e.target.checked
-												? [...form.marketplaces, market]
-												: form.marketplaces.filter((m) => m !== market)
-										)
-									}
+									type="radio"
+									name="marketplace"
+									checked={form.marketplaces[0] === market}
+									onChange={() => set('marketplaces', [market])}
 									className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
 								/>
 								<span className="text-xs font-semibold text-foreground">

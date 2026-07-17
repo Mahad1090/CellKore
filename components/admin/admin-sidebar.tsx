@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-	LayoutDashboard, Package, Tag, MapPin, Boxes, Phone, Settings, FileText,
+	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
 	Users, BarChart3, ShoppingBag, Shield, MailPlus,
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
@@ -13,6 +13,9 @@ const navItems: { label: string; href: string; icon: any; permission?: AdminPerm
 	{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 	{ label: 'Products', href: '/admin/products', icon: Package, permission: 'products:read' },
 	{ label: 'Categories', href: '/admin/categories', icon: Tag, permission: 'products:read' },
+	{ label: 'Product Types', href: '/admin/product-types', icon: Layers, permission: 'products:read' },
+	{ label: 'Spec Templates', href: '/admin/spec-templates', icon: ListChecks, permission: 'products:read' },
+	{ label: 'Mobile Spec Presets', href: '/admin/mobile-spec-presets', icon: Smartphone, permission: 'products:read' },
 	{ label: 'Wholesale', href: '/admin/wholesale', icon: Boxes, permission: 'products:read' },
 	{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
 	{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },

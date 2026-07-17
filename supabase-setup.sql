@@ -12,6 +12,74 @@
 -- Human-readable order reference (CK-YYYY-NNNNN) + gift options
 alter table orders add column if not exists reference text unique;
 alter table products add column if not exists lot_quantity integer;
+-- Structured mobile spec sheet (categories -> field key -> value), replaces the free-text Add Spec editor for phones.
+-- Shape defined in lib/mobile-specs.ts (general/display/performance/memory/battery/rearCamera/frontCamera/
+-- connectivity/audio/sensors/software/boxContents/samsungFeatures/appleFeatures/custom[]).
+alter table products add column if not exists mobile_specifications jsonb not null default '{}'::jsonb;
+-- Admin-only cost data for the profit-margin calculator; never selected in the public storefront query (lib/data.ts).
+alter table products add column if not exists purchase_price numeric(10,2);
+-- Variant swatch color + per-variant image tagging (matched by color name, see database.sql comment).
+alter table product_variants add column if not exists swatch_hex text;
+alter table product_variants add column if not exists storage text;
+alter table product_variants add column if not exists ram text;
+alter table product_images add column if not exists variant_color text;
+-- Product Types (Phone, Phone Case, Charger, ...), each mapped to a Category; is_phone_type
+-- drives whether the Mobile Specifications editor shows on the product form.
+create table if not exists product_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category_id uuid references categories(id) on delete set null,
+  is_phone_type boolean not null default false,
+  is_active boolean not null default true,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_product_types_category_id on product_types(category_id);
+alter table products add column if not exists product_type_id uuid references product_types(id) on delete set null;
+create index if not exists idx_products_product_type_id on products(product_type_id);
+alter table product_types enable row level security;
+drop policy if exists "public read product_types" on product_types;
+create policy "public read product_types" on product_types for select using (true);
+-- Admin-defined reusable spec field lists per Product Type. Only admin routes (service role)
+-- touch these tables — the storefront reads a self-contained snapshot on products.template_specifications
+-- instead of joining here, so no public read policy is needed.
+create table if not exists spec_templates (
+  id uuid primary key default gen_random_uuid(),
+  product_type_id uuid not null references product_types(id) on delete cascade,
+  name text not null,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index if not exists idx_spec_templates_product_type_id on spec_templates(product_type_id);
+create table if not exists spec_template_fields (
+  id uuid primary key default gen_random_uuid(),
+  template_id uuid not null references spec_templates(id) on delete cascade,
+  key text not null,
+  label text not null,
+  field_type text not null default 'text',
+  options jsonb,
+  unit text,
+  default_value text,
+  sort_order int not null default 0
+);
+alter table spec_template_fields add column if not exists default_value text;
+create index if not exists idx_spec_template_fields_template_id on spec_template_fields(template_id);
+alter table products add column if not exists spec_template_id uuid references spec_templates(id) on delete set null;
+alter table products add column if not exists template_specifications jsonb not null default '{}'::jsonb;
+alter table spec_templates enable row level security;
+alter table spec_template_fields enable row level security;
+-- Named, reusable snapshots of Mobile Specifications values (e.g. "iPhone 15 Pro"), phone-only.
+-- Admin/service-role only, same as spec_templates — nothing FKs to a preset, it's copied in on load.
+create table if not exists mobile_spec_presets (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  brand text,
+  mobile_specifications jsonb not null default '{}'::jsonb,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
 alter table orders add column if not exists is_gift boolean not null default false;
 alter table orders add column if not exists gift_recipient_name text;
 alter table orders add column if not exists gift_recipient_phone text;

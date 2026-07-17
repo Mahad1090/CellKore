@@ -15,8 +15,8 @@ export async function GET(request: NextRequest, { params }: Params) {
 		.from('products')
 		.select(`
 			*,
-			product_images ( id, image_url, sort_order, is_primary ),
-			product_variants ( id, color, stock_quantity, price_adjustment ),
+			product_images ( id, image_url, sort_order, is_primary, variant_color ),
+			product_variants ( id, color, swatch_hex, storage, ram, stock_quantity, price_adjustment ),
 			product_specifications ( id, spec_name, spec_value ),
 			product_marketplaces ( marketplace ),
 			wholesale_variant_colors ( id, color ),
@@ -44,13 +44,17 @@ export async function PUT(request: NextRequest, { params }: Params) {
 			sku: payload.sku || null,
 			brand: payload.brand || null,
 			category_id: payload.category_id || null,
+			product_type_id: payload.product_type_id || null,
+			spec_template_id: payload.spec_template_id || null,
 			condition: payload.condition ?? 'new',
 			base_price: payload.base_price,
-			location: payload.location || null,
+			purchase_price: payload.purchase_price ?? null,
 			description: payload.description || null,
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,
 			lot_quantity: payload.lot_quantity ?? null,
+			mobile_specifications: payload.mobile_specifications ?? {},
+			template_specifications: payload.template_specifications ?? {},
 		})
 		.eq('id', id)
 	if (error) return NextResponse.json({ error: error.message }, { status: 500 })

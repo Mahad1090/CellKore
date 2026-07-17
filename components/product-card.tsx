@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { MapPin, Smartphone } from 'lucide-react'
+import { Smartphone } from 'lucide-react'
 import type { Product } from '@/lib/types'
 import { primaryImage, totalStock } from '@/lib/types'
 
@@ -51,16 +51,10 @@ export function ProductCard({ product }: { product: Product }) {
 						<h3 className="text-sm font-medium text-card-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">
 							{product.name}
 						</h3>
-						<div className="mt-auto pt-3 flex items-end justify-between gap-2">
+						<div className="mt-auto pt-3">
 							<span className="text-base font-semibold text-card-foreground">
 								${Number(product.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
 							</span>
-							{product.location && (
-								<span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-									<MapPin className="w-3 h-3" />
-									{product.location}
-								</span>
-							)}
 						</div>
 					</div>
 				</div>

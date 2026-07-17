@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Heart, ShoppingCart, ChevronLeft, ChevronRight, MapPin, Smartphone, Minus, Plus } from 'lucide-react'
+import { Heart, ShoppingCart, ChevronLeft, ChevronRight, Smartphone, Minus, Plus } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { DetailShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
+import { Accordion } from '@/components/ui/accordion'
 import { fetchProductById } from '@/lib/data'
 import { addToLocalCart, getWishlist, toggleWishlist } from '@/lib/cart'
-import type { Product, ProductVariant } from '@/lib/types'
+import { categoryHasValues, getCategoriesForBrand, getCategoryValues } from '@/lib/mobile-specs'
+import type { Product } from '@/lib/types'
 
 export default function ProductDetailPage() {
 	const params = useParams()
@@ -18,27 +20,110 @@ export default function ProductDetailPage() {
 	const { toast } = useToast()
 
 	const [product, setProduct] = useState<Product | null | undefined>(undefined)
-	const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
+	const [selectedColor, setSelectedColor] = useState<string | null>(null)
+	const [selectedStorage, setSelectedStorage] = useState<string | null>(null)
 	const [selectedImage, setSelectedImage] = useState(0)
 	const [quantity, setQuantity] = useState(1)
 	const [isWishlisted, setIsWishlisted] = useState(false)
+	const [openSpecItems, setOpenSpecItems] = useState<string[]>([])
 
 	useEffect(() => {
 		if (!id) return
 		fetchProductById(id)
 			.then((data) => {
 				setProduct(data)
-				const inStock = (data?.product_variants ?? []).find((v) => v.stock_quantity > 0)
-				setSelectedVariant(inStock ?? data?.product_variants?.[0] ?? null)
+				const productVariants = data?.product_variants ?? []
+				const initial = productVariants.find((v) => v.stock_quantity > 0) ?? productVariants[0] ?? null
+				setSelectedColor(initial?.color ?? null)
+				setSelectedStorage(initial?.storage ?? null)
+				const categories = getCategoriesForBrand(data?.brand).filter((category) =>
+					categoryHasValues(data?.mobile_specifications ?? {}, category)
+				)
+				setOpenSpecItems(categories.map((c) => c.id))
 			})
 			.catch(() => setProduct(null))
 		setIsWishlisted(getWishlist().includes(id))
 	}, [id])
 
-	const images = useMemo(
+	const variants = useMemo(() => product?.product_variants ?? [], [product])
+	const hasStorageDimension = useMemo(() => variants.some((v) => (v.storage ?? '').trim() !== ''), [variants])
+	const selectedVariant = useMemo(() => {
+		if (variants.length === 0) return null
+		return (
+			variants.find(
+				(v) =>
+					(v.color ?? '') === (selectedColor ?? '') &&
+					(!hasStorageDimension || (v.storage ?? '').trim() === (selectedStorage ?? ''))
+			) ?? null
+		)
+	}, [variants, selectedColor, selectedStorage, hasStorageDimension])
+
+	const uniqueColors = useMemo(() => {
+		const seen = new Set<string>()
+		const list: { color: string | null; swatch_hex?: string | null }[] = []
+		for (const v of variants) {
+			const key = v.color ?? ''
+			if (!seen.has(key)) {
+				seen.add(key)
+				list.push({ color: v.color, swatch_hex: v.swatch_hex })
+			}
+		}
+		return list
+	}, [variants])
+
+	const storageOptions = useMemo(() => {
+		if (!hasStorageDimension) return []
+		const seen = new Set<string>()
+		const list: string[] = []
+		for (const v of variants) {
+			if ((v.color ?? '') !== (selectedColor ?? '')) continue
+			const s = (v.storage ?? '').trim()
+			if (s && !seen.has(s)) {
+				seen.add(s)
+				list.push(s)
+			}
+		}
+		return list
+	}, [variants, selectedColor, hasStorageDimension])
+
+	const colorHasStock = (color: string | null) =>
+		variants.some((v) => (v.color ?? '') === (color ?? '') && v.stock_quantity > 0)
+
+	const handleSelectColor = (color: string | null) => {
+		if (hasStorageDimension) {
+			const storagesForColor = variants
+				.filter((v) => (v.color ?? '') === (color ?? ''))
+				.map((v) => (v.storage ?? '').trim())
+				.filter(Boolean)
+			if (!storagesForColor.includes(selectedStorage ?? '')) {
+				setSelectedStorage(storagesForColor[0] ?? null)
+			}
+		}
+		setSelectedColor(color)
+		setQuantity(1)
+		setSelectedImage(0)
+	}
+
+	const handleSelectStorage = (storage: string) => {
+		setSelectedStorage(storage)
+		setQuantity(1)
+		setSelectedImage(0)
+	}
+
+	const allImages = useMemo(
 		() => [...(product?.product_images ?? [])].sort((a, b) => a.sort_order - b.sort_order),
 		[product]
 	)
+
+	const images = useMemo(() => {
+		if (!product || variants.length === 0) return allImages
+		const colorImages = selectedColor
+			? allImages.filter((i) => (i.variant_color ?? '').trim() === selectedColor)
+			: []
+		if (colorImages.length > 0) return colorImages
+		const shared = allImages.filter((i) => !(i.variant_color ?? '').trim())
+		return shared.length > 0 ? shared : allImages
+	}, [allImages, product, variants, selectedColor])
 
 	if (product === undefined) {
 		return (
@@ -65,15 +150,23 @@ export default function ProductDetailPage() {
 		)
 	}
 
-	const variants = product.product_variants ?? []
-	const specs = product.product_specifications ?? []
+	const legacySpecs = product.product_specifications ?? []
+	const mobileSpecs = product.mobile_specifications ?? {}
+	const specCategories = getCategoriesForBrand(product.brand).filter((category) => categoryHasValues(mobileSpecs, category))
+	const customSpecs = (mobileSpecs.custom ?? []).filter((c) => c.key.trim() && c.value.trim())
+	const templateEntries = (product.template_specifications?.entries ?? []).filter((e) => e.value.trim())
+	const templateCustom = (product.template_specifications?.custom ?? []).filter((c) => c.label.trim() && c.value.trim())
 	const displayPrice = Number(product.base_price) + Number(selectedVariant?.price_adjustment ?? 0)
 	const maxStock = selectedVariant?.stock_quantity ?? 0
 	const inStock = variants.length === 0 || maxStock > 0
 
 	const handleAddToCart = () => {
 		if (variants.length > 0 && !selectedVariant) {
-			toast({ title: 'Select an option', description: 'Please choose a color first.', variant: 'info' })
+			toast({
+				title: 'Select an option',
+				description: hasStorageDimension ? 'Please choose a color and storage.' : 'Please choose a color.',
+				variant: 'info',
+			})
 			return
 		}
 		if (!inStock) return
@@ -82,9 +175,11 @@ export default function ProductDetailPage() {
 			variantId: selectedVariant?.id ?? null,
 			quantity,
 		})
+		const storageLabel = selectedVariant?.ram ? `${selectedVariant.ram}/${selectedVariant.storage}` : selectedVariant?.storage
+		const variantLabel = [selectedVariant?.color, storageLabel].filter(Boolean).join(' — ')
 		toast({
 			title: 'Added to cart',
-			description: `${product.name}${selectedVariant?.color ? ` — ${selectedVariant.color}` : ''} × ${quantity}`,
+			description: `${product.name}${variantLabel ? ` — ${variantLabel}` : ''} × ${quantity}`,
 			variant: 'success',
 		})
 	}
@@ -172,12 +267,6 @@ export default function ProductDetailPage() {
 							<span className="px-3 py-1 rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80 capitalize">
 								{product.condition}
 							</span>
-							{product.location && (
-								<span className="flex items-center gap-1 text-xs text-muted-foreground">
-									<MapPin className="w-3.5 h-3.5" />
-									{product.location}
-								</span>
-							)}
 						</div>
 
 						<p className="text-3xl font-bold text-primary mb-6">
@@ -188,31 +277,71 @@ export default function ProductDetailPage() {
 							<p className="text-sm text-foreground/75 leading-relaxed mb-8">{product.description}</p>
 						)}
 
-						{/* Variant selector — depleted options disabled */}
+						{/* Variant selectors — depleted combinations disabled */}
 						{variants.length > 0 && (
 							<div className="mb-8">
 								<p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mb-3">Color</p>
 								<div className="flex flex-wrap gap-2.5">
-									{variants.map((variant) => {
-										const depleted = variant.stock_quantity === 0
+									{uniqueColors.map(({ color, swatch_hex }) => {
+										const depleted = !colorHasStock(color)
+										const active = (selectedColor ?? '') === (color ?? '')
 										return (
 											<button
-												key={variant.id}
+												key={color ?? '__standard__'}
 												disabled={depleted}
-												onClick={() => {
-													setSelectedVariant(variant)
-													setQuantity(1)
-												}}
-												className={`px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
+												onClick={() => handleSelectColor(color)}
+												className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
 													depleted
 														? 'border-border text-muted-foreground/50 line-through cursor-not-allowed'
-														: selectedVariant?.id === variant.id
+														: active
 														? 'border-primary bg-primary text-primary-foreground cursor-pointer'
 														: 'border-border text-foreground hover:border-primary cursor-pointer'
 												}`}
 											>
-												{variant.color ?? 'Standard'}
-												{Number(variant.price_adjustment) !== 0 && !depleted && (
+												{swatch_hex && (
+													<span
+														className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+														style={{ backgroundColor: swatch_hex }}
+													/>
+												)}
+												{color ?? 'Standard'}
+												{!hasStorageDimension && selectedVariant && active && !depleted && Number(selectedVariant.price_adjustment) !== 0 && (
+													<span className="ml-1.5 opacity-70">
+														{Number(selectedVariant.price_adjustment) > 0 ? '+' : ''}${Number(selectedVariant.price_adjustment).toFixed(0)}
+													</span>
+												)}
+											</button>
+										)
+									})}
+								</div>
+							</div>
+						)}
+
+						{hasStorageDimension && storageOptions.length > 0 && (
+							<div className="mb-8">
+								<p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mb-3">Storage</p>
+								<div className="flex flex-wrap gap-2.5">
+									{storageOptions.map((storage) => {
+										const variant = variants.find(
+											(v) => (v.color ?? '') === (selectedColor ?? '') && (v.storage ?? '').trim() === storage
+										)
+										const depleted = !variant || variant.stock_quantity === 0
+										const active = (selectedStorage ?? '') === storage
+										return (
+											<button
+												key={storage}
+												disabled={depleted}
+												onClick={() => handleSelectStorage(storage)}
+												className={`px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
+													depleted
+														? 'border-border text-muted-foreground/50 line-through cursor-not-allowed'
+														: active
+														? 'border-primary bg-primary text-primary-foreground cursor-pointer'
+														: 'border-border text-foreground hover:border-primary cursor-pointer'
+												}`}
+											>
+												{variant?.ram ? `${variant.ram} / ${storage}` : storage}
+												{variant && Number(variant.price_adjustment) !== 0 && !depleted && (
 													<span className="ml-1.5 opacity-70">
 														{Number(variant.price_adjustment) > 0 ? '+' : ''}${Number(variant.price_adjustment).toFixed(0)}
 													</span>
@@ -221,10 +350,11 @@ export default function ProductDetailPage() {
 										)
 									})}
 								</div>
-								{selectedVariant && selectedVariant.stock_quantity > 0 && selectedVariant.stock_quantity <= 5 && (
-									<p className="text-xs text-destructive mt-3">Only {selectedVariant.stock_quantity} left in stock</p>
-								)}
 							</div>
+						)}
+
+						{variants.length > 0 && selectedVariant && selectedVariant.stock_quantity > 0 && selectedVariant.stock_quantity <= 5 && (
+							<p className="text-xs text-destructive mb-8 -mt-4">Only {selectedVariant.stock_quantity} left in stock</p>
 						)}
 
 						{/* Quantity + actions */}
@@ -272,13 +402,99 @@ export default function ProductDetailPage() {
 						</div>
 
 						{/* Specifications */}
-						{specs.length > 0 && (
+						{(specCategories.length > 0 || customSpecs.length > 0) && (
+							<div>
+								<h2 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground mb-3">
+									Specifications
+								</h2>
+								<Accordion
+									openItems={openSpecItems}
+									onOpenItemsChange={setOpenSpecItems}
+									items={[
+										...specCategories.map((category) => ({
+											value: category.id,
+											header: category.label,
+											content: (() => {
+												const categoryValues = getCategoryValues(mobileSpecs, category.id)
+												return (
+													<dl>
+														{category.fields
+															.filter((field) => (categoryValues[field.key] ?? '').trim() !== '')
+															.map((field, index) => (
+																<div
+																	key={field.key}
+																	className={`flex items-center justify-between py-2.5 text-sm ${index % 2 === 1 ? 'bg-muted/40' : ''}`}
+																>
+																	<dt className="text-muted-foreground">{field.label}</dt>
+																	<dd className="font-medium text-foreground">
+																		{field.type === 'checkbox' ? 'Yes' : categoryValues[field.key]}
+																		{field.unit && field.type !== 'checkbox' ? ` ${field.unit}` : ''}
+																	</dd>
+																</div>
+															))}
+													</dl>
+												)
+											})(),
+										})),
+										...(customSpecs.length > 0
+											? [
+													{
+														value: 'additional',
+														header: 'Additional Specifications',
+														content: (
+															<dl>
+																{customSpecs.map((spec, index) => (
+																	<div
+																		key={spec.key}
+																		className={`flex items-center justify-between py-2.5 text-sm ${index % 2 === 1 ? 'bg-muted/40' : ''}`}
+																	>
+																		<dt className="text-muted-foreground">{spec.key}</dt>
+																		<dd className="font-medium text-foreground">{spec.value}</dd>
+																	</div>
+																))}
+															</dl>
+														),
+													},
+												]
+											: []),
+									]}
+								/>
+							</div>
+						)}
+						{specCategories.length === 0 && customSpecs.length === 0 && (templateEntries.length > 0 || templateCustom.length > 0) && (
 							<div className="border border-border rounded-3xl overflow-hidden">
 								<h2 className="px-6 py-4 bg-secondary text-xs font-bold uppercase tracking-[0.18em] text-foreground">
 									Specifications
 								</h2>
 								<dl>
-									{specs.map((spec, index) => (
+									{[
+										...templateEntries.map((e) => ({
+											key: e.key,
+											label: e.label,
+											value: e.type === 'checkbox' ? 'Yes' : `${e.value}${e.unit ? ` ${e.unit}` : ''}`,
+										})),
+										...templateCustom.map((c) => ({ key: c.label, label: c.label, value: c.value })),
+									].map((spec, index) => (
+										<div
+											key={spec.key}
+											className={`flex items-center justify-between px-6 py-3.5 text-sm ${
+												index % 2 === 1 ? 'bg-muted/40' : ''
+											}`}
+										>
+											<dt className="text-muted-foreground">{spec.label}</dt>
+											<dd className="font-medium text-foreground">{spec.value}</dd>
+										</div>
+									))}
+								</dl>
+							</div>
+						)}
+						{specCategories.length === 0 && customSpecs.length === 0 && templateEntries.length === 0 && templateCustom.length === 0 && legacySpecs.length > 0 && (
+							<div className="border border-border rounded-3xl overflow-hidden">
+								<h2 className="px-6 py-4 bg-secondary text-xs font-bold uppercase tracking-[0.18em] text-foreground">
+									Specifications
+								</h2>
+								<dl>
+									{legacySpecs.map((spec, index) => (
 										<div
 											key={spec.id}
 											className={`flex items-center justify-between px-6 py-3.5 text-sm ${

@@ -1,22 +1,26 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import type { MarketplaceType, ProductCondition } from '@/lib/types'
+import type { MarketplaceType, ProductCondition, TemplateSpecifications } from '@/lib/types'
+import type { MobileSpecifications } from '@/lib/mobile-specs'
 
 export interface ProductPayload {
 	name: string
 	sku?: string | null
 	brand?: string | null
 	category_id?: string | null
+	product_type_id?: string | null
+	spec_template_id?: string | null
 	condition?: ProductCondition
 	base_price: number
-	location?: string | null
+	purchase_price?: number | null
 	description?: string | null
 	is_wholesale?: boolean
 	lot_quantity?: number | null
 	is_active?: boolean
-	specifications?: { spec_name: string; spec_value: string }[]
-	variants?: { id?: string; color: string | null; stock_quantity: number; price_adjustment: number }[]
+	mobile_specifications?: MobileSpecifications
+	template_specifications?: TemplateSpecifications
+	variants?: { id?: string; color: string | null; swatch_hex: string | null; storage: string | null; ram: string | null; stock_quantity: number; price_adjustment: number }[]
 	marketplaces?: MarketplaceType[]
-	images?: { image_url: string; sort_order: number; is_primary: boolean }[]
+	images?: { image_url: string; sort_order: number; is_primary: boolean; variant_color: string | null }[]
 	wholesale_colors?: string[]
 }
 
@@ -31,17 +35,6 @@ export async function syncProductRelations(
 	payload: ProductPayload
 ): Promise<string | null> {
 	try {
-		if (payload.specifications) {
-			await service.from('product_specifications').delete().eq('product_id', productId)
-			const specs = payload.specifications.filter((s) => s.spec_name.trim() && s.spec_value.trim())
-			if (specs.length > 0) {
-				const { error } = await service
-					.from('product_specifications')
-					.insert(specs.map((s) => ({ ...s, product_id: productId })))
-				if (error) throw error
-			}
-		}
-
 		if (payload.variants) {
 			const keepIds: string[] = []
 			for (const variant of payload.variants) {
@@ -51,6 +44,9 @@ export async function syncProductRelations(
 						.from('product_variants')
 						.update({
 							color: variant.color,
+							swatch_hex: variant.swatch_hex,
+							storage: variant.storage,
+							ram: variant.ram,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})
@@ -63,6 +59,9 @@ export async function syncProductRelations(
 						.insert({
 							product_id: productId,
 							color: variant.color,
+							swatch_hex: variant.swatch_hex,
+							storage: variant.storage,
+							ram: variant.ram,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})
@@ -99,6 +98,7 @@ export async function syncProductRelations(
 						image_url: img.image_url,
 						sort_order: img.sort_order ?? index,
 						is_primary: hasPrimary ? img.is_primary : index === 0,
+						variant_color: img.variant_color || null,
 					}))
 				)
 				if (error) throw error

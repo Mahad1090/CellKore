@@ -82,23 +82,77 @@ create table categories (
   created_at timestamptz not null default now()
 );
 
+create table product_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  category_id uuid references categories(id) on delete set null,
+  is_phone_type boolean not null default false,
+  is_active boolean not null default true,
+  sort_order int not null default 0,
+  created_at timestamptz not null default now()
+);
+create index idx_product_types_category_id on product_types(category_id);
+
+-- Admin-defined reusable spec field lists, attached to a Product Type (many per type allowed).
+create table spec_templates (
+  id uuid primary key default gen_random_uuid(),
+  product_type_id uuid not null references product_types(id) on delete cascade,
+  name text not null,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create index idx_spec_templates_product_type_id on spec_templates(product_type_id);
+
+create table spec_template_fields (
+  id uuid primary key default gen_random_uuid(),
+  template_id uuid not null references spec_templates(id) on delete cascade,
+  key text not null,
+  label text not null,
+  field_type text not null default 'text', -- 'text' | 'number' | 'select' | 'checkbox'
+  options jsonb,
+  unit text,
+  default_value text,
+  sort_order int not null default 0
+);
+create index idx_spec_template_fields_template_id on spec_template_fields(template_id);
+
+-- Named, reusable snapshots of Mobile Specifications values (e.g. "iPhone 15 Pro"), phone-only.
+-- Not referenced by products — values are copied in on load, never live-joined.
+create table mobile_spec_presets (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  brand text,
+  mobile_specifications jsonb not null default '{}'::jsonb,
+  sort_order int not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
 create table products (
   id uuid primary key default gen_random_uuid(),
   category_id uuid references categories(id) on delete set null,
+  product_type_id uuid references product_types(id) on delete set null,
+  spec_template_id uuid references spec_templates(id) on delete set null,
   sku text unique,
   name text not null,
   brand text,
   condition product_condition not null default 'new',
   base_price numeric(10,2) not null,
-  location text,
+  purchase_price numeric(10,2),
   description text,
   is_wholesale boolean not null default false,
   lot_quantity int,
   is_active boolean not null default true,
+  mobile_specifications jsonb not null default '{}'::jsonb,
+  -- Snapshot of the chosen spec template's fields at save time (label/type/unit/value),
+  -- plus any per-product custom entries. Never live-joined back to spec_templates.
+  template_specifications jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 create index idx_products_category_id on products(category_id);
+create index idx_products_product_type_id on products(product_type_id);
 create index idx_products_is_wholesale on products(is_wholesale);
 
 -- A product can be listed in US only, Canada only, or both
@@ -121,18 +175,25 @@ create table product_variants (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null references products(id) on delete cascade,
   color text,
+  swatch_hex text,
+  storage text,
+  ram text,
   stock_quantity int not null default 0,
   price_adjustment numeric(10,2) not null default 0,
   created_at timestamptz not null default now()
 );
 create index idx_product_variants_product_id on product_variants(product_id);
 
+-- variant_color matches product_variants.color by name (not a FK) so images can be
+-- tagged to a variant before that variant has a DB id during admin form entry.
+-- null/empty = shared image shown regardless of selected color.
 create table product_images (
   id uuid primary key default gen_random_uuid(),
   product_id uuid not null references products(id) on delete cascade,
   image_url text not null,
   sort_order int not null default 0,
-  is_primary boolean not null default false
+  is_primary boolean not null default false,
+  variant_color text
 );
 create index idx_product_images_product_id on product_images(product_id);
 

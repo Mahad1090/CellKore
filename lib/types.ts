@@ -1,3 +1,17 @@
+import type { MobileSpecifications, SpecFieldType } from '@/lib/mobile-specs'
+
+export interface MobileSpecPreset {
+	id: string
+	name: string
+	brand: string | null
+	mobile_specifications: MobileSpecifications
+	sort_order: number
+	is_active: boolean
+	created_at: string
+}
+
+export type { SpecFieldType }
+
 export type ProductCondition = 'new' | 'used' | 'refurbished'
 export type MarketplaceType = 'US' | 'CA'
 export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
@@ -16,18 +30,68 @@ export interface Category {
 	created_at: string
 }
 
+export interface ProductType {
+	id: string
+	name: string
+	category_id: string | null
+	is_phone_type: boolean
+	is_active: boolean
+	sort_order: number
+	created_at: string
+}
+
+export interface SpecTemplateField {
+	id?: string
+	key: string
+	label: string
+	field_type: SpecFieldType
+	options?: string[] | null
+	unit?: string | null
+	default_value?: string | null
+	sort_order: number
+}
+
+export interface SpecTemplate {
+	id: string
+	product_type_id: string
+	name: string
+	sort_order: number
+	is_active: boolean
+	created_at: string
+	spec_template_fields?: SpecTemplateField[]
+}
+
+export interface TemplateSpecEntry {
+	key: string
+	label: string
+	value: string
+	type: SpecFieldType
+	unit?: string | null
+	options?: string[] | null
+}
+
+export interface TemplateSpecifications {
+	templateName?: string
+	entries: TemplateSpecEntry[]
+	custom: { label: string; value: string }[]
+}
+
 export interface ProductImage {
 	id: string
 	product_id: string
 	image_url: string
 	sort_order: number
 	is_primary: boolean
+	variant_color?: string | null
 }
 
 export interface ProductVariant {
 	id: string
 	product_id: string
 	color: string | null
+	swatch_hex?: string | null
+	storage?: string | null
+	ram?: string | null
 	stock_quantity: number
 	price_adjustment: number
 	created_at?: string
@@ -43,16 +107,20 @@ export interface ProductSpecification {
 export interface Product {
 	id: string
 	category_id: string | null
+	product_type_id?: string | null
+	spec_template_id?: string | null
 	sku: string | null
 	name: string
 	brand: string | null
 	condition: ProductCondition
 	base_price: number
-	location: string | null
+	purchase_price?: number | null
 	description: string | null
 	is_wholesale: boolean
 	lot_quantity?: number | null
 	is_active: boolean
+	mobile_specifications?: MobileSpecifications | null
+	template_specifications?: TemplateSpecifications | null
 	created_at: string
 	updated_at: string
 	categories?: Category | null

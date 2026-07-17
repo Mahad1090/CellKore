@@ -13,7 +13,7 @@ import {
 	productToForm,
 	type ProductFormValue,
 } from '@/components/admin/product-form'
-import type { Category } from '@/lib/types'
+import type { Category, MobileSpecPreset, ProductType, SpecTemplate } from '@/lib/types'
 
 export default function AdminProductsPage() {
 	return (
@@ -29,6 +29,9 @@ function ProductsContent() {
 	const { can } = useAdmin()
 	const [products, setProducts] = useState<any[] | null>(null)
 	const [categories, setCategories] = useState<Category[]>([])
+	const [productTypes, setProductTypes] = useState<ProductType[]>([])
+	const [specTemplates, setSpecTemplates] = useState<SpecTemplate[]>([])
+	const [mobileSpecPresets, setMobileSpecPresets] = useState<MobileSpecPreset[]>([])
 	const [search, setSearch] = useState('')
 	const [editing, setEditing] = useState<ProductFormValue | null>(null)
 
@@ -45,6 +48,18 @@ function ProductsContent() {
 			.then((res) => res.json())
 			.then((json) => setCategories(json.categories ?? []))
 			.catch(() => setCategories([]))
+		fetch('/api/admin/product-types')
+			.then((res) => res.json())
+			.then((json) => setProductTypes(json.productTypes ?? []))
+			.catch(() => setProductTypes([]))
+		fetch('/api/admin/spec-templates')
+			.then((res) => res.json())
+			.then((json) => setSpecTemplates(json.specTemplates ?? []))
+			.catch(() => setSpecTemplates([]))
+		fetch('/api/admin/mobile-spec-presets')
+			.then((res) => res.json())
+			.then((json) => setMobileSpecPresets(json.mobileSpecPresets ?? []))
+			.catch(() => setMobileSpecPresets([]))
 	}, [load])
 
 	useEffect(() => {
@@ -199,6 +214,10 @@ function ProductsContent() {
 					open
 					initial={editing}
 					categories={categories}
+					productTypes={productTypes}
+					specTemplates={specTemplates}
+					mobileSpecPresets={mobileSpecPresets}
+					onPresetCreated={(preset) => setMobileSpecPresets((prev) => [...prev, preset])}
 					onClose={() => setEditing(null)}
 					onSaved={load}
 				/>
