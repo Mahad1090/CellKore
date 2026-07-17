@@ -3,7 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Jost } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
-import { AdminProvider } from '@/contexts/admin-context'
+import { ToastProvider } from '@/components/ui/toast'
+import { MarketplaceProvider } from '@/contexts/marketplace-context'
 
 const cormorant = Cormorant_Garamond({
   variable: '--font-heading',
@@ -44,12 +45,10 @@ export const metadata: Metadata = {
   },
 }
 
+// The storefront theme is fixed and identical regardless of the browser's
+// light/dark preference.
 export const viewport: Viewport = {
-  colorScheme: 'light dark',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: 'white' },
-    { media: '(prefers-color-scheme: dark)', color: 'black' },
-  ],
+  colorScheme: 'light',
 }
 
 export default function RootLayout({
@@ -60,11 +59,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${cormorant.variable} ${jost.variable} bg-background`}>
       <body className="font-sans antialiased">
-        <AuthProvider>
-          <AdminProvider>
-            {children}
-          </AdminProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <MarketplaceProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </MarketplaceProvider>
+        </ToastProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

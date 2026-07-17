@@ -1,177 +1,161 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { mockSocialLinks } from '@/lib/mock-admin-data'
-import { Save } from 'lucide-react'
-
-interface SocialLink {
-  id: string
-  platform: string
-  url: string
-  is_active: boolean
-}
+import { useCallback, useEffect, useState } from 'react'
+import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { PageTitle, Panel, EmptyState, adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { useAdmin } from '@/contexts/admin-context'
+import type { SocialLink } from '@/lib/types'
 
 export default function AdminSettingsPage() {
-  const [socialLinks, setSocialLinks] = useState<SocialLink[]>(mockSocialLinks)
-  const [loading, setLoading] = useState(false)
-  const [newLink, setNewLink] = useState({ platform: '', url: '', is_active: true })
+	const { toast, confirm } = useToast()
+	const { can } = useAdmin()
+	const [links, setLinks] = useState<SocialLink[] | null>(null)
+	const [newLink, setNewLink] = useState({ platform: '', url: '' })
+	const [saving, setSaving] = useState(false)
 
-  const fetchSocialLinks = async () => {
-    // Using mock data
-    setSocialLinks(mockSocialLinks)
-  }
+	const load = useCallback(() => {
+		fetch('/api/admin/social-links')
+			.then((res) => res.json())
+			.then((json) => setLinks(json.links ?? []))
+			.catch(() => setLinks([]))
+	}, [])
 
-  const addSocialLink = async () => {
-    if (!newLink.platform || !newLink.url) {
-      alert('Please fill in all fields')
-      return
-    }
+	useEffect(load, [load])
 
-    try {
-      const { error } = await supabase
-        .from('social_links')
-        .insert([newLink])
+	const add = async () => {
+		if (!newLink.platform.trim() || !newLink.url.trim()) return
+		setSaving(true)
+		try {
+			const res = await fetch('/api/admin/social-links', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ...newLink, is_active: true }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			setNewLink({ platform: '', url: '' })
+			toast({ title: 'Social link added', variant: 'success' })
+			load()
+		} catch (err) {
+			toast({ title: 'Add failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSaving(false)
+		}
+	}
 
-      if (error) throw error
-      setNewLink({ platform: '', url: '', is_active: true })
-      fetchSocialLinks()
-    } catch (error) {
-      console.error('Error adding social link:', error)
-      alert('Error adding social link. Please try again.')
-    }
-  }
+	const update = async (link: SocialLink) => {
+		const res = await fetch('/api/admin/social-links', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(link),
+		})
+		if (!res.ok) {
+			const json = await res.json()
+			toast({ title: 'Update failed', description: json.error, variant: 'error' })
+		}
+		load()
+	}
 
-  const updateSocialLink = async (id: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('social_links')
-        .update({ is_active: !isActive })
-        .eq('id', id)
+	const remove = async (link: SocialLink) => {
+		const ok = await confirm({
+			title: 'Remove social link?',
+			description: `The ${link.platform} link will be removed from the storefront footer.`,
+			confirmLabel: 'Remove',
+			destructive: true,
+		})
+		if (!ok) return
+		await fetch(`/api/admin/social-links?id=${link.id}`, { method: 'DELETE' })
+		load()
+	}
 
-      if (error) throw error
-      fetchSocialLinks()
-    } catch (error) {
-      console.error('Error updating social link:', error)
-    }
-  }
+	const writable = can('settings:write')
 
-  const deleteSocialLink = async (id: string) => {
-    if (!confirm('Are you sure?')) return
+	return (
+		<div>
+			<PageTitle title="Settings & Social Links" subtitle="Platforms shown in the storefront footer" />
 
-    try {
-      const { error } = await supabase.from('social_links').delete().eq('id', id)
-      if (error) throw error
-      setSocialLinks(socialLinks.filter(l => l.id !== id))
-    } catch (error) {
-      console.error('Error deleting social link:', error)
-    }
-  }
+			{writable && (
+				<Panel title="Add Platform" className="max-w-3xl mb-8">
+					<div className="grid sm:grid-cols-3 gap-3">
+						<input
+							placeholder="Platform (e.g. Instagram)"
+							value={newLink.platform}
+							onChange={(e) => setNewLink({ ...newLink, platform: e.target.value })}
+							className={adminInput}
+						/>
+						<input
+							placeholder="https://instagram.com/cellkore"
+							value={newLink.url}
+							onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+							className={adminInput}
+						/>
+						<button onClick={add} disabled={saving} className={`${adminButton} justify-center`}>
+							{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+							Add Link
+						</button>
+					</div>
+				</Panel>
+			)}
 
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Settings</h1>
-          <p className="text-slate-400">Manage site-wide settings and configurations</p>
-        </div>
-
-        {/* Social Links */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <h2 className="text-lg font-semibold text-white mb-6">Social Links</h2>
-
-          {/* Add New Link */}
-          <div className="mb-8 pb-8 border-b border-slate-700">
-            <h3 className="text-sm font-medium text-slate-300 mb-4">Add New Link</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Platform</label>
-                  <input
-                    type="text"
-                    value={newLink.platform}
-                    onChange={(e) => setNewLink(prev => ({ ...prev, platform: e.target.value }))}
-                    placeholder="e.g., Facebook, Instagram"
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">URL</label>
-                  <input
-                    type="url"
-                    value={newLink.url}
-                    onChange={(e) => setNewLink(prev => ({ ...prev, url: e.target.value }))}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={addSocialLink}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-              >
-                <Save className="w-4 h-4" />
-                Add Link
-              </button>
-            </div>
-          </div>
-
-          {/* Existing Links */}
-          {loading ? (
-            <p className="text-slate-400 text-center py-4">Loading links...</p>
-          ) : socialLinks.length === 0 ? (
-            <p className="text-slate-400 text-center py-4">No social links added yet</p>
-          ) : (
-            <div className="space-y-3">
-              {socialLinks.map((link) => (
-                <div key={link.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition">
-                  <div>
-                    <p className="text-white font-medium">{link.platform}</p>
-                    <p className="text-slate-400 text-sm truncate">{link.url}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => updateSocialLink(link.id, link.is_active)}
-                      className={`px-3 py-1 rounded text-xs font-medium transition ${
-                        link.is_active
-                          ? 'bg-green-900/30 text-green-400 hover:bg-green-900/50'
-                          : 'bg-red-900/30 text-red-400 hover:bg-red-900/50'
-                      }`}
-                    >
-                      {link.is_active ? 'Active' : 'Inactive'}
-                    </button>
-                    <button
-                      onClick={() => deleteSocialLink(link.id)}
-                      className="px-3 py-1 rounded text-xs font-medium bg-red-900/30 text-red-400 hover:bg-red-900/50 transition"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Site Info */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mt-6">
-          <h2 className="text-lg font-semibold text-white mb-4">Admin Information</h2>
-          <div className="space-y-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Admin Panel Version</span>
-              <span className="text-white font-medium">1.0.0</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Database</span>
-              <span className="text-white font-medium">Supabase PostgreSQL</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Last Updated</span>
-              <span className="text-white font-medium">{new Date().toLocaleDateString()}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+			{links === null ? (
+				<TableShimmer />
+			) : links.length === 0 ? (
+				<EmptyState message="No social links configured." />
+			) : (
+				<div className="border border-border rounded-3xl overflow-hidden bg-card overflow-x-auto max-w-3xl">
+					<table className="w-full text-sm min-w-[520px]">
+						<thead>
+							<tr className="bg-secondary text-left">
+								{['Platform', 'URL', 'Active', ''].map((h) => (
+									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{links.map((link) => (
+								<tr key={link.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+									<td className="px-5 py-3.5 font-medium text-card-foreground">{link.platform}</td>
+									<td className="px-5 py-3.5">
+										{writable ? (
+											<input
+												defaultValue={link.url}
+												onBlur={(e) => {
+													if (e.target.value !== link.url) update({ ...link, url: e.target.value })
+												}}
+												className={`${adminInput} py-1.5`}
+											/>
+										) : (
+											<span className="text-foreground/75 text-xs">{link.url}</span>
+										)}
+									</td>
+									<td className="px-5 py-3.5">
+										<input
+											type="checkbox"
+											checked={link.is_active}
+											disabled={!writable}
+											onChange={(e) => update({ ...link, is_active: e.target.checked })}
+											className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
+										/>
+									</td>
+									<td className="px-5 py-3.5">
+										{writable && (
+											<button
+												onClick={() => remove(link)}
+												className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+												aria-label="Remove"
+											>
+												<Trash2 className="w-4 h-4" />
+											</button>
+										)}
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+		</div>
+	)
 }

@@ -1,260 +1,174 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { mockWholesaleTiers } from '@/lib/mock-admin-data'
-import { Edit, Trash2, Plus } from 'lucide-react'
-
-interface WholesaleTier {
-  id: string
-  product_id: string
-  min_quantity: number
-  max_quantity: number | null
-  price_per_unit: number
-  product_name?: string
-}
+import { useCallback, useEffect, useState } from 'react'
+import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { PageTitle, EmptyState, adminButton, adminInput, Panel } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { useAdmin } from '@/contexts/admin-context'
+import type { WholesalePriceTier } from '@/lib/types'
 
 export default function AdminWholesalePage() {
-  const [tiers, setTiers] = useState<WholesaleTier[]>(mockWholesaleTiers)
-  const [products, setProducts] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    product_id: '',
-    min_quantity: '',
-    max_quantity: '',
-    price_per_unit: '',
-  })
+	const { toast, confirm } = useToast()
+	const { can } = useAdmin()
+	const [lots, setLots] = useState<any[] | null>(null)
+	const [selectedLot, setSelectedLot] = useState<string>('')
+	const [tiers, setTiers] = useState<WholesalePriceTier[] | null>(null)
+	const [form, setForm] = useState({ min_quantity: '', max_quantity: '', price_per_unit: '' })
+	const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+	useEffect(() => {
+		fetch('/api/admin/products?wholesale=true')
+			.then((res) => res.json())
+			.then((json) => {
+				const list = json.products ?? []
+				setLots(list)
+				if (list.length > 0) setSelectedLot((prev) => prev || list[0].id)
+			})
+			.catch(() => setLots([]))
+	}, [])
 
-  const fetchData = async () => {
-    // Using mock data for demo
-    setTiers(mockWholesaleTiers)
-  }
+	const loadTiers = useCallback(() => {
+		if (!selectedLot) {
+			setTiers([])
+			return
+		}
+		setTiers(null)
+		fetch(`/api/admin/wholesale-tiers?product_id=${selectedLot}`)
+			.then((res) => res.json())
+			.then((json) => setTiers(json.tiers ?? []))
+			.catch(() => setTiers([]))
+	}, [selectedLot])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+	useEffect(loadTiers, [loadTiers])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+	const addTier = async () => {
+		setSaving(true)
+		try {
+			const res = await fetch('/api/admin/wholesale-tiers', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					product_id: selectedLot,
+					min_quantity: Number(form.min_quantity),
+					max_quantity: form.max_quantity === '' ? null : Number(form.max_quantity),
+					price_per_unit: Number(form.price_per_unit),
+				}),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Tier added', variant: 'success' })
+			setForm({ min_quantity: '', max_quantity: '', price_per_unit: '' })
+			loadTiers()
+		} catch (err) {
+			toast({ title: 'Cannot add tier', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSaving(false)
+		}
+	}
 
-    try {
-      const data = {
-        ...formData,
-        min_quantity: parseInt(formData.min_quantity),
-        max_quantity: formData.max_quantity ? parseInt(formData.max_quantity) : null,
-        price_per_unit: parseFloat(formData.price_per_unit),
-      }
+	const removeTier = async (tier: WholesalePriceTier) => {
+		const ok = await confirm({
+			title: 'Remove pricing tier?',
+			description: `The ${tier.min_quantity}${tier.max_quantity ? `–${tier.max_quantity}` : '+'} bracket will be removed.`,
+			confirmLabel: 'Remove',
+			destructive: true,
+		})
+		if (!ok) return
+		await fetch(`/api/admin/wholesale-tiers/${tier.id}`, { method: 'DELETE' })
+		loadTiers()
+	}
 
-      if (editingId) {
-        const { error } = await supabase
-          .from('wholesale_price_tiers')
-          .update(data)
-          .eq('id', editingId)
+	const writable = can('wholesale:write')
+	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
 
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('wholesale_price_tiers')
-          .insert([data])
+	return (
+		<div>
+			<PageTitle title="Wholesale Pricing Tiers" subtitle="Quantity-based price brackets per lot" />
 
-        if (error) throw error
-      }
+			{lots === null ? (
+				<TableShimmer />
+			) : lots.length === 0 ? (
+				<EmptyState message="No wholesale lots yet — mark a product as a wholesale lot in the Products panel first." />
+			) : (
+				<div className="space-y-8 max-w-3xl">
+					<div>
+						<label className={label}>Wholesale Lot</label>
+						<select value={selectedLot} onChange={(e) => setSelectedLot(e.target.value)} className={`${adminInput} cursor-pointer`}>
+							{lots.map((lot) => (
+								<option key={lot.id} value={lot.id}>{lot.name}</option>
+							))}
+						</select>
+					</div>
 
-      setEditingId(null)
-      setFormData({ product_id: '', min_quantity: '', max_quantity: '', price_per_unit: '' })
-      fetchData()
-    } catch (error) {
-      console.error('Error saving tier:', error)
-      alert('Error saving tier. Please try again.')
-    }
-  }
+					{writable && (
+						<Panel title="Add Pricing Bracket">
+							<div className="grid sm:grid-cols-4 gap-3 items-end">
+								<div>
+									<label className={label}>Min Quantity</label>
+									<input type="number" min={1} value={form.min_quantity} onChange={(e) => setForm({ ...form, min_quantity: e.target.value })} className={adminInput} placeholder="10" />
+								</div>
+								<div>
+									<label className={label}>Max Quantity (optional)</label>
+									<input type="number" value={form.max_quantity} onChange={(e) => setForm({ ...form, max_quantity: e.target.value })} className={adminInput} placeholder="49" />
+								</div>
+								<div>
+									<label className={label}>Price Per Unit</label>
+									<input type="number" step="0.01" value={form.price_per_unit} onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })} className={adminInput} placeholder="299.00" />
+								</div>
+								<button onClick={addTier} disabled={saving || !form.min_quantity || !form.price_per_unit} className={`${adminButton} justify-center`}>
+									{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+									Add
+								</button>
+							</div>
+							<p className="text-[11px] text-muted-foreground mt-3">
+								Overlapping quantity bounds are rejected automatically.
+							</p>
+						</Panel>
+					)}
 
-  const editTier = (tier: WholesaleTier) => {
-    setEditingId(tier.id)
-    setFormData({
-      product_id: tier.product_id,
-      min_quantity: tier.min_quantity.toString(),
-      max_quantity: tier.max_quantity?.toString() || '',
-      price_per_unit: tier.price_per_unit.toString(),
-    })
-  }
-
-  const deleteTier = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this tier?')) return
-
-    try {
-      const { error } = await supabase.from('wholesale_price_tiers').delete().eq('id', id)
-      if (error) throw error
-      setTiers(tiers.filter(t => t.id !== id))
-    } catch (error) {
-      console.error('Error deleting tier:', error)
-    }
-  }
-
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Wholesale Pricing</h1>
-          <p className="text-slate-400">Manage wholesale price tiers</p>
-        </div>
-
-        {/* Form */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-white mb-4">
-            {editingId ? 'Edit Price Tier' : 'Add Price Tier'}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Product *</label>
-                <select
-                  name="product_id"
-                  value={formData.product_id}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">Select Product</option>
-                  {products.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Min Quantity *</label>
-                <input
-                  type="number"
-                  name="min_quantity"
-                  value={formData.min_quantity}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., 10"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Max Quantity (optional)</label>
-                <input
-                  type="number"
-                  name="max_quantity"
-                  value={formData.max_quantity}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 50"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Price Per Unit *</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="price_per_unit"
-                    value={formData.price_per_unit}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
-              >
-                {editingId ? 'Update' : 'Add'} Tier
-              </button>
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingId(null)
-                    setFormData({ product_id: '', min_quantity: '', max_quantity: '', price_per_unit: '' })
-                  }}
-                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </form>
-        </div>
-
-        {/* Tiers List */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">Loading tiers...</p>
-            </div>
-          ) : tiers.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">No wholesale tiers yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700 border-b border-slate-600">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Product</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Min Qty</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Max Qty</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Price/Unit</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tiers.map((tier) => (
-                    <tr key={tier.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">{tier.product_name}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">{tier.min_quantity}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">{tier.max_quantity || '∞'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">${tier.price_per_unit.toFixed(2)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => editTier(tier)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-blue-400"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteTier(tier.id)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-red-400"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+					{tiers === null ? (
+						<TableShimmer rows={3} />
+					) : tiers.length === 0 ? (
+						<EmptyState message="No pricing tiers for this lot yet." />
+					) : (
+						<div className="border border-border rounded-3xl overflow-hidden bg-card">
+							<table className="w-full text-sm">
+								<thead>
+									<tr className="bg-secondary text-left">
+										<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">Quantity Range</th>
+										<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">Price Per Unit</th>
+										<th className="w-16" />
+									</tr>
+								</thead>
+								<tbody>
+									{tiers.map((tier) => (
+										<tr key={tier.id} className="border-t border-border">
+											<td className="px-5 py-3.5 text-foreground/85 font-medium">
+												{tier.min_quantity}{tier.max_quantity == null ? '+' : ` – ${tier.max_quantity}`} units
+											</td>
+											<td className="px-5 py-3.5 font-semibold text-card-foreground">
+												${Number(tier.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+											</td>
+											<td className="px-5 py-3.5">
+												{writable && (
+													<button
+														onClick={() => removeTier(tier)}
+														className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+														aria-label="Remove tier"
+													>
+														<Trash2 className="w-4 h-4" />
+													</button>
+												)}
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
+			)}
+		</div>
+	)
 }

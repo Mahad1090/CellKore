@@ -1,311 +1,615 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Loader } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star } from 'lucide-react'
+import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
+import { useToast } from '@/components/ui/toast'
+import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
+import type { Category, MarketplaceType, ProductCondition } from '@/lib/types'
 
-interface ProductFormProps {
-  productId?: string
+const DEFAULT_SPEC_KEYS = [
+	'Display Size',
+	'Storage Capacity',
+	'Charging Type',
+	'Battery Capacity',
+	'Front Camera',
+	'Back Camera',
+]
+const CUSTOM_KEY = '__custom__'
+
+interface SpecRow {
+	key: string // one of DEFAULT_SPEC_KEYS or CUSTOM_KEY
+	customKey: string
+	value: string
 }
 
-interface Category {
-  id: string
-  name: string
+interface VariantRow {
+	id?: string
+	color: string
+	stock_quantity: number
+	price_adjustment: number
 }
 
-export function ProductForm({ productId }: ProductFormProps) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
-  const [formData, setFormData] = useState({
-    name: '',
-    brand: '',
-    category_id: '',
-    sku: '',
-    base_price: '',
-    condition: 'new' as const,
-    description: '',
-    location: '',
-    is_active: true,
-    is_wholesale: false,
-  })
+interface ImageRow {
+	image_url: string
+	sort_order: number
+	is_primary: boolean
+}
 
-  useEffect(() => {
-    fetchCategories()
-    if (productId) {
-      fetchProduct()
-    }
-  }, [productId])
+export interface ProductFormValue {
+	id?: string
+	name: string
+	sku: string
+	brand: string
+	category_id: string
+	condition: ProductCondition
+	base_price: string
+	location: string
+	description: string
+	is_wholesale: boolean
+	is_active: boolean
+	specs: SpecRow[]
+	variants: VariantRow[]
+	marketplaces: MarketplaceType[]
+	images: ImageRow[]
+	wholesale_colors: string
+}
 
-  const fetchCategories = async () => {
-    try {
-      const { data } = await supabase.from('categories').select('*')
-      setCategories(data || [])
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
+export const EMPTY_PRODUCT: ProductFormValue = {
+	name: '',
+	sku: '',
+	brand: '',
+	category_id: '',
+	condition: 'new',
+	base_price: '',
+	location: '',
+	description: '',
+	is_wholesale: false,
+	is_active: true,
+	specs: [],
+	variants: [],
+	marketplaces: ['US'],
+	images: [],
+	wholesale_colors: '',
+}
 
-  const fetchProduct = async () => {
-    try {
-      const { data } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', productId)
-        .single()
+export function productToForm(product: any): ProductFormValue {
+	return {
+		id: product.id,
+		name: product.name ?? '',
+		sku: product.sku ?? '',
+		brand: product.brand ?? '',
+		category_id: product.category_id ?? '',
+		condition: product.condition ?? 'new',
+		base_price: String(product.base_price ?? ''),
+		location: product.location ?? '',
+		description: product.description ?? '',
+		is_wholesale: product.is_wholesale ?? false,
+		is_active: product.is_active ?? true,
+		specs: (product.product_specifications ?? []).map((s: any) => ({
+			key: DEFAULT_SPEC_KEYS.includes(s.spec_name) ? s.spec_name : CUSTOM_KEY,
+			customKey: DEFAULT_SPEC_KEYS.includes(s.spec_name) ? '' : s.spec_name,
+			value: s.spec_value,
+		})),
+		variants: (product.product_variants ?? []).map((v: any) => ({
+			id: v.id,
+			color: v.color ?? '',
+			stock_quantity: v.stock_quantity ?? 0,
+			price_adjustment: Number(v.price_adjustment ?? 0),
+		})),
+		marketplaces: (product.product_marketplaces ?? []).map((m: any) => m.marketplace),
+		images: (product.product_images ?? [])
+			.sort((a: any, b: any) => a.sort_order - b.sort_order)
+			.map((img: any) => ({ image_url: img.image_url, sort_order: img.sort_order, is_primary: img.is_primary })),
+		wholesale_colors: (product.wholesale_variant_colors ?? []).map((c: any) => c.color).join(', '),
+	}
+}
 
-      if (data) {
-        setFormData({
-          name: data.name,
-          brand: data.brand || '',
-          category_id: data.category_id || '',
-          sku: data.sku || '',
-          base_price: data.base_price.toString(),
-          condition: data.condition,
-          description: data.description || '',
-          location: data.location || '',
-          is_active: data.is_active,
-          is_wholesale: data.is_wholesale,
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching product:', error)
-    }
-  }
+function specName(row: SpecRow): string {
+	return row.key === CUSTOM_KEY ? row.customKey.trim() : row.key
+}
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target
-    const val = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    setFormData(prev => ({ ...prev, [name]: val }))
-  }
+export function formToPayload(form: ProductFormValue) {
+	return {
+		name: form.name.trim(),
+		sku: form.sku.trim() || null,
+		brand: form.brand.trim() || null,
+		category_id: form.category_id || null,
+		condition: form.condition,
+		base_price: Number(form.base_price),
+		location: form.location.trim() || null,
+		description: form.description.trim() || null,
+		is_wholesale: form.is_wholesale,
+		is_active: form.is_active,
+		specifications: form.specs
+			.filter((s) => specName(s) && s.value.trim())
+			.map((s) => ({ spec_name: specName(s), spec_value: s.value.trim() })),
+		variants: form.variants
+			.filter((v) => v.color.trim() || v.stock_quantity > 0)
+			.map((v) => ({
+				id: v.id,
+				color: v.color.trim() || null,
+				stock_quantity: Math.max(0, Math.floor(Number(v.stock_quantity) || 0)),
+				price_adjustment: Number(v.price_adjustment) || 0,
+			})),
+		marketplaces: form.marketplaces,
+		images: form.images
+			.filter((img) => img.image_url.trim())
+			.map((img, index) => ({ ...img, sort_order: index })),
+		wholesale_colors: form.is_wholesale
+			? form.wholesale_colors.split(',').map((c) => c.trim()).filter(Boolean)
+			: [],
+	}
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+/**
+ * Auto-SKU: parses brand, name, first variant color, and storage capacity into
+ * a standardized SKU, e.g. CK-IPH15-BL-128.
+ */
+function generateSku(form: ProductFormValue): string {
+	const compact = (value: string, length: number) =>
+		value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length)
 
-    try {
-      const data = {
-        ...formData,
-        base_price: parseFloat(formData.base_price),
-      }
+	const brandPart = compact(form.brand, 3)
+	const namePart = compact(
+		form.name.replace(new RegExp(form.brand, 'ig'), ''),
+		5
+	)
+	const color = form.variants.find((v) => v.color.trim())?.color ?? ''
+	const colorPart = compact(color, 2)
+	const storage = form.specs.find((s) => specName(s) === 'Storage Capacity')?.value ?? ''
+	const storagePart = storage.replace(/[^0-9]/g, '')
 
-      if (productId) {
-        const { error } = await supabase
-          .from('products')
-          .update(data)
-          .eq('id', productId)
+	return ['CK', `${brandPart}${namePart}` || 'ITEM', colorPart, storagePart]
+		.filter(Boolean)
+		.join('-')
+}
 
-        if (error) throw error
-      } else {
-        const { error } = await supabase
-          .from('products')
-          .insert([data])
+export function ProductFormModal({
+	open,
+	initial,
+	categories,
+	onClose,
+	onSaved,
+}: {
+	open: boolean
+	initial: ProductFormValue
+	categories: Category[]
+	onClose: () => void
+	onSaved: () => void
+}) {
+	const { toast } = useToast()
+	const [form, setForm] = useState<ProductFormValue>(initial)
+	const [saving, setSaving] = useState(false)
+	const [uploading, setUploading] = useState(false)
+	const [uploadVariantColor, setUploadVariantColor] = useState('')
 
-        if (error) throw error
-      }
+	useEffect(() => {
+		setForm(initial)
+	}, [initial])
 
-      router.push('/admin/products')
-    } catch (error) {
-      console.error('Error saving product:', error)
-      alert('Error saving product. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+	const set = <K extends keyof ProductFormValue>(field: K, value: ProductFormValue[K]) =>
+		setForm((f) => ({ ...f, [field]: value }))
 
-  return (
-    <div className="bg-slate-900 min-h-screen p-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-slate-800 rounded-lg transition"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-400" />
-          </button>
-          <div>
-            <h1 className="text-3xl font-bold text-white">
-              {productId ? 'Edit Product' : 'Add New Product'}
-            </h1>
-            <p className="text-slate-400">Manage product details and settings</p>
-          </div>
-        </div>
+	const save = async () => {
+		if (!form.name.trim() || !form.base_price || Number.isNaN(Number(form.base_price))) {
+			toast({ title: 'Missing fields', description: 'Product name and a numeric base price are required.', variant: 'error' })
+			return
+		}
+		setSaving(true)
+		try {
+			const payload = formToPayload(form)
+			const res = await fetch(form.id ? `/api/admin/products/${form.id}` : '/api/admin/products', {
+				method: form.id ? 'PUT' : 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error ?? 'Save failed')
+			toast({ title: form.id ? 'Product updated' : 'Product created', variant: 'success' })
+			onSaved()
+			onClose()
+		} catch (err) {
+			toast({ title: 'Save failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSaving(false)
+		}
+	}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-slate-800 rounded-lg border border-slate-700 p-6 space-y-6">
-          {/* Basic Information */}
-          <div className="border-b border-slate-700 pb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Basic Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Product Name *</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="e.g., iPhone 15 Pro Max"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
+	const handleUpload = async (files: FileList | null) => {
+		if (!files || files.length === 0) return
+		if (!form.name.trim()) {
+			toast({ title: 'Name the product first', description: 'The product name is used for its storage folder.', variant: 'info' })
+			return
+		}
+		setUploading(true)
+		try {
+			const next = [...form.images]
+			for (const file of Array.from(files)) {
+				const path = productImagePath(
+					form.name,
+					form.id ?? 'new',
+					file.name,
+					uploadVariantColor.trim() || undefined
+				)
+				const url = await uploadViaAdminApi(path, file)
+				next.push({ image_url: url, sort_order: next.length, is_primary: next.length === 0 })
+			}
+			set('images', next)
+			toast({ title: 'Images uploaded', variant: 'success' })
+		} catch (err) {
+			toast({ title: 'Upload failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setUploading(false)
+		}
+	}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Brand</label>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Apple"
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">SKU</label>
-                  <input
-                    type="text"
-                    name="sku"
-                    value={formData.sku}
-                    onChange={handleInputChange}
-                    placeholder="e.g., IPHONE-15-PRO-MAX"
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
+	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Category</label>
-                  <select
-                    name="category_id"
-                    value={formData.category_id}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="">Select a category</option>
-                    {categories.map(cat => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Condition *</label>
-                  <select
-                    name="condition"
-                    value={formData.condition}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="new">New</option>
-                    <option value="refurbished">Refurbished</option>
-                    <option value="used">Used</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
+	return (
+		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
+			<div className="space-y-8">
+				{/* Core fields */}
+				<div className="grid sm:grid-cols-2 gap-4">
+					<div className="sm:col-span-2">
+						<label className={label}>Name</label>
+						<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Max" />
+					</div>
+					<div>
+						<label className={label}>SKU</label>
+						<div className="flex gap-2">
+							<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-IPH15-BL-128" />
+							<button
+								type="button"
+								onClick={() => set('sku', generateSku(form))}
+								className={`${adminButtonGhost} shrink-0 px-3.5`}
+								title="Auto-generate SKU from brand, name, color and storage"
+							>
+								<Wand2 className="w-3.5 h-3.5" />
+								Auto
+							</button>
+						</div>
+					</div>
+					<div>
+						<label className={label}>Brand</label>
+						<input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={adminInput} placeholder="Apple" />
+					</div>
+					<div>
+						<label className={label}>Category</label>
+						<select value={form.category_id} onChange={(e) => set('category_id', e.target.value)} className={`${adminInput} cursor-pointer`}>
+							<option value="">No category</option>
+							{categories.map((c) => (
+								<option key={c.id} value={c.id}>{c.name}</option>
+							))}
+						</select>
+					</div>
+					<div>
+						<label className={label}>Condition</label>
+						<select value={form.condition} onChange={(e) => set('condition', e.target.value as ProductCondition)} className={`${adminInput} cursor-pointer`}>
+							<option value="new">New</option>
+							<option value="used">Used</option>
+							<option value="refurbished">Refurbished</option>
+						</select>
+					</div>
+					<div>
+						<label className={label}>Base Price (USD)</label>
+						<input type="number" step="0.01" value={form.base_price} onChange={(e) => set('base_price', e.target.value)} className={adminInput} placeholder="999.00" />
+					</div>
+					<div>
+						<label className={label}>Location</label>
+						<input value={form.location} onChange={(e) => set('location', e.target.value)} className={adminInput} placeholder="Miami, FL" />
+					</div>
+					<div className="sm:col-span-2">
+						<label className={label}>Description</label>
+						<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} />
+					</div>
+					<div className="flex items-center gap-6 sm:col-span-2">
+						<label className="flex items-center gap-2.5 cursor-pointer">
+							<input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
+							<span className="text-xs font-semibold text-foreground">Active listing</span>
+						</label>
+						<label className="flex items-center gap-2.5 cursor-pointer">
+							<input type="checkbox" checked={form.is_wholesale} onChange={(e) => set('is_wholesale', e.target.checked)} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
+							<span className="text-xs font-semibold text-foreground">Wholesale lot</span>
+						</label>
+					</div>
+				</div>
 
-          {/* Pricing */}
-          <div className="border-b border-slate-700 pb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Pricing</h2>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Base Price *</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="base_price"
-                  value={formData.base_price}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="0.00"
-                  className="w-full pl-8 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
+				{/* Marketplaces */}
+				<div>
+					<label className={label}>Marketplaces</label>
+					<div className="flex gap-4">
+						{(['US', 'CA'] as MarketplaceType[]).map((market) => (
+							<label key={market} className="flex items-center gap-2.5 px-4 py-2.5 border border-border rounded-full cursor-pointer hover:border-primary transition-colors">
+								<input
+									type="checkbox"
+									checked={form.marketplaces.includes(market)}
+									onChange={(e) =>
+										set(
+											'marketplaces',
+											e.target.checked
+												? [...form.marketplaces, market]
+												: form.marketplaces.filter((m) => m !== market)
+										)
+									}
+									className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
+								/>
+								<span className="text-xs font-semibold text-foreground">
+									{market === 'US' ? 'US Marketplace' : 'Canada Marketplace'}
+								</span>
+							</label>
+						))}
+					</div>
+				</div>
 
-          {/* Details */}
-          <div className="border-b border-slate-700 pb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Details</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Product description..."
-                  rows={4}
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Location</label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  placeholder="e.g., New York, NY"
-                  className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
+				{/* Specifications editor */}
+				<div>
+					<div className="flex items-center justify-between mb-3">
+						<label className={label}>Specifications</label>
+						<button
+							type="button"
+							onClick={() => set('specs', [...form.specs, { key: DEFAULT_SPEC_KEYS[0], customKey: '', value: '' }])}
+							className={`${adminButtonGhost} px-3.5 py-1.5`}
+						>
+							<Plus className="w-3 h-3" />
+							Add Spec
+						</button>
+					</div>
+					<div className="space-y-2.5">
+						{form.specs.map((spec, index) => (
+							<div key={index} className="flex flex-wrap gap-2.5 items-center">
+								<select
+									value={spec.key}
+									onChange={(e) => {
+										const next = [...form.specs]
+										next[index] = { ...spec, key: e.target.value }
+										set('specs', next)
+									}}
+									className={`${adminInput} w-44 cursor-pointer`}
+								>
+									{DEFAULT_SPEC_KEYS.map((key) => (
+										<option key={key} value={key}>{key}</option>
+									))}
+									<option value={CUSTOM_KEY}>Custom Spec Key</option>
+								</select>
+								{spec.key === CUSTOM_KEY && (
+									<input
+										placeholder="Custom key"
+										value={spec.customKey}
+										onChange={(e) => {
+											const next = [...form.specs]
+											next[index] = { ...spec, customKey: e.target.value }
+											set('specs', next)
+										}}
+										className={`${adminInput} w-40`}
+									/>
+								)}
+								<input
+									placeholder="Value"
+									value={spec.value}
+									onChange={(e) => {
+										const next = [...form.specs]
+										next[index] = { ...spec, value: e.target.value }
+										set('specs', next)
+									}}
+									className={`${adminInput} flex-1 min-w-[140px]`}
+								/>
+								<button
+									type="button"
+									onClick={() => set('specs', form.specs.filter((_, i) => i !== index))}
+									className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+									aria-label="Remove specification"
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
+							</div>
+						))}
+						{form.specs.length === 0 && (
+							<p className="text-xs text-muted-foreground">No specifications yet — add display size, storage, cameras, and more.</p>
+						)}
+					</div>
+				</div>
 
-          {/* Settings */}
-          <div className="pb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Settings</h2>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 rounded"
-                />
-                <span className="text-sm text-slate-300">Active (visible to customers)</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="is_wholesale"
-                  checked={formData.is_wholesale}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 rounded"
-                />
-                <span className="text-sm text-slate-300">Wholesale Product</span>
-              </label>
-            </div>
-          </div>
+				{/* Variants grid */}
+				<div>
+					<div className="flex items-center justify-between mb-3">
+						<label className={label}>Variants — Stock & Price Adjustments</label>
+						<button
+							type="button"
+							onClick={() => set('variants', [...form.variants, { color: '', stock_quantity: 0, price_adjustment: 0 }])}
+							className={`${adminButtonGhost} px-3.5 py-1.5`}
+						>
+							<Plus className="w-3 h-3" />
+							Add Variant
+						</button>
+					</div>
+					{form.variants.length > 0 && (
+						<div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
+							<table className="w-full text-sm min-w-[480px]">
+								<thead>
+									<tr className="bg-secondary text-left">
+										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Color</th>
+										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Stock Qty</th>
+										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Adj. (±)</th>
+										<th className="w-12" />
+									</tr>
+								</thead>
+								<tbody>
+									{form.variants.map((variant, index) => (
+										<tr key={index} className="border-t border-border">
+											<td className="px-3 py-2">
+												<input
+													value={variant.color}
+													onChange={(e) => {
+														const next = [...form.variants]
+														next[index] = { ...variant, color: e.target.value }
+														set('variants', next)
+													}}
+													className={adminInput}
+													placeholder="Midnight Blue"
+												/>
+											</td>
+											<td className="px-3 py-2">
+												<input
+													type="number"
+													min={0}
+													value={variant.stock_quantity}
+													onChange={(e) => {
+														const next = [...form.variants]
+														next[index] = { ...variant, stock_quantity: Number(e.target.value) }
+														set('variants', next)
+													}}
+													className={adminInput}
+												/>
+											</td>
+											<td className="px-3 py-2">
+												<input
+													type="number"
+													step="0.01"
+													value={variant.price_adjustment}
+													onChange={(e) => {
+														const next = [...form.variants]
+														next[index] = { ...variant, price_adjustment: Number(e.target.value) }
+														set('variants', next)
+													}}
+													className={adminInput}
+												/>
+											</td>
+											<td className="px-3 py-2">
+												<button
+													type="button"
+													onClick={() => set('variants', form.variants.filter((_, i) => i !== index))}
+													className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+													aria-label="Remove variant"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
 
-          {/* Actions */}
-          <div className="flex gap-4 pt-4 border-t border-slate-700">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition disabled:opacity-50"
-            >
-              {loading && <Loader className="w-4 h-4 animate-spin" />}
-              {loading ? 'Saving...' : productId ? 'Update Product' : 'Create Product'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
+				{/* Wholesale lot colors */}
+				{form.is_wholesale && (
+					<div>
+						<label className={label}>Wholesale Lot Colors (comma-separated)</label>
+						<input
+							value={form.wholesale_colors}
+							onChange={(e) => set('wholesale_colors', e.target.value)}
+							className={adminInput}
+							placeholder="Black, Silver, Gold"
+						/>
+					</div>
+				)}
+
+				{/* Image manager */}
+				<div>
+					<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+						<label className={label}>Images</label>
+						<div className="flex items-center gap-2">
+							<input
+								placeholder="Variant color folder (optional)"
+								value={uploadVariantColor}
+								onChange={(e) => setUploadVariantColor(e.target.value)}
+								className={`${adminInput} w-52`}
+							/>
+							<label className={`${adminButtonGhost} px-3.5 py-2 cursor-pointer`}>
+								{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+								Upload
+								<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleUpload(e.target.files); e.target.value = '' }} />
+							</label>
+						</div>
+					</div>
+					<div className="space-y-2.5">
+						{form.images.map((image, index) => (
+							<div key={index} className="flex items-center gap-2.5">
+								<div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0 border border-border">
+									{image.image_url && <img src={image.image_url} alt="" className="w-full h-full object-cover" />}
+								</div>
+								<input
+									placeholder="Paste image URL"
+									value={image.image_url}
+									onChange={(e) => {
+										const next = [...form.images]
+										next[index] = { ...image, image_url: e.target.value }
+										set('images', next)
+									}}
+									className={`${adminInput} flex-1`}
+								/>
+								<button
+									type="button"
+									onClick={() => {
+										set('images', form.images.map((img, i) => ({ ...img, is_primary: i === index })))
+									}}
+									className={`p-2.5 rounded-full transition-all cursor-pointer ${
+										image.is_primary ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-muted'
+									}`}
+									title="Set as primary/thumbnail image"
+								>
+									<Star className={`w-4 h-4 ${image.is_primary ? 'fill-current' : ''}`} />
+								</button>
+								<div className="flex flex-col">
+									<button
+										type="button"
+										disabled={index === 0}
+										onClick={() => {
+											const next = [...form.images]
+											;[next[index - 1], next[index]] = [next[index], next[index - 1]]
+											set('images', next)
+										}}
+										className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
+										aria-label="Move up"
+									>
+										▲
+									</button>
+									<button
+										type="button"
+										disabled={index === form.images.length - 1}
+										onClick={() => {
+											const next = [...form.images]
+											;[next[index + 1], next[index]] = [next[index], next[index + 1]]
+											set('images', next)
+										}}
+										className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
+										aria-label="Move down"
+									>
+										▼
+									</button>
+								</div>
+								<button
+									type="button"
+									onClick={() => set('images', form.images.filter((_, i) => i !== index))}
+									className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+									aria-label="Remove image"
+								>
+									<Trash2 className="w-4 h-4" />
+								</button>
+							</div>
+						))}
+						<button
+							type="button"
+							onClick={() => set('images', [...form.images, { image_url: '', sort_order: form.images.length, is_primary: form.images.length === 0 }])}
+							className={`${adminButtonGhost} px-3.5 py-1.5`}
+						>
+							<Plus className="w-3 h-3" />
+							Add Image URL
+						</button>
+					</div>
+				</div>
+
+				{/* Actions */}
+				<div className="flex justify-end gap-3 pt-4 border-t border-border">
+					<button type="button" onClick={onClose} className={adminButtonGhost}>Cancel</button>
+					<button type="button" onClick={save} disabled={saving} className={adminButton}>
+						{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+						{saving ? 'Saving...' : 'Save Product'}
+					</button>
+				</div>
+			</div>
+		</Modal>
+	)
 }

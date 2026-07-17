@@ -1,200 +1,112 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { mockInquiries } from '@/lib/mock-admin-data'
-import { Trash2, Eye } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { PageTitle, StatusBadge, EmptyState } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { useAdmin } from '@/contexts/admin-context'
+import type { ContactInquiry } from '@/lib/types'
 
-interface Inquiry {
-  id: string
-  name: string
-  email: string
-  phone: string | null
-  message: string
-  country: string | null
-  status: string
-  submitted_at: string
-}
+const FILTERS = [
+	{ value: 'all', label: 'All' },
+	{ value: 'new', label: 'New' },
+	{ value: 'responded', label: 'Responded' },
+]
 
 export default function AdminInquiriesPage() {
-  const [inquiries, setInquiries] = useState<Inquiry[]>(mockInquiries)
-  const [loading, setLoading] = useState(false)
-  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null)
+	const { toast } = useToast()
+	const { can } = useAdmin()
+	const [inquiries, setInquiries] = useState<ContactInquiry[] | null>(null)
+	const [filter, setFilter] = useState('all')
 
-  const fetchInquiries = async () => {
-    // Using mock data
-    setInquiries(mockInquiries)
-  }
+	const load = useCallback(() => {
+		const query = filter === 'all' ? '' : `?status=${filter}`
+		fetch(`/api/admin/inquiries${query}`)
+			.then((res) => res.json())
+			.then((json) => setInquiries(json.inquiries ?? []))
+			.catch(() => setInquiries([]))
+	}, [filter])
 
-  const markAsResponded = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('contact_inquiries')
-        .update({ status: 'responded' })
-        .eq('id', id)
+	useEffect(() => {
+		setInquiries(null)
+		load()
+	}, [load])
 
-      if (error) throw error
-      fetchInquiries()
-    } catch (error) {
-      console.error('Error updating inquiry:', error)
-    }
-  }
+	const toggleStatus = async (inquiry: ContactInquiry) => {
+		const next = inquiry.status === 'new' ? 'responded' : 'new'
+		const res = await fetch(`/api/admin/inquiries/${inquiry.id}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ status: next }),
+		})
+		if (res.ok) {
+			load()
+		} else {
+			const json = await res.json()
+			toast({ title: 'Update failed', description: json.error, variant: 'error' })
+		}
+	}
 
-  const deleteInquiry = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this inquiry?')) return
+	const writable = can('inquiries:write')
 
-    try {
-      const { error } = await supabase.from('contact_inquiries').delete().eq('id', id)
-      if (error) throw error
-      setInquiries(inquiries.filter(i => i.id !== id))
-    } catch (error) {
-      console.error('Error deleting inquiry:', error)
-    }
-  }
+	return (
+		<div>
+			<PageTitle title="Contact Inquiries" subtitle="Messages submitted through the contact form" />
 
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Contact Inquiries</h1>
-          <p className="text-slate-400">Manage customer inquiries from the contact form</p>
-        </div>
+			<div className="inline-flex rounded-full border border-border overflow-hidden bg-background mb-6">
+				{FILTERS.map((f) => (
+					<button
+						key={f.value}
+						onClick={() => setFilter(f.value)}
+						className={`px-5 py-2 text-[10px] uppercase tracking-[0.16em] font-semibold transition-colors cursor-pointer ${
+							filter === f.value ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-muted'
+						}`}
+					>
+						{f.label}
+					</button>
+				))}
+			</div>
 
-        {/* Inquiries List */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">Loading inquiries...</p>
-            </div>
-          ) : inquiries.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">No inquiries yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700 border-b border-slate-600">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Country</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Submitted</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {inquiries.map((inquiry) => (
-                    <tr key={inquiry.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">{inquiry.name}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">{inquiry.email}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-200">
-                          {inquiry.country || '—'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          inquiry.status === 'new'
-                            ? 'bg-yellow-900/30 text-yellow-400'
-                            : 'bg-green-900/30 text-green-400'
-                        }`}>
-                          {inquiry.status === 'new' ? 'New' : 'Responded'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">
-                          {new Date(inquiry.submitted_at).toLocaleDateString()}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setSelectedInquiry(inquiry)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-blue-400"
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          {inquiry.status === 'new' && (
-                            <button
-                              onClick={() => markAsResponded(inquiry.id)}
-                              className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition"
-                            >
-                              Mark Responded
-                            </button>
-                          )}
-                          <button
-                            onClick={() => deleteInquiry(inquiry.id)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-red-400"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Details Modal */}
-        {selectedInquiry && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 max-w-md w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Inquiry Details</h2>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="text-slate-400">Name</p>
-                  <p className="text-white font-medium">{selectedInquiry.name}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Email</p>
-                  <p className="text-white">{selectedInquiry.email}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Phone</p>
-                  <p className="text-white">{selectedInquiry.phone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Country</p>
-                  <p className="text-white">{selectedInquiry.country || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Message</p>
-                  <p className="text-white whitespace-pre-wrap">{selectedInquiry.message}</p>
-                </div>
-                <div className="flex gap-2">
-                  {selectedInquiry.status === 'new' && (
-                    <button
-                      onClick={() => {
-                        markAsResponded(selectedInquiry.id)
-                        setSelectedInquiry(null)
-                      }}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg transition"
-                    >
-                      Mark Responded
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedInquiry(null)}
-                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-lg transition"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+			{inquiries === null ? (
+				<TableShimmer />
+			) : inquiries.length === 0 ? (
+				<EmptyState message="No inquiries in this view." />
+			) : (
+				<div className="space-y-4">
+					{inquiries.map((inquiry) => (
+						<div key={inquiry.id} className="bg-card border border-border rounded-3xl p-6 hover:border-primary/40 transition-colors">
+							<div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+								<div>
+									<p className="text-sm font-semibold text-card-foreground">{inquiry.name}</p>
+									<p className="text-xs text-muted-foreground mt-0.5">
+										{inquiry.email}
+										{inquiry.phone ? ` · ${inquiry.phone}` : ''}
+										{inquiry.country ? ` · ${inquiry.country}` : ''}
+									</p>
+								</div>
+								<div className="flex items-center gap-3">
+									<span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+										{new Date(inquiry.submitted_at).toLocaleString()}
+									</span>
+									<StatusBadge value={inquiry.status} />
+								</div>
+							</div>
+							<p className="text-xs text-foreground/75 leading-relaxed whitespace-pre-line">{inquiry.message}</p>
+							{writable && (
+								<label className="flex items-center gap-2.5 mt-4 cursor-pointer w-fit">
+									<input
+										type="checkbox"
+										checked={inquiry.status === 'responded'}
+										onChange={() => toggleStatus(inquiry)}
+										className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
+									/>
+									<span className="text-xs font-semibold text-foreground/80">Mark as responded</span>
+								</label>
+							)}
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	)
 }

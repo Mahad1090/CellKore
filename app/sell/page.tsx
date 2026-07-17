@@ -1,349 +1,297 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Upload, Check, X, ImageIcon, Loader2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { useState } from 'react'
-import { Upload, Check } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
+import { fetchCmsPage } from '@/lib/data'
+import { uploadSellPhoneImages, MAX_UPLOAD_BYTES } from '@/lib/storage'
+import { isValidPhone } from '@/lib/tax'
+
+const CONDITIONS = [
+	{ value: 'new', label: 'New / Like New' },
+	{ value: 'used', label: 'Used' },
+	{ value: 'refurbished', label: 'Refurbished' },
+] as const
 
 export default function SellYourPhonePage() {
-  const [formData, setFormData] = useState({
-    brand: '',
-    model: '',
-    condition: 'good',
-    storage: '',
-    ram: '',
-    color: '',
-    damage: '',
-    description: '',
-    name: '',
-    email: '',
-    phone: '',
-  })
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [images, setImages] = useState<File[]>([])
+	const { toast } = useToast()
+	const { user } = useAuth()
+	const [submitting, setSubmitting] = useState(false)
+	const [submitted, setSubmitted] = useState(false)
+	const [successCopy, setSuccessCopy] = useState<{ title: string; content: string } | null>(null)
+	const [files, setFiles] = useState<File[]>([])
+	const [form, setForm] = useState({
+		brand: '',
+		model: '',
+		storage: '',
+		ram: '',
+		color: '',
+		condition: 'used' as 'new' | 'used' | 'refurbished',
+		damages: '',
+		comments: '',
+		name: '',
+		email: '',
+		phone: '',
+	})
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+	// Success-screen copy comes from the CMS, not hardcoded strings
+	useEffect(() => {
+		fetchCmsPage('sell-success')
+			.then((page) =>
+				setSuccessCopy(
+					page
+						? { title: page.title, content: page.content ?? '' }
+						: null
+				)
+			)
+			.catch(() => setSuccessCopy(null))
+	}, [])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setImages(Array.from(e.target.files))
-    }
-  }
+	const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+		setForm((f) => ({ ...f, [field]: e.target.value }))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrorMessage(null)
-    setSubmitting(true)
+	const handleFiles = (selected: FileList | null) => {
+		if (!selected) return
+		const next: File[] = [...files]
+		for (const file of Array.from(selected)) {
+			if (!file.type.startsWith('image/')) {
+				toast({ title: 'Unsupported file', description: `${file.name} is not an image.`, variant: 'error' })
+				continue
+			}
+			if (file.size > MAX_UPLOAD_BYTES) {
+				toast({ title: 'File too large', description: `${file.name} exceeds the 5MB limit.`, variant: 'error' })
+				continue
+			}
+			if (next.length >= 8) break
+			next.push(file)
+		}
+		setFiles(next)
+	}
 
-    // sell_phone_requests only has a single free-text "description" column,
-    // so we fold the extra device details (storage/ram/color/damage/name)
-    // into it with clear labels rather than losing that information.
-    const detailLines = [
-      `Submitted by: ${formData.name}`,
-      formData.storage && `Storage: ${formData.storage}`,
-      formData.ram && `RAM: ${formData.ram}`,
-      formData.color && `Color: ${formData.color}`,
-      formData.damage && `Damage: ${formData.damage}`,
-      formData.description && `Additional details: ${formData.description}`,
-    ].filter(Boolean)
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!form.brand.trim() || !form.model.trim()) {
+			toast({ title: 'Missing details', description: 'Device brand and model are required.', variant: 'error' })
+			return
+		}
+		if (!form.email.trim() && !form.phone.trim()) {
+			toast({ title: 'Contact required', description: 'Provide an email or a phone number so we can send your quote.', variant: 'error' })
+			return
+		}
+		if (form.phone.trim() && !isValidPhone(form.phone)) {
+			toast({ title: 'Invalid phone', description: 'Please enter a valid phone number (10–15 digits).', variant: 'error' })
+			return
+		}
 
-    const { error } = await supabase.from('sell_phone_requests').insert({
-      device_brand: formData.brand,
-      device_model: formData.model,
-      condition: formData.condition,
-      description: detailLines.join('\n'),
-      contact_phone: formData.phone || null,
-      contact_email: formData.email || null,
-    })
+		setSubmitting(true)
+		try {
+			const description = [
+				form.storage && `Storage: ${form.storage}`,
+				form.ram && `RAM: ${form.ram}`,
+				form.color && `Color: ${form.color}`,
+				form.damages && `Damages: ${form.damages}`,
+				form.comments && `Comments: ${form.comments}`,
+				form.name && `Contact name: ${form.name}`,
+			]
+				.filter(Boolean)
+				.join('\n')
 
-    setSubmitting(false)
+			// Upload photos first (compressed client-side). If any upload fails the
+			// helper rolls back already-uploaded files and throws — we then abort
+			// without writing the request row.
+			const requestId = crypto.randomUUID()
+			const uploaded = await uploadSellPhoneImages(requestId, files)
 
-    if (error) {
-      console.error('Error submitting sell request:', error)
-      setErrorMessage('Something went wrong submitting your request. Please try again.')
-      return
-    }
+			const { error: insertError } = await supabase.from('sell_phone_requests').insert({
+				id: requestId,
+				user_id: user?.id ?? null,
+				device_brand: form.brand.trim(),
+				device_model: form.model.trim(),
+				condition: form.condition,
+				description,
+				contact_phone: form.phone.trim() || null,
+				contact_email: form.email.trim() || null,
+				status: 'submitted',
+			})
+			if (insertError) {
+				// Roll back storage so no dead files remain
+				if (uploaded.length > 0) {
+					await supabase.storage
+						.from('sell-phone-images')
+						.remove(uploaded.map((u) => u.path))
+						.catch(() => undefined)
+				}
+				throw insertError
+			}
 
-    setSubmitted(true)
-    setTimeout(() => {
-      setSubmitted(false)
-      setFormData({
-        brand: '',
-        model: '',
-        condition: 'good',
-        storage: '',
-        ram: '',
-        color: '',
-        damage: '',
-        description: '',
-        name: '',
-        email: '',
-        phone: '',
-      })
-      setImages([])
-    }, 3000)
-  }
+			if (uploaded.length > 0) {
+				await supabase.from('sell_phone_images').insert(
+					uploaded.map((u) => ({ request_id: requestId, image_url: u.publicUrl }))
+				)
+			}
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+			setSubmitted(true)
+			window.scrollTo({ top: 0, behavior: 'smooth' })
+		} catch (err) {
+			toast({
+				title: 'Submission failed',
+				description: err instanceof Error ? err.message : 'Please try again in a moment.',
+				variant: 'error',
+			})
+		} finally {
+			setSubmitting(false)
+		}
+	}
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Sell Your Phone</h1>
-          <p className="text-lg md:text-xl opacity-90">
-            Get instant quote and sell your device to us for the best price
-          </p>
-        </div>
-      </section>
+	if (submitted) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+					<div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-8">
+						<Check className="w-9 h-9 text-primary" />
+					</div>
+					<h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-luxury uppercase mb-6">
+						{successCopy?.title ?? 'Quote Request Received'}
+					</h1>
+					<p className="text-sm md:text-base text-foreground/75 leading-relaxed whitespace-pre-line mb-10">
+						{successCopy?.content ??
+							'Thank you for your submission. A CellKore support agent will contact you within 24 hours with an official quote.'}
+					</p>
+					<Link
+						href="/"
+						className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
+					>
+						Back to Home
+					</Link>
+				</div>
+				<Footer />
+			</main>
+		)
+	}
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {submitted ? (
-          <div className="bg-card border-2 border-green-500 rounded-lg p-8 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                <Check className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Thank You!</h2>
-            <p className="text-muted-foreground mb-4">
-              We&apos;ve received your device information. Our team will review and contact you within 24 hours with a quote.
-            </p>
-            <p className="text-sm text-muted-foreground">Redirecting you back...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Device Information */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Device Information</h2>
+	const inputClass =
+		'w-full px-4 py-3 border border-border rounded-xl bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all'
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Brand */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Brand *</label>
-                  <select
-                    name="brand"
-                    value={formData.brand}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="">Select Brand</option>
-                    <option value="apple">Apple</option>
-                    <option value="samsung">Samsung</option>
-                    <option value="google">Google Pixel</option>
-                    <option value="oneplus">OnePlus</option>
-                    <option value="motorola">Motorola</option>
-                    <option value="xiaomi">Xiaomi</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-                {/* Model */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Model *</label>
-                  <input
-                    type="text"
-                    name="model"
-                    value={formData.model}
-                    onChange={handleInputChange}
-                    placeholder="e.g. iPhone 15 Pro Max"
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
+			<section className="bg-primary text-primary-foreground py-12">
+				<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Sell Your Phone</p>
+					<h1 className="text-3xl md:text-4xl font-bold tracking-luxury uppercase">Get an Official Quote</h1>
+					<p className="opacity-90 mt-3 font-light">
+						Tell us about your device — our team will review it and get back to you with an offer.
+					</p>
+				</div>
+			</section>
 
-                {/* Storage */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Storage</label>
-                  <select
-                    name="storage"
-                    value={formData.storage}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="">Select Storage</option>
-                    <option value="64gb">64GB</option>
-                    <option value="128gb">128GB</option>
-                    <option value="256gb">256GB</option>
-                    <option value="512gb">512GB</option>
-                    <option value="1tb">1TB</option>
-                  </select>
-                </div>
+			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+				{/* Device */}
+				<div className="bg-card border border-border rounded-3xl p-7">
+					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">1 · Device Details</h2>
+					<div className="grid sm:grid-cols-2 gap-4">
+						<input required placeholder="Brand (e.g. Apple)" value={form.brand} onChange={set('brand')} className={inputClass} />
+						<input required placeholder="Model (e.g. iPhone 15 Pro)" value={form.model} onChange={set('model')} className={inputClass} />
+						<input placeholder="Storage (e.g. 256GB)" value={form.storage} onChange={set('storage')} className={inputClass} />
+						<input placeholder="RAM (e.g. 8GB)" value={form.ram} onChange={set('ram')} className={inputClass} />
+						<input placeholder="Color" value={form.color} onChange={set('color')} className={inputClass} />
+						<select value={form.condition} onChange={set('condition')} className={`${inputClass} cursor-pointer`}>
+							{CONDITIONS.map((c) => (
+								<option key={c.value} value={c.value}>{c.label}</option>
+							))}
+						</select>
+					</div>
+					<textarea
+						placeholder="Any damage? (scratches, cracked screen, battery health...)"
+						value={form.damages}
+						onChange={set('damages')}
+						rows={3}
+						className={`${inputClass} mt-4 resize-none`}
+					/>
+					<textarea
+						placeholder="Additional comments"
+						value={form.comments}
+						onChange={set('comments')}
+						rows={2}
+						className={`${inputClass} mt-4 resize-none`}
+					/>
+				</div>
 
-                {/* RAM */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">RAM</label>
-                  <select
-                    name="ram"
-                    value={formData.ram}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="">Select RAM</option>
-                    <option value="4gb">4GB</option>
-                    <option value="6gb">6GB</option>
-                    <option value="8gb">8GB</option>
-                    <option value="12gb">12GB</option>
-                    <option value="16gb">16GB</option>
-                  </select>
-                </div>
+				{/* Photos */}
+				<div className="bg-card border border-border rounded-3xl p-7">
+					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-2">2 · Device Photos</h2>
+					<p className="text-xs text-muted-foreground mb-6">
+						Up to 8 photos, 5MB each. Photos are compressed automatically before upload.
+					</p>
+					<label className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl py-10 cursor-pointer hover:border-primary hover:bg-secondary/50 transition-all">
+						<Upload className="w-6 h-6 text-muted-foreground mb-3" />
+						<span className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground/70">
+							Click to select images
+						</span>
+						<input
+							type="file"
+							accept="image/*"
+							multiple
+							className="hidden"
+							onChange={(e) => {
+								handleFiles(e.target.files)
+								e.target.value = ''
+							}}
+						/>
+					</label>
+					{files.length > 0 && (
+						<div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-5">
+							{files.map((file, index) => (
+								<div key={`${file.name}-${index}`} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+									<img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover" />
+									<button
+										type="button"
+										onClick={() => setFiles(files.filter((_, i) => i !== index))}
+										className="absolute top-1 right-1 p-1 rounded-full bg-background/90 border border-border opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+										aria-label="Remove photo"
+									>
+										<X className="w-3 h-3" />
+									</button>
+								</div>
+							))}
+						</div>
+					)}
+					{files.length === 0 && (
+						<div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+							<ImageIcon className="w-3.5 h-3.5" />
+							Photos help us give you a more accurate quote.
+						</div>
+					)}
+				</div>
 
-                {/* Color */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Color</label>
-                  <input
-                    type="text"
-                    name="color"
-                    value={formData.color}
-                    onChange={handleInputChange}
-                    placeholder="e.g. Space Black"
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
+				{/* Contact */}
+				<div className="bg-card border border-border rounded-3xl p-7">
+					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">3 · Contact Details</h2>
+					<div className="grid sm:grid-cols-2 gap-4">
+						<input placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
+						<input type="email" placeholder="Email address" value={form.email} onChange={set('email')} className={inputClass} />
+						<input type="tel" placeholder="Phone number" value={form.phone} onChange={set('phone')} className={`${inputClass} sm:col-span-2`} />
+					</div>
+				</div>
 
-                {/* Condition */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Condition *</label>
-                  <select
-                    name="condition"
-                    value={formData.condition}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="excellent">Excellent (Like New)</option>
-                    <option value="good">Good (Minor Scratches)</option>
-                    <option value="fair">Fair (Visible Wear)</option>
-                    <option value="poor">Poor (Significant Damage)</option>
-                  </select>
-                </div>
-              </div>
+				<button
+					type="submit"
+					disabled={submitting}
+					className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+				>
+					{submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+					{submitting ? 'Submitting your request...' : 'Request My Quote'}
+				</button>
+			</form>
 
-              {/* Damage Description */}
-              <div className="mt-6">
-                <label className="block text-sm font-semibold text-foreground mb-2">Describe Any Damage</label>
-                <textarea
-                  name="damage"
-                  value={formData.damage}
-                  onChange={handleInputChange}
-                  placeholder="List any cracks, dents, screen issues, battery problems, etc."
-                  rows={4}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {/* Additional Details */}
-              <div className="mt-6">
-                <label className="block text-sm font-semibold text-foreground mb-2">Additional Details</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Anything else we should know about the device (accessories included, warranty status, etc.)"
-                  rows={3}
-                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary"
-                />
-              </div>
-            </div>
-
-            {/* Photos */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Device Photos</h2>
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-foreground font-semibold mb-2">Upload photos of your device</p>
-                <p className="text-muted-foreground text-sm mb-4">Include front, back, and any damage areas</p>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  id="photos"
-                />
-                <label htmlFor="photos" className="inline-block px-6 py-2 bg-primary text-primary-foreground rounded-lg cursor-pointer hover:opacity-90 transition">
-                  Choose Photos
-                </label>
-                {images.length > 0 && <p className="text-sm text-green-600 mt-3">{images.length} photo(s) selected</p>}
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div className="bg-card border border-border rounded-lg p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Your Information</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Full Name *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Email *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                {/* Phone */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-foreground mb-2">Phone Number *</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {errorMessage && (
-              <div className="p-4 bg-red-100 text-red-700 rounded-lg text-sm">{errorMessage}</div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-bold text-lg disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Submitting...' : 'Get Instant Quote'}
-            </button>
-
-            <p className="text-center text-muted-foreground text-sm">
-              We respect your privacy. Your information will never be shared with third parties.
-            </p>
-          </form>
-        )}
-      </div>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }

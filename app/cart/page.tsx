@@ -1,194 +1,220 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Trash2, ArrowRight, Minus, Plus, ShoppingCart, Smartphone } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Trash2, ArrowRight } from 'lucide-react'
+import { TableShimmer } from '@/components/shimmer'
+import { useAuth } from '@/contexts/auth-context'
+import { useMarketplace } from '@/contexts/marketplace-context'
+import {
+	loadCartItems,
+	getLocalCart,
+	setLocalCart,
+	persistCartForUser,
+	type LocalCartItem,
+} from '@/lib/cart'
+import { fetchProductById } from '@/lib/data'
+import { getTaxRate } from '@/lib/tax'
+import type { Product } from '@/lib/types'
+import { primaryImage } from '@/lib/types'
+
+interface HydratedItem extends LocalCartItem {
+	product: Product
+}
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+	const { user, loading: authLoading } = useAuth()
+	const { marketplace } = useMarketplace()
+	const [items, setItems] = useState<HydratedItem[] | null>(null)
 
-  useEffect(() => {
-    setIsLoading(true)
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    setCartItems(cart)
-    setIsLoading(false)
+	useEffect(() => {
+		if (authLoading) return
+		let cancelled = false
+		;(async () => {
+			try {
+				const raw = await loadCartItems(user?.id ?? null)
+				const hydrated: HydratedItem[] = []
+				for (const item of raw) {
+					const product = await fetchProductById(item.productId)
+					if (!product || !product.is_active) continue
+					// If an admin deleted the selected variant, drop it from the cart
+					if (item.variantId && !(product.product_variants ?? []).some((v) => v.id === item.variantId)) {
+						continue
+					}
+					hydrated.push({ ...item, product })
+				}
+				if (!cancelled) {
+					setItems(hydrated)
+					if (!user) setLocalCart(hydrated.map(({ product, ...rest }) => rest))
+				}
+			} catch {
+				if (!cancelled) setItems([])
+			}
+		})()
+		return () => {
+			cancelled = true
+		}
+	}, [user, authLoading])
 
-    const handleStorageChange = () => {
-      const updatedCart = JSON.parse(localStorage.getItem('cart') || '[]')
-      setCartItems(updatedCart)
-    }
+	const syncItems = (next: HydratedItem[]) => {
+		setItems(next)
+		const raw = next.map(({ product, ...rest }) => rest)
+		if (user) {
+			persistCartForUser(user.id, raw).catch(() => undefined)
+			setLocalCart(raw) // keep the header badge in sync
+		} else {
+			setLocalCart(raw)
+		}
+	}
 
-    window.addEventListener('storage', handleStorageChange)
-    return () => window.removeEventListener('storage', handleStorageChange)
-  }, [])
+	const unitPrice = (item: HydratedItem) => {
+		const variant = (item.product.product_variants ?? []).find((v) => v.id === item.variantId)
+		return Number(item.product.base_price) + Number(variant?.price_adjustment ?? 0)
+	}
 
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    const updated = cartItems.map((item) =>
-      item.id === productId ? { ...item, quantity: Math.max(1, newQuantity) } : item
-    )
-    setCartItems(updated)
-    localStorage.setItem('cart', JSON.stringify(updated))
-    window.dispatchEvent(new Event('storage'))
-  }
+	const subtotal = useMemo(
+		() => (items ?? []).reduce((sum, item) => sum + unitPrice(item) * item.quantity, 0),
+		[items]
+	)
+	// Indicative tax estimate for the cart view; the exact amount is computed at checkout
+	const estimatedTaxRate = getTaxRate(marketplace === 'CA' ? 'CA' : 'US', '')
+	const estimatedTax = subtotal * estimatedTaxRate
 
-  const removeItem = (productId: string) => {
-    const updated = cartItems.filter((item) => item.id !== productId)
-    setCartItems(updated)
-    localStorage.setItem('cart', JSON.stringify(updated))
-    window.dispatchEvent(new Event('storage'))
-  }
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-  const tax = subtotal * 0.1
-  const total = subtotal + tax
+			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+				<h1 className="text-3xl font-bold text-foreground tracking-luxury uppercase mb-10">Shopping Cart</h1>
 
-  if (isLoading) {
-    return (
-      <main className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-        <Footer />
-      </main>
-    )
-  }
+				{items === null ? (
+					<TableShimmer rows={4} />
+				) : items.length === 0 ? (
+					<div className="text-center py-24 border border-dashed border-border rounded-3xl">
+						<ShoppingCart className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
+						<p className="text-muted-foreground text-sm mb-6">Your cart is empty.</p>
+						<Link
+							href="/products"
+							className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
+						>
+							Browse Products
+						</Link>
+					</div>
+				) : (
+					<div className="grid lg:grid-cols-3 gap-10">
+						<div className="lg:col-span-2 space-y-4">
+							{items.map((item, index) => {
+								const variant = (item.product.product_variants ?? []).find((v) => v.id === item.variantId)
+								const image = primaryImage(item.product)
+								const maxStock = variant?.stock_quantity ?? 99
+								return (
+									<div
+										key={`${item.productId}-${item.variantId}`}
+										className="flex gap-5 bg-card border border-border rounded-3xl p-5 hover:border-primary/40 transition-colors"
+									>
+										<Link href={`/products/${item.productId}`} className="w-24 h-24 rounded-2xl overflow-hidden bg-muted shrink-0">
+											{image ? (
+												<img src={image} alt={item.product.name} className="w-full h-full object-cover" />
+											) : (
+												<div className="w-full h-full flex items-center justify-center">
+													<Smartphone className="w-8 h-8 text-muted-foreground/40" />
+												</div>
+											)}
+										</Link>
+										<div className="flex-1 min-w-0">
+											<Link
+												href={`/products/${item.productId}`}
+												className="text-sm font-medium text-card-foreground hover:text-primary transition-colors line-clamp-2"
+											>
+												{item.product.name}
+											</Link>
+											{variant?.color && (
+												<p className="text-xs text-muted-foreground mt-1">Color: {variant.color}</p>
+											)}
+											<div className="flex items-center justify-between mt-3 flex-wrap gap-3">
+												<div className="flex items-center border border-border rounded-full overflow-hidden">
+													<button
+														onClick={() => {
+															const next = [...items]
+															next[index] = { ...item, quantity: Math.max(1, item.quantity - 1) }
+															syncItems(next)
+														}}
+														className="p-2 hover:bg-muted transition-colors cursor-pointer"
+														aria-label="Decrease quantity"
+													>
+														<Minus className="w-3 h-3" />
+													</button>
+													<span className="w-9 text-center text-xs font-semibold">{item.quantity}</span>
+													<button
+														onClick={() => {
+															const next = [...items]
+															next[index] = { ...item, quantity: Math.min(maxStock, item.quantity + 1) }
+															syncItems(next)
+														}}
+														className="p-2 hover:bg-muted transition-colors cursor-pointer"
+														aria-label="Increase quantity"
+													>
+														<Plus className="w-3 h-3" />
+													</button>
+												</div>
+												<div className="flex items-center gap-4">
+													<span className="text-sm font-bold text-card-foreground">
+														${(unitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+													</span>
+													<button
+														onClick={() => syncItems(items.filter((_, i) => i !== index))}
+														className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+														aria-label="Remove item"
+													>
+														<Trash2 className="w-4 h-4" />
+													</button>
+												</div>
+											</div>
+										</div>
+									</div>
+								)
+							})}
+						</div>
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+						{/* Summary */}
+						<div className="bg-card border border-border rounded-3xl p-7 h-fit sticky top-32">
+							<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Order Summary</h2>
+							<div className="space-y-3 text-sm">
+								<div className="flex justify-between text-foreground/75">
+									<span>Subtotal</span>
+									<span className="font-medium text-card-foreground">
+										${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									</span>
+								</div>
+								<div className="flex justify-between text-foreground/75">
+									<span>Estimated Tax</span>
+									<span className="font-medium text-card-foreground">
+										${estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									</span>
+								</div>
+								<div className="border-t border-border pt-3 flex justify-between text-base font-bold text-card-foreground">
+									<span>Estimated Total</span>
+									<span>${(subtotal + estimatedTax).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+								</div>
+								<p className="text-[11px] text-muted-foreground">
+									Final tax is calculated from your shipping state or province at checkout.
+								</p>
+							</div>
+							<Link
+								href="/checkout"
+								className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all shadow-lg"
+							>
+								Proceed to Checkout
+								<ArrowRight className="w-4 h-4" />
+							</Link>
+						</div>
+					</div>
+				)}
+			</div>
 
-      {/* Header */}
-      <section className="bg-primary text-primary-foreground py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold">Shopping Cart</h1>
-          <p className="opacity-90 mt-2">Review your items and proceed to checkout</p>
-        </div>
-      </section>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {cartItems.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-muted-foreground mb-6">Your cart is empty</p>
-            <Link href="/products" className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
-              Continue Shopping
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <div className="bg-card border border-border rounded-lg overflow-hidden">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-6 border-b border-border last:border-b-0 items-start">
-                    {/* Image */}
-                    <Link href={`/products/${item.id}`} className="flex-shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-24 h-24 object-cover rounded-lg"
-                      />
-                    </Link>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <Link href={`/products/${item.id}`} className="font-semibold text-foreground hover:text-primary transition line-clamp-2">
-                        {item.name}
-                      </Link>
-                      <p className="text-sm text-muted-foreground mt-1">${item.price.toFixed(2)}</p>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="flex items-center gap-2 bg-muted rounded-lg">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="px-3 py-2 hover:bg-opacity-80 transition"
-                      >
-                        −
-                      </button>
-                      <span className="px-3 py-2 font-semibold">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="px-3 py-2 hover:bg-opacity-80 transition"
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    {/* Price */}
-                    <div className="text-right min-w-[100px]">
-                      <p className="font-bold text-foreground">${(item.price * item.quantity).toFixed(2)}</p>
-                    </div>
-
-                    {/* Remove */}
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="p-2 hover:bg-muted rounded-lg transition text-muted-foreground hover:text-red-600"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Continue Shopping */}
-              <Link href="/products" className="inline-flex items-center gap-2 text-primary hover:underline mt-6 font-semibold">
-                ← Continue Shopping
-              </Link>
-            </div>
-
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-card border border-border rounded-lg p-6 sticky top-24">
-                <h2 className="text-xl font-bold text-foreground mb-6">Order Summary</h2>
-
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Subtotal</span>
-                    <span>${subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Tax (10%)</span>
-                    <span>${tax.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>Shipping</span>
-                    <span>Free</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-4 mb-6">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
-                    <span className="text-primary">${total.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <button className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold flex items-center justify-center gap-2 mb-3">
-                  Proceed to Checkout
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                <button className="w-full px-6 py-3 border border-border rounded-lg hover:bg-muted transition font-semibold text-foreground">
-                  Apply Coupon
-                </button>
-
-                {/* Security Info */}
-                <div className="mt-6 pt-6 border-t border-border text-xs text-muted-foreground text-center">
-                  <p>✓ Secure checkout</p>
-                  <p>✓ Free returns within 30 days</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }

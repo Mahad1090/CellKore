@@ -1,266 +1,302 @@
 'use client'
 
-import { Navigation } from '@/components/navigation'
-import { Footer } from '@/components/footer'
-import { ALL_PRODUCTS, ProductVariant } from '@/lib/mock-data'
-import { useState, useEffect } from 'react'
-import { Star, Heart, ShoppingCart, Check } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { ProductVariantSelector } from '@/components/product-variant-selector'
-import { ProductSpecifications } from '@/components/product-specifications'
+import { Heart, ShoppingCart, ChevronLeft, ChevronRight, MapPin, Smartphone, Minus, Plus } from 'lucide-react'
+import { Navigation } from '@/components/navigation'
+import { Footer } from '@/components/footer'
+import { DetailShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { fetchProductById } from '@/lib/data'
+import { addToLocalCart, getWishlist, toggleWishlist } from '@/lib/cart'
+import type { Product, ProductVariant } from '@/lib/types'
 
 export default function ProductDetailPage() {
-  const params = useParams()
-  const id = typeof params.id === 'string' ? params.id : ''
-  const product = ALL_PRODUCTS.find((p) => p.id === id)
-  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
-  const [isWishlisted, setIsWishlisted] = useState(false)
-  const [addedToCart, setAddedToCart] = useState(false)
+	const params = useParams()
+	const id = typeof params.id === 'string' ? params.id : ''
+	const { toast } = useToast()
 
-  useEffect(() => {
-    if (product?.variants && product.variants.length > 0) {
-      setSelectedVariant(product.variants[0])
-    }
-  }, [product])
+	const [product, setProduct] = useState<Product | null | undefined>(undefined)
+	const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
+	const [selectedImage, setSelectedImage] = useState(0)
+	const [quantity, setQuantity] = useState(1)
+	const [isWishlisted, setIsWishlisted] = useState(false)
 
-  if (!product) {
-    return (
-      <main className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Product Not Found</h1>
-          <Link href="/products" className="text-primary hover:underline">
-            Back to Products
-          </Link>
-        </div>
-        <Footer />
-      </main>
-    )
-  }
+	useEffect(() => {
+		if (!id) return
+		fetchProductById(id)
+			.then((data) => {
+				setProduct(data)
+				const inStock = (data?.product_variants ?? []).find((v) => v.stock_quantity > 0)
+				setSelectedVariant(inStock ?? data?.product_variants?.[0] ?? null)
+			})
+			.catch(() => setProduct(null))
+		setIsWishlisted(getWishlist().includes(id))
+	}, [id])
 
-  const images = product.images || [product.image]
-  const displayPrice = selectedVariant?.price || product.price
-  const displayOriginalPrice = selectedVariant?.originalPrice || product.originalPrice
-  const isInStock = selectedVariant?.inStock ?? product.inStock
+	const images = useMemo(
+		() => [...(product?.product_images ?? [])].sort((a, b) => a.sort_order - b.sort_order),
+		[product]
+	)
 
-  const handleAddToCart = () => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    const cartItem = {
-      ...product,
-      variant: selectedVariant,
-      quantity,
-    }
-    const existingItem = cart.find((item: any) => item.id === product.id && item.variant?.id === selectedVariant?.id)
+	if (product === undefined) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<DetailShimmer />
+				<Footer />
+			</main>
+		)
+	}
 
-    if (existingItem) {
-      existingItem.quantity += quantity
-    } else {
-      cart.push(cartItem)
-    }
+	if (product === null || product.is_wholesale || !product.is_active) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+					<h1 className="text-3xl font-bold text-foreground mb-4">Product Not Found</h1>
+					<Link href="/products" className="text-primary hover:underline text-sm">
+						Back to Products
+					</Link>
+				</div>
+				<Footer />
+			</main>
+		)
+	}
 
-    localStorage.setItem('cart', JSON.stringify(cart))
-    setAddedToCart(true)
-    setTimeout(() => setAddedToCart(false), 2000)
-    window.dispatchEvent(new Event('storage'))
-  }
+	const variants = product.product_variants ?? []
+	const specs = product.product_specifications ?? []
+	const displayPrice = Number(product.base_price) + Number(selectedVariant?.price_adjustment ?? 0)
+	const maxStock = selectedVariant?.stock_quantity ?? 0
+	const inStock = variants.length === 0 || maxStock > 0
 
-  const handleAddToWishlist = () => {
-    const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]')
-    const exists = wishlist.find((item: any) => item.id === product.id)
+	const handleAddToCart = () => {
+		if (variants.length > 0 && !selectedVariant) {
+			toast({ title: 'Select an option', description: 'Please choose a color first.', variant: 'info' })
+			return
+		}
+		if (!inStock) return
+		addToLocalCart({
+			productId: product.id,
+			variantId: selectedVariant?.id ?? null,
+			quantity,
+		})
+		toast({
+			title: 'Added to cart',
+			description: `${product.name}${selectedVariant?.color ? ` — ${selectedVariant.color}` : ''} × ${quantity}`,
+			variant: 'success',
+		})
+	}
 
-    if (exists) {
-      const filtered = wishlist.filter((item: any) => item.id !== product.id)
-      localStorage.setItem('wishlist', JSON.stringify(filtered))
-      setIsWishlisted(false)
-    } else {
-      wishlist.push(product)
-      localStorage.setItem('wishlist', JSON.stringify(wishlist))
-      setIsWishlisted(true)
-    }
+	const handleWishlist = () => {
+		const added = toggleWishlist(product.id)
+		setIsWishlisted(added)
+		toast({
+			title: added ? 'Saved to wishlist' : 'Removed from wishlist',
+			variant: 'info',
+		})
+	}
 
-    window.dispatchEvent(new Event('storage'))
-  }
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+				<nav className="text-xs text-muted-foreground mb-8 uppercase tracking-[0.14em]">
+					<Link href="/" className="hover:text-primary transition-colors">Home</Link>
+					<span className="mx-2">/</span>
+					<Link href="/products" className="hover:text-primary transition-colors">Products</Link>
+					<span className="mx-2">/</span>
+					<span className="text-foreground">{product.name}</span>
+				</nav>
 
-      {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-primary">
-            Home
-          </Link>
-          <span>/</span>
-          <Link href="/products" className="hover:text-primary">
-            Products
-          </Link>
-          <span>/</span>
-          <span className="text-foreground">{product.name}</span>
-        </div>
-      </div>
+				<div className="grid md:grid-cols-2 gap-12">
+					{/* Image carousel */}
+					<div>
+						<div className="relative aspect-square bg-muted rounded-3xl overflow-hidden group">
+							{images.length > 0 ? (
+								<img
+									src={images[selectedImage]?.image_url}
+									alt={product.name}
+									className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+								/>
+							) : (
+								<div className="w-full h-full flex items-center justify-center">
+									<Smartphone className="w-16 h-16 text-muted-foreground/30" />
+								</div>
+							)}
+							{images.length > 1 && (
+								<>
+									<button
+										onClick={() => setSelectedImage((i) => (i - 1 + images.length) % images.length)}
+										className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-background/80 backdrop-blur border border-border opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+										aria-label="Previous image"
+									>
+										<ChevronLeft className="w-4 h-4" />
+									</button>
+									<button
+										onClick={() => setSelectedImage((i) => (i + 1) % images.length)}
+										className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-background/80 backdrop-blur border border-border opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+										aria-label="Next image"
+									>
+										<ChevronRight className="w-4 h-4" />
+									</button>
+								</>
+							)}
+						</div>
+						{images.length > 1 && (
+							<div className="flex gap-3 mt-4 overflow-x-auto no-scrollbar">
+								{images.map((image, index) => (
+									<button
+										key={image.id}
+										onClick={() => setSelectedImage(index)}
+										className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+											selectedImage === index ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+										}`}
+									>
+										<img src={image.image_url} alt="" className="w-full h-full object-cover" />
+									</button>
+								))}
+							</div>
+						)}
+					</div>
 
-      {/* Product Detail */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-          {/* Images */}
-          <div className="flex flex-col-reverse md:flex-col gap-4">
-            {/* Main Image */}
-            <div className="bg-white rounded-lg overflow-hidden h-96 md:h-[500px]">
-              <img src={images[selectedImage]} alt={product.name} className="w-full h-full object-contain" />
-            </div>
+					{/* Details */}
+					<div>
+						{product.brand && (
+							<p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">{product.brand}</p>
+						)}
+						<h1 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{product.name}</h1>
+						<div className="flex items-center gap-3 mb-6">
+							<span className="px-3 py-1 rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80 capitalize">
+								{product.condition}
+							</span>
+							{product.location && (
+								<span className="flex items-center gap-1 text-xs text-muted-foreground">
+									<MapPin className="w-3.5 h-3.5" />
+									{product.location}
+								</span>
+							)}
+						</div>
 
-            {/* Thumbnails */}
-            {images.length > 1 && (
-              <div className="flex gap-2">
-                {images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
-                      selectedImage === idx ? 'border-primary' : 'border-border hover:border-primary'
-                    }`}
-                  >
-                    <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+						<p className="text-3xl font-bold text-primary mb-6">
+							${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+						</p>
 
-          {/* Product Info */}
-          <div className="flex flex-col">
-            {/* Category Badge */}
-            <div className="mb-2">
-              <span className="inline-block px-3 py-1 bg-muted text-muted-foreground rounded text-xs font-semibold capitalize">
-                {product.category}
-              </span>
-            </div>
+						{product.description && (
+							<p className="text-sm text-foreground/75 leading-relaxed mb-8">{product.description}</p>
+						)}
 
-            {product.country && (
-              <div className="mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-foreground text-background">
-                  Available in {product.country === 'US' ? 'United States' : 'Canada'}
-                </span>
-              </div>
-            )}
+						{/* Variant selector — depleted options disabled */}
+						{variants.length > 0 && (
+							<div className="mb-8">
+								<p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mb-3">Color</p>
+								<div className="flex flex-wrap gap-2.5">
+									{variants.map((variant) => {
+										const depleted = variant.stock_quantity === 0
+										return (
+											<button
+												key={variant.id}
+												disabled={depleted}
+												onClick={() => {
+													setSelectedVariant(variant)
+													setQuantity(1)
+												}}
+												className={`px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
+													depleted
+														? 'border-border text-muted-foreground/50 line-through cursor-not-allowed'
+														: selectedVariant?.id === variant.id
+														? 'border-primary bg-primary text-primary-foreground cursor-pointer'
+														: 'border-border text-foreground hover:border-primary cursor-pointer'
+												}`}
+											>
+												{variant.color ?? 'Standard'}
+												{Number(variant.price_adjustment) !== 0 && !depleted && (
+													<span className="ml-1.5 opacity-70">
+														{Number(variant.price_adjustment) > 0 ? '+' : ''}${Number(variant.price_adjustment).toFixed(0)}
+													</span>
+												)}
+											</button>
+										)
+									})}
+								</div>
+								{selectedVariant && selectedVariant.stock_quantity > 0 && selectedVariant.stock_quantity <= 5 && (
+									<p className="text-xs text-destructive mt-3">Only {selectedVariant.stock_quantity} left in stock</p>
+								)}
+							</div>
+						)}
 
-            {/* Title */}
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">{product.name}</h1>
+						{/* Quantity + actions */}
+						<div className="flex flex-wrap items-center gap-4 mb-10">
+							<div className="flex items-center border border-border rounded-full overflow-hidden">
+								<button
+									onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+									className="p-3 hover:bg-muted transition-colors cursor-pointer"
+									aria-label="Decrease quantity"
+								>
+									<Minus className="w-3.5 h-3.5" />
+								</button>
+								<span className="w-10 text-center text-sm font-semibold">{quantity}</span>
+								<button
+									onClick={() => setQuantity((q) => (maxStock > 0 ? Math.min(maxStock, q + 1) : q + 1))}
+									className="p-3 hover:bg-muted transition-colors cursor-pointer"
+									aria-label="Increase quantity"
+								>
+									<Plus className="w-3.5 h-3.5" />
+								</button>
+							</div>
+							<button
+								onClick={handleAddToCart}
+								disabled={!inStock}
+								className={`flex-1 min-w-[180px] flex items-center justify-center gap-2 px-8 py-3.5 rounded-full text-xs font-bold uppercase tracking-[0.18em] transition-all ${
+									inStock
+										? 'bg-primary text-primary-foreground hover:opacity-90 hover:scale-[1.02] active:scale-95 cursor-pointer shadow-lg'
+										: 'bg-muted text-muted-foreground cursor-not-allowed'
+								}`}
+							>
+								<ShoppingCart className="w-4 h-4" />
+								{inStock ? 'Add to Cart' : 'Out of Stock'}
+							</button>
+							<button
+								onClick={handleWishlist}
+								className={`p-3.5 rounded-full border transition-all cursor-pointer ${
+									isWishlisted
+										? 'border-primary bg-primary/10 text-primary'
+										: 'border-border text-foreground hover:border-primary hover:text-primary'
+								}`}
+								aria-label="Toggle wishlist"
+							>
+								<Heart className={`w-4.5 h-4.5 ${isWishlisted ? 'fill-current' : ''}`} />
+							</button>
+						</div>
 
-            {/* Rating */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-5 h-5 ${i < Math.floor(product.rating) ? 'fill-accent text-accent' : 'text-muted'}`}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {product.rating} out of 5 ({product.reviews} reviews)
-              </span>
-            </div>
+						{/* Specifications */}
+						{specs.length > 0 && (
+							<div className="border border-border rounded-3xl overflow-hidden">
+								<h2 className="px-6 py-4 bg-secondary text-xs font-bold uppercase tracking-[0.18em] text-foreground">
+									Specifications
+								</h2>
+								<dl>
+									{specs.map((spec, index) => (
+										<div
+											key={spec.id}
+											className={`flex items-center justify-between px-6 py-3.5 text-sm ${
+												index % 2 === 1 ? 'bg-muted/40' : ''
+											}`}
+										>
+											<dt className="text-muted-foreground">{spec.spec_name}</dt>
+											<dd className="font-medium text-foreground">{spec.spec_value}</dd>
+										</div>
+									))}
+								</dl>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
 
-            {/* Price */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-4xl font-bold text-primary">${displayPrice}</span>
-              {displayOriginalPrice && (
-                <div className="flex items-center gap-2">
-                  <span className="text-lg text-muted-foreground line-through">${displayOriginalPrice}</span>
-                  <span className="bg-accent text-accent-foreground px-2 py-1 rounded text-sm font-semibold">
-                    Save ${(displayOriginalPrice - displayPrice).toFixed(2)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Condition & Warranty */}
-            <div className="bg-muted rounded-lg p-4 mb-6 space-y-2">
-              {product.country && (
-                <div>
-                  <span className="font-semibold text-foreground">Country: </span>
-                  <span className="text-muted-foreground">{product.country === 'US' ? 'United States' : 'Canada'}</span>
-                </div>
-              )}
-              {product.condition && (
-                <div>
-                  <span className="font-semibold text-foreground">Condition: </span>
-                  <span className="text-muted-foreground capitalize">{product.condition}</span>
-                </div>
-              )}
-              {product.warranty && (
-                <div>
-                  <span className="font-semibold text-foreground">Warranty: </span>
-                  <span className="text-muted-foreground">{product.warranty}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Variant Selector */}
-            {product.variants && product.variants.length > 0 && (
-              <div className="mb-6">
-                <ProductVariantSelector
-                  variants={product.variants}
-                  onSelectVariant={setSelectedVariant}
-                  selectedVariant={selectedVariant}
-                />
-              </div>
-            )}
-
-            {/* Quantity & Actions */}
-            <div className="flex gap-4 mb-6">
-              <div className="flex items-center gap-2 bg-muted rounded-lg">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-4 py-2 hover:bg-opacity-80 transition"
-                >
-                  −
-                </button>
-                <span className="px-4 py-2 font-semibold">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="px-4 py-2 hover:bg-opacity-80 transition">
-                  +
-                </button>
-              </div>
-
-              <button
-                onClick={handleAddToCart}
-                disabled={!isInStock}
-                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {addedToCart ? 'Added to Cart!' : 'Add to Cart'}
-              </button>
-
-              <button
-                onClick={handleAddToWishlist}
-                className={`px-6 py-3 rounded-lg border-2 transition font-semibold ${
-                  isWishlisted ? 'bg-accent text-accent-foreground border-accent' : 'border-border hover:border-primary'
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
-              </button>
-            </div>
-
-            {/* Description */}
-            {product.description && (
-              <div className="text-muted-foreground">
-                <h3 className="font-semibold text-foreground mb-2">About This Product</h3>
-                <p>{product.description}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Specifications Section */}
-        {product.specifications && <ProductSpecifications product={product} />}
-      </div>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }

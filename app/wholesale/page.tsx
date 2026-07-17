@@ -1,177 +1,132 @@
 'use client'
 
-import { Footer } from '@/components/footer'
-import { Navigation } from '@/components/navigation'
-import { WHOLESALE_LISTINGS } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Package, Tag, Truck, ShieldCheck, Star } from 'lucide-react'
+import { Package, Tag, Truck, ShieldCheck } from 'lucide-react'
+import { Navigation } from '@/components/navigation'
+import { Footer } from '@/components/footer'
+import { GridShimmer } from '@/components/shimmer'
+import { useMarketplace } from '@/contexts/marketplace-context'
+import { fetchWholesaleLots } from '@/lib/data'
+import type { Product } from '@/lib/types'
+import { primaryImage, totalStock } from '@/lib/types'
+
+const PERKS = [
+	{ icon: Package, title: 'Manifested Lots', text: 'Full inventory manifests before you commit' },
+	{ icon: Tag, title: 'Tiered Pricing', text: 'Price breaks that scale with quantity' },
+	{ icon: Truck, title: 'Freight Ready', text: 'Palletized and shipped across US & Canada' },
+	{ icon: ShieldCheck, title: 'Certified Grading', text: 'Every unit tested and graded' },
+]
 
 export default function WholesalePage() {
-  const manifestRows = WHOLESALE_LISTINGS.flatMap((listing) =>
-    listing.manifestRows.map((row) => ({
-      ...row,
-      listingId: listing.id,
-      listingName: listing.name,
-      listingPrice: listing.price,
-      listingCondition: listing.condition,
-    })),
-  )
+	const { marketplace, loading: marketLoading } = useMarketplace()
+	const [lots, setLots] = useState<Product[] | null>(null)
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+	useEffect(() => {
+		if (marketLoading) return
+		setLots(null)
+		fetchWholesaleLots(marketplace)
+			.then(setLots)
+			.catch(() => setLots([]))
+	}, [marketplace, marketLoading])
 
-      <section className="bg-gradient-to-r from-primary to-black text-white py-14 md:py-20 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-luxury uppercase font-heading">Bulk stock ready to move</h1>
-            <p className="text-lg md:text-xl opacity-90 mb-8 font-light">
-              Browse wholesale phones in the same card style as the home page, then open each lot for a full manifest.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#inventory" className="px-8 py-3 bg-white text-primary rounded-lg hover:bg-gray-100 transition font-semibold text-center">
-                View Stock
-              </a>
-              <a href="#manifest" className="px-8 py-3 border-2 border-white rounded-lg hover:bg-white hover:text-primary transition font-semibold text-center">
-                View Manifest
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { icon: Package, title: 'Bulk Ready', desc: 'Stock organized for quick resale and replenishment.' },
-            { icon: Tag, title: 'Clear Pricing', desc: 'See price per lot before opening the detail page.' },
-            { icon: Truck, title: 'Fast Fulfillment', desc: 'Wholesale orders can move as soon as the lot is confirmed.' },
-            { icon: ShieldCheck, title: 'Condition Graded', desc: 'Every lot shows the condition up front.' },
-          ].map((item, idx) => {
-            const Icon = item.icon
-            return (
-              <div key={idx} className="bg-card border border-border rounded-lg p-6">
-                <Icon className="w-10 h-10 text-primary mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-            )
-          })}
-        </div>
-      </section>
+			<section className="bg-accent text-accent-foreground py-14">
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
+					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase">Bulk Device Lots</h1>
+					<p className="opacity-90 mt-4 text-base md:text-lg font-light max-w-2xl">
+						Manifested wholesale lots with transparent bulk pricing tiers. All wholesale transactions are final.
+					</p>
+				</div>
+			</section>
 
-      <section id="inventory" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-muted rounded-lg">
-        <div className="flex items-end justify-between gap-4 mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground">Wholesale Inventory</h2>
-            <p className="text-muted-foreground mt-2">Cards show the lot image, price, quantity, and condition.</p>
-          </div>
-          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground bg-background border border-border rounded-full px-4 py-2">
-            <Star className="w-4 h-4 text-accent" />
-            Click any lot for full manifest
-          </div>
-        </div>
+			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+				<div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+					{PERKS.map((perk) => (
+						<div key={perk.title} className="bg-card border border-border rounded-2xl p-5 flex items-start gap-3 hover:border-primary transition-colors">
+							<perk.icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+							<div>
+								<p className="text-xs font-bold uppercase tracking-[0.12em] text-card-foreground">{perk.title}</p>
+								<p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">{perk.text}</p>
+							</div>
+						</div>
+					))}
+				</div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {WHOLESALE_LISTINGS.map((listing) => (
-            <Link key={listing.id} href={`/wholesale/${listing.id}`}>
-              <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg hover:border-primary transition h-full flex flex-col">
-                <div className="relative bg-white h-48 overflow-hidden">
-                  <img src={listing.image} alt={listing.name} className="w-full h-full object-cover hover:scale-105 transition" />
-                  <div className="absolute top-3 left-3 rounded-full bg-foreground/90 text-background px-3 py-1 text-xs font-semibold">
-                    {listing.condition}
-                  </div>
-                  <div className="absolute top-3 right-3 rounded-full bg-accent text-accent-foreground px-3 py-1 text-xs font-semibold">
-                    {listing.quantity} units
-                  </div>
-                </div>
+				<h2 className="text-2xl font-bold text-foreground tracking-luxury uppercase mb-8">Available Lots</h2>
 
-                <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="text-xl font-bold text-foreground mb-2">{listing.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{listing.description}</p>
+				{lots === null ? (
+					<GridShimmer count={6} />
+				) : lots.length === 0 ? (
+					<div className="text-center py-24 border border-dashed border-border rounded-3xl">
+						<p className="text-muted-foreground text-sm">No wholesale lots are currently listed for this marketplace.</p>
+					</div>
+				) : (
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{lots.map((lot) => {
+							const image = primaryImage(lot)
+							const units = totalStock(lot)
+							const soldOut = (lot.product_variants ?? []).length > 0 && units === 0
+							return (
+								<Link key={lot.id} href={`/wholesale/${lot.id}`} className="group block">
+									<div className="border-beam-container h-full">
+										<div className="border-beam-glow" />
+										<div className="border-beam-inner overflow-hidden flex flex-col h-full">
+											<div className="relative aspect-[4/3] bg-muted overflow-hidden">
+												{image ? (
+													<img
+														src={image}
+														alt={lot.name}
+														className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+														loading="lazy"
+													/>
+												) : (
+													<div className="w-full h-full flex items-center justify-center">
+														<Package className="w-12 h-12 text-muted-foreground/30" />
+													</div>
+												)}
+												<span className="absolute top-3 left-3 px-3 py-1 rounded-full bg-background/90 backdrop-blur border border-border text-[9px] font-semibold uppercase tracking-[0.14em] text-foreground/80 capitalize">
+													{lot.condition}
+												</span>
+												{soldOut && (
+													<span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-destructive text-white text-[9px] font-semibold uppercase tracking-[0.14em]">
+														Sold Out
+													</span>
+												)}
+											</div>
+											<div className="p-6 flex flex-col flex-1">
+												<h3 className="text-base font-medium text-card-foreground group-hover:text-primary transition-colors leading-snug">
+													{lot.name}
+												</h3>
+												<div className="mt-auto pt-4 flex items-end justify-between">
+													<div>
+														<p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Lot Price</p>
+														<p className="text-xl font-bold text-card-foreground">
+															${Number(lot.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+														</p>
+													</div>
+													{units > 0 && (
+														<div className="text-right">
+															<p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Units</p>
+															<p className="text-sm font-semibold text-card-foreground">{units}</p>
+														</div>
+													)}
+												</div>
+											</div>
+										</div>
+									</div>
+								</Link>
+							)
+						})}
+					</div>
+				)}
+			</section>
 
-                  <div className="mt-auto space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Wholesale price</span>
-                      <span className="text-2xl font-bold text-primary">${listing.price}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Quantity</span>
-                      <span className="font-semibold text-foreground">{listing.quantity}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Condition</span>
-                      <span className="font-semibold text-foreground">{listing.condition}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section id="manifest" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-border flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Wholesale Manifest</h2>
-              <p className="text-sm text-muted-foreground">This list combines the lots into a manifest-style view like your reference screen.</p>
-            </div>
-            <div className="text-sm text-muted-foreground bg-muted rounded-full px-4 py-2">
-              {manifestRows.length} manifest rows
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted text-foreground">
-                <tr>
-                  <th className="px-6 py-3 text-left font-semibold">Model</th>
-                  <th className="px-6 py-3 text-left font-semibold">Capacity</th>
-                  <th className="px-6 py-3 text-left font-semibold">Carrier</th>
-                  <th className="px-6 py-3 text-left font-semibold">Grade</th>
-                  <th className="px-6 py-3 text-left font-semibold">Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {manifestRows.map((row) => (
-                  <tr key={row.id} className="border-t border-border hover:bg-muted/60 transition">
-                    <td className="px-6 py-3">
-                      <Link href={`/wholesale/${row.listingId}`} className="font-medium text-primary hover:underline">
-                        {row.model}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-3 text-muted-foreground">{row.capacity}</td>
-                    <td className="px-6 py-3 text-muted-foreground">{row.carrier}</td>
-                    <td className="px-6 py-3">
-                      <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                        {row.grade}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 font-semibold text-foreground">{row.quantity}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-gradient-to-r from-primary to-black text-white rounded-lg p-8 md:p-10 shadow-lg">
-          <h2 className="text-2xl md:text-3xl font-bold mb-3">Need a larger lot or a custom mix?</h2>
-          <p className="text-white/80 mb-6 max-w-2xl">
-            Tell us the model, capacity, carrier, grade, and quantity you want, and we will prepare a dedicated wholesale quote.
-          </p>
-          <a href="/contact" className="inline-block px-6 py-3 bg-white text-primary rounded-lg hover:bg-slate-100 transition font-semibold">
-            Request Wholesale Quote
-          </a>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }

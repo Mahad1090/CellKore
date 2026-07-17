@@ -1,211 +1,212 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { Plus, Edit, Trash2, Eye, Search } from 'lucide-react'
-
-interface Product {
-  id: string
-  name: string
-  sku: string | null
-  brand: string | null
-  base_price: number
-  condition: string
-  is_active: boolean
-  created_at: string
-}
-
-// Mock products data
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'iPhone 14 Pro',
-    sku: 'IP14P-001',
-    brand: 'Apple',
-    base_price: 999,
-    condition: 'New',
-    is_active: true,
-    created_at: '2024-01-15',
-  },
-  {
-    id: '2',
-    name: 'Samsung Galaxy S24',
-    sku: 'SG24-001',
-    brand: 'Samsung',
-    base_price: 899,
-    condition: 'New',
-    is_active: true,
-    created_at: '2024-01-14',
-  },
-  {
-    id: '3',
-    name: 'Google Pixel 8',
-    sku: 'GP8-001',
-    brand: 'Google',
-    base_price: 799,
-    condition: 'Refurbished',
-    is_active: true,
-    created_at: '2024-01-13',
-  },
-]
+import { Suspense, useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Plus, Pencil, Trash2, Search } from 'lucide-react'
+import { PageTitle, EmptyState, adminButton, adminInput } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { useAdmin } from '@/contexts/admin-context'
+import {
+	ProductFormModal,
+	EMPTY_PRODUCT,
+	productToForm,
+	type ProductFormValue,
+} from '@/components/admin/product-form'
+import type { Category } from '@/lib/types'
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(mockProducts)
-  const [loading, setLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(mockProducts)
+	return (
+		<Suspense fallback={<TableShimmer />}>
+			<ProductsContent />
+		</Suspense>
+	)
+}
 
-  useEffect(() => {
-    const filtered = products.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
-    setFilteredProducts(filtered)
-  }, [searchTerm, products])
+function ProductsContent() {
+	const searchParams = useSearchParams()
+	const { toast, confirm } = useToast()
+	const { can } = useAdmin()
+	const [products, setProducts] = useState<any[] | null>(null)
+	const [categories, setCategories] = useState<Category[]>([])
+	const [search, setSearch] = useState('')
+	const [editing, setEditing] = useState<ProductFormValue | null>(null)
 
-  const deleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
+	const load = useCallback(() => {
+		fetch('/api/admin/products')
+			.then((res) => res.json())
+			.then((json) => setProducts(json.products ?? []))
+			.catch(() => setProducts([]))
+	}, [])
 
-    try {
-      const { error } = await supabase.from('products').delete().eq('id', id)
-      if (error) throw error
-      setProducts(products.filter(p => p.id !== id))
-    } catch (error) {
-      console.error('Error deleting product:', error)
-    }
-  }
+	useEffect(() => {
+		load()
+		fetch('/api/admin/categories')
+			.then((res) => res.json())
+			.then((json) => setCategories(json.categories ?? []))
+			.catch(() => setCategories([]))
+	}, [load])
 
-  const toggleActive = async (id: string, isActive: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .update({ is_active: !isActive })
-        .eq('id', id)
+	useEffect(() => {
+		if (searchParams.get('new') === '1' && can('products:write')) {
+			setEditing(EMPTY_PRODUCT)
+		}
+	}, [searchParams, can])
 
-      if (error) throw error
-      setProducts(products.map(p => p.id === id ? { ...p, is_active: !isActive } : p))
-    } catch (error) {
-      console.error('Error updating product:', error)
-    }
-  }
+	const openEdit = async (id: string) => {
+		const res = await fetch(`/api/admin/products/${id}`)
+		const json = await res.json()
+		if (res.ok) setEditing(productToForm(json.product))
+	}
 
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Products</h1>
-            <p className="text-slate-400">Manage all product listings</p>
-          </div>
-          <Link
-            href="/admin/products/new"
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
-          >
-            <Plus className="w-5 h-5" />
-            Add Product
-          </Link>
-        </div>
+	const remove = async (product: any) => {
+		const ok = await confirm({
+			title: 'Delete product?',
+			description: `"${product.name}" and all of its variants, images and specifications will be permanently removed.`,
+			confirmLabel: 'Delete',
+			destructive: true,
+		})
+		if (!ok) return
+		const res = await fetch(`/api/admin/products/${product.id}`, { method: 'DELETE' })
+		if (res.ok) {
+			toast({ title: 'Product deleted', variant: 'success' })
+			load()
+		} else {
+			const json = await res.json()
+			toast({ title: 'Delete failed', description: json.error, variant: 'error' })
+		}
+	}
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-        </div>
+	const filtered = (products ?? []).filter(
+		(p) =>
+			!search.trim() ||
+			p.name.toLowerCase().includes(search.toLowerCase()) ||
+			(p.sku ?? '').toLowerCase().includes(search.toLowerCase()) ||
+			(p.brand ?? '').toLowerCase().includes(search.toLowerCase())
+	)
 
-        {/* Table */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">Loading products...</p>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400 mb-4">No products found</p>
-              <Link
-                href="/admin/products/new"
-                className="text-blue-400 hover:text-blue-300 text-sm"
-              >
-                Create the first product
-              </Link>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700 border-b border-slate-600">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Name</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">SKU</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Price</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Condition</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Status</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr key={product.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">{product.name}</p>
-                        {product.brand && <p className="text-slate-400 text-sm">{product.brand}</p>}
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">{product.sku || '—'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">${product.base_price.toFixed(2)}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-200 capitalize">
-                          {product.condition}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => toggleActive(product.id, product.is_active)}
-                          className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                            product.is_active
-                              ? 'bg-green-900/30 text-green-400'
-                              : 'bg-red-900/30 text-red-400'
-                          }`}
-                        >
-                          {product.is_active ? 'Active' : 'Inactive'}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/admin/products/${product.id}`}
-                            className="p-2 hover:bg-slate-600 rounded transition text-blue-400"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Link>
-                          <button
-                            onClick={() => deleteProduct(product.id)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-red-400"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
+	const writable = can('products:write')
+
+	return (
+		<div>
+			<PageTitle
+				title="Products"
+				subtitle="Catalog listings and wholesale lots"
+				actions={
+					writable && (
+						<button onClick={() => setEditing(EMPTY_PRODUCT)} className={adminButton}>
+							<Plus className="w-3.5 h-3.5" />
+							Add Product
+						</button>
+					)
+				}
+			/>
+
+			<div className="relative mb-6 max-w-sm">
+				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				<input
+					placeholder="Search by name, SKU, brand..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className={`${adminInput} pl-11`}
+				/>
+			</div>
+
+			{products === null ? (
+				<TableShimmer />
+			) : filtered.length === 0 ? (
+				<EmptyState message="No products found." />
+			) : (
+				<div className="border border-border rounded-3xl overflow-hidden overflow-x-auto bg-card">
+					<table className="w-full text-sm min-w-[760px]">
+						<thead>
+							<tr className="bg-secondary text-left">
+								{['Product', 'SKU', 'Category', 'Price', 'Stock', 'Type', 'Status', ''].map((h) => (
+									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{filtered.map((product) => {
+								const stock = (product.product_variants ?? []).reduce(
+									(sum: number, v: any) => sum + v.stock_quantity,
+									0
+								)
+								const image = (product.product_images ?? []).find((i: any) => i.is_primary) ?? product.product_images?.[0]
+								return (
+									<tr key={product.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+										<td className="px-5 py-3.5">
+											<div className="flex items-center gap-3">
+												<div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
+													{image && <img src={image.image_url} alt="" className="w-full h-full object-cover" />}
+												</div>
+												<div className="min-w-0">
+													<p className="font-medium text-card-foreground truncate max-w-[220px]">{product.name}</p>
+													<p className="text-[11px] text-muted-foreground">{product.brand ?? '—'}</p>
+												</div>
+											</div>
+										</td>
+										<td className="px-5 py-3.5 text-foreground/75 font-mono text-xs">{product.sku ?? '—'}</td>
+										<td className="px-5 py-3.5 text-foreground/75">{product.categories?.name ?? '—'}</td>
+										<td className="px-5 py-3.5 font-semibold text-card-foreground">
+											${Number(product.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+										</td>
+										<td className="px-5 py-3.5">
+											<span className={stock === 0 && (product.product_variants ?? []).length > 0 ? 'text-destructive font-semibold' : 'text-foreground/75'}>
+												{(product.product_variants ?? []).length === 0 ? '—' : stock}
+											</span>
+										</td>
+										<td className="px-5 py-3.5">
+											<span className="text-[10px] uppercase tracking-wider font-semibold text-foreground/60">
+												{product.is_wholesale ? 'Wholesale' : 'Retail'}
+											</span>
+										</td>
+										<td className="px-5 py-3.5">
+											<span
+												className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
+													product.is_active ? 'bg-primary/10 text-primary' : 'bg-secondary text-foreground/60'
+												}`}
+											>
+												{product.is_active ? 'Active' : 'Inactive'}
+											</span>
+										</td>
+										<td className="px-5 py-3.5">
+											{writable && (
+												<div className="flex items-center gap-1.5 justify-end">
+													<button
+														onClick={() => openEdit(product.id)}
+														className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
+														aria-label="Edit"
+													>
+														<Pencil className="w-4 h-4" />
+													</button>
+													<button
+														onClick={() => remove(product)}
+														className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+														aria-label="Delete"
+													>
+														<Trash2 className="w-4 h-4" />
+													</button>
+												</div>
+											)}
+										</td>
+									</tr>
+								)
+							})}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{editing && (
+				<ProductFormModal
+					open
+					initial={editing}
+					categories={categories}
+					onClose={() => setEditing(null)}
+					onSaved={load}
+				/>
+			)}
+		</div>
+	)
 }

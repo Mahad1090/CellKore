@@ -1,67 +1,75 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { adminSignOut, getAdminUser } from '@/lib/admin-auth'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { roleHasPermission, type AdminPermission } from '@/lib/admin/rbac'
+import type { AdminRole } from '@/lib/types'
 
-interface AdminUser {
-  email: string
-  name: string
-  loginTime: string
-  token: string
+export interface AdminUserSession {
+	id: string
+	email: string
+	name: string
+	role: AdminRole
 }
 
 interface AdminContextType {
-  adminUser: AdminUser | null
-  loading: boolean
-  signOut: () => Promise<void>
-  isAuthenticated: boolean
+	adminUser: AdminUserSession | null
+	loading: boolean
+	signOut: () => Promise<void>
+	refresh: () => Promise<void>
+	can: (permission: AdminPermission) => boolean
+	isAuthenticated: boolean
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null)
-  const [loading, setLoading] = useState(true)
+	const router = useRouter()
+	const [adminUser, setAdminUser] = useState<AdminUserSession | null>(null)
+	const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    checkAdminAuth()
-  }, [])
+	const refresh = useCallback(async () => {
+		try {
+			const res = await fetch('/api/admin/auth/me')
+			if (res.ok) {
+				const json = await res.json()
+				setAdminUser(json.admin)
+			} else {
+				setAdminUser(null)
+			}
+		} catch {
+			setAdminUser(null)
+		} finally {
+			setLoading(false)
+		}
+	}, [])
 
-  const checkAdminAuth = () => {
-    try {
-      const user = getAdminUser()
-      if (user) {
-        setAdminUser(user)
-      } else {
-        setAdminUser(null)
-      }
-    } catch (error) {
-      console.error('Error checking admin auth:', error)
-      setAdminUser(null)
-    } finally {
-      setLoading(false)
-    }
-  }
+	useEffect(() => {
+		refresh()
+	}, [refresh])
 
-  const signOut = async () => {
-    await adminSignOut()
-    setAdminUser(null)
-  }
+	const signOut = async () => {
+		await fetch('/api/admin/auth/logout', { method: 'POST' }).catch(() => undefined)
+		setAdminUser(null)
+		router.push('/admin/login')
+	}
 
-  const value = {
-    adminUser,
-    loading,
-    signOut,
-    isAuthenticated: !!adminUser
-  }
+	const can = (permission: AdminPermission) =>
+		adminUser ? roleHasPermission(adminUser.role, permission) : false
 
-  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
+	return (
+		<AdminContext.Provider
+			value={{ adminUser, loading, signOut, refresh, can, isAuthenticated: !!adminUser }}
+		>
+			{children}
+		</AdminContext.Provider>
+	)
 }
 
 export function useAdmin() {
-  const context = useContext(AdminContext)
-  if (context === undefined) {
-    throw new Error('useAdmin must be used within an AdminProvider')
-  }
-  return context
+	const context = useContext(AdminContext)
+	if (context === undefined) {
+		throw new Error('useAdmin must be used within an AdminProvider')
+	}
+	return context
 }

@@ -1,228 +1,307 @@
 'use client'
 
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { ArrowLeft, Package, AlertTriangle, Minus, Plus } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { WHOLESALE_LISTINGS } from '@/lib/mock-data'
-import Link from 'next/link'
-import { ArrowLeft, Search, Package, Tag, Truck, ShieldCheck } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { DetailShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { fetchProductById, fetchWholesaleTiers, fetchWholesaleColors } from '@/lib/data'
+import { addToLocalCart } from '@/lib/cart'
+import type { Product, WholesalePriceTier } from '@/lib/types'
+import { primaryImage, totalStock } from '@/lib/types'
+
+const FINAL_SALE_NOTICE = 'Returns and Exchanges are not supported. All wholesale transactions are final.'
 
 export default function WholesaleDetailPage() {
-  const params = useParams()
-  const listingId = typeof params.id === 'string' ? params.id : ''
-  const listing = WHOLESALE_LISTINGS.find((item) => item.id === listingId)
-  const [filterText, setFilterText] = useState('')
-  const [viewMode, setViewMode] = useState<'manifest' | 'model' | 'capacity' | 'carrier' | 'grade'>('manifest')
+	const params = useParams()
+	const router = useRouter()
+	const { toast } = useToast()
+	const id = typeof params.id === 'string' ? params.id : ''
 
-  const otherListings = WHOLESALE_LISTINGS.filter((item) => item.id !== listingId)
+	const [lot, setLot] = useState<Product | null | undefined>(undefined)
+	const [tiers, setTiers] = useState<WholesalePriceTier[]>([])
+	const [lotColors, setLotColors] = useState<string[]>([])
+	const [quantity, setQuantity] = useState(1)
 
-  const filteredRows = useMemo(() => {
-    if (!listing) return []
+	useEffect(() => {
+		if (!id) return
+		Promise.all([fetchProductById(id), fetchWholesaleTiers(id), fetchWholesaleColors(id)])
+			.then(([product, priceTiers, colors]) => {
+				setLot(product)
+				setTiers(priceTiers)
+				setLotColors(colors)
+				if (priceTiers.length > 0) setQuantity(priceTiers[0].min_quantity)
+			})
+			.catch(() => setLot(null))
+	}, [id])
 
-    return listing.manifestRows.filter((row) => {
-      const haystack = `${row.model} ${row.capacity} ${row.carrier} ${row.grade} ${row.quantity}`.toLowerCase()
-      return haystack.includes(filterText.toLowerCase())
-    })
-  }, [listing, filterText])
+	const specValue = (name: string) =>
+		(lot?.product_specifications ?? []).find(
+			(s) => s.spec_name.toLowerCase() === name.toLowerCase()
+		)?.spec_value ?? '—'
 
-  if (!listing) {
-    return (
-      <main className="min-h-screen bg-background">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-          <h1 className="text-3xl font-bold text-foreground mb-4">Wholesale Lot Not Found</h1>
-          <Link href="/wholesale" className="text-primary hover:underline">
-            Back to Wholesale
-          </Link>
-        </div>
-        <Footer />
-      </main>
-    )
-  }
+	const activeTier = useMemo(
+		() =>
+			tiers.find(
+				(t) => quantity >= t.min_quantity && (t.max_quantity == null || quantity <= t.max_quantity)
+			),
+		[tiers, quantity]
+	)
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+	if (lot === undefined) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<DetailShimmer />
+				<Footer />
+			</main>
+		)
+	}
 
-      <section className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/wholesale" className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Wholesale
-          </Link>
-          <div className="max-w-3xl">
-            <p className="text-sm uppercase tracking-[0.25em] opacity-70 mb-3">Wholesale Lot</p>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{listing.name}</h1>
-            <p className="text-white/80 text-base md:text-lg">
-              Detailed manifest, condition, and quantity breakdown for this wholesale stock.
-            </p>
-          </div>
-        </div>
-      </section>
+	if (lot === null || !lot.is_wholesale) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+					<h1 className="text-3xl font-bold text-foreground mb-4">Lot Not Found</h1>
+					<Link href="/wholesale" className="text-primary hover:underline text-sm">
+						Back to Wholesale
+					</Link>
+				</div>
+				<Footer />
+			</main>
+		)
+	}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground mb-8">
-          There might be a 5% variance in the value, unit count, and/or condition listed below. Disputes within the declared variance will not be accepted.
-        </div>
+	const variants = lot.product_variants ?? []
+	const units = totalStock(lot)
+	const soldOut = variants.length > 0 && units === 0
+	const image = primaryImage(lot)
+	const unitPrice = activeTier ? Number(activeTier.price_per_unit) : Number(lot.base_price)
 
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 mb-10">
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="relative h-64 bg-white">
-              <img src={listing.image} alt={listing.name} className="w-full h-full object-cover" />
-              <div className="absolute top-3 left-3 rounded-full bg-foreground/90 text-background px-3 py-1 text-xs font-semibold">
-                {listing.condition}
-              </div>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Wholesale price</p>
-                <p className="text-3xl font-bold text-primary">${listing.price}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Quantity</p>
-                  <p className="text-lg font-semibold text-foreground">{listing.quantity}</p>
-                </div>
-                <div className="rounded-lg bg-muted p-3">
-                  <p className="text-xs text-muted-foreground">Condition</p>
-                  <p className="text-lg font-semibold text-foreground">{listing.condition}</p>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">{listing.description}</p>
-            </div>
-          </div>
+	const handleCheckout = () => {
+		if (soldOut) return
+		addToLocalCart({ productId: lot.id, variantId: variants[0]?.id ?? null, quantity })
+		toast({ title: 'Lot added to cart', description: `${lot.name} × ${quantity} units`, variant: 'success' })
+		router.push('/checkout')
+	}
 
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-              {[
-                { icon: Package, label: 'Lot size', value: `${listing.quantity} units` },
-                { icon: Tag, label: 'Start price', value: `$${listing.price}` },
-                { icon: Truck, label: 'Fulfillment', value: 'Bulk dispatch' },
-                { icon: ShieldCheck, label: 'Condition', value: listing.condition },
-              ].map((item, idx) => {
-                const Icon = item.icon
-                return (
-                  <div key={idx} className="bg-card border border-border rounded-lg p-4">
-                    <Icon className="w-5 h-5 text-primary mb-3" />
-                    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{item.label}</p>
-                    <p className="text-lg font-semibold text-foreground mt-1">{item.value}</p>
-                  </div>
-                )
-              })}
-            </div>
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-            <div className="bg-card border border-border rounded-lg p-4 md:p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-foreground">Manifest</h2>
-                  <p className="text-sm text-muted-foreground">Filter and review each stock line in this lot.</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    ['manifest', 'Full Manifest'],
-                    ['model', 'Model'],
-                    ['capacity', 'Capacity'],
-                    ['carrier', 'Carrier'],
-                    ['grade', 'Grade'],
-                  ] as const).map(([value, label]) => (
-                    <button
-                      key={value}
-                      onClick={() => setViewMode(value)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold transition ${
-                        viewMode === value ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+				<Link
+					href="/wholesale"
+					className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.16em] text-muted-foreground hover:text-primary transition-colors mb-8"
+				>
+					<ArrowLeft className="w-3.5 h-3.5" />
+					All Wholesale Lots
+				</Link>
 
-              <div className="flex items-center gap-3 mb-5">
-                <Search className="w-4 h-4 text-muted-foreground" />
-                <input
-                  value={filterText}
-                  onChange={(e) => setFilterText(e.target.value)}
-                  placeholder="Filter rows..."
-                  className="w-full rounded-lg border border-border bg-background px-4 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
+				<div className="grid lg:grid-cols-5 gap-10">
+					{/* Lot overview */}
+					<div className="lg:col-span-2">
+						<div className="aspect-[4/3] bg-muted rounded-3xl overflow-hidden mb-6">
+							{image ? (
+								<img src={image} alt={lot.name} className="w-full h-full object-cover" />
+							) : (
+								<div className="w-full h-full flex items-center justify-center">
+									<Package className="w-16 h-16 text-muted-foreground/30" />
+								</div>
+							)}
+						</div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted text-foreground">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold">Model</th>
-                      <th className="px-4 py-3 text-left font-semibold">Capacity</th>
-                      <th className="px-4 py-3 text-left font-semibold">Carrier</th>
-                      <th className="px-4 py-3 text-left font-semibold">Grade</th>
-                      <th className="px-4 py-3 text-left font-semibold">Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredRows.map((row) => (
-                      <tr key={row.id} className="border-t border-border hover:bg-muted/60 transition">
-                        <td className="px-4 py-3 font-medium text-foreground">{row.model}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{row.capacity}</td>
-                        <td className="px-4 py-3 text-muted-foreground">{row.carrier}</td>
-                        <td className="px-4 py-3">
-                          <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                            {row.grade}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-semibold text-foreground">{row.quantity}</td>
-                      </tr>
-                    ))}
-                    {filteredRows.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-10 text-center text-muted-foreground">
-                          No manifest rows match your filter.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
+						<h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3">{lot.name}</h1>
+						<div className="flex items-center gap-3 mb-6">
+							<span className="px-3 py-1 rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80 capitalize">
+								{lot.condition}
+							</span>
+							{units > 0 && (
+								<span className="text-xs text-muted-foreground">{units} units in lot</span>
+							)}
+						</div>
+						{lot.description && (
+							<p className="text-sm text-foreground/75 leading-relaxed mb-8">{lot.description}</p>
+						)}
 
-        {otherListings.length > 0 && (
-          <section className="mt-12">
-            <div className="flex items-end justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">More Wholesale Lots</h2>
-                <p className="text-sm text-muted-foreground">Additional lots available in the same inventory.</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {otherListings.map((other) => (
-                <Link key={other.id} href={`/wholesale/${other.id}`}>
-                  <div className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg hover:border-primary transition h-full flex flex-col">
-                    <div className="relative h-40 bg-white">
-                      <img src={other.image} alt={other.name} className="w-full h-full object-cover" />
-                      <div className="absolute top-3 left-3 rounded-full bg-foreground/90 text-background px-3 py-1 text-xs font-semibold">
-                        {other.condition}
-                      </div>
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-semibold text-foreground mb-2">{other.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{other.description}</p>
-                      <div className="mt-auto flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">${other.price}</span>
-                        <span className="font-semibold text-foreground">{other.quantity} units</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </section>
+						{/* Checkout box */}
+						<div className="bg-card border border-border rounded-3xl p-6">
+							<div className="flex items-end justify-between mb-5">
+								<div>
+									<p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Unit Price</p>
+									<p className="text-2xl font-bold text-primary">
+										${unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									</p>
+								</div>
+								<div className="text-right">
+									<p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Total</p>
+									<p className="text-xl font-bold text-card-foreground">
+										${(unitPrice * quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									</p>
+								</div>
+							</div>
 
-      <Footer />
-    </main>
-  )
+							<div className="flex items-center gap-3 mb-5">
+								<span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Quantity</span>
+								<div className="flex items-center border border-border rounded-full overflow-hidden ml-auto">
+									<button
+										onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+										className="p-2.5 hover:bg-muted transition-colors cursor-pointer"
+										aria-label="Decrease quantity"
+									>
+										<Minus className="w-3.5 h-3.5" />
+									</button>
+									<input
+										type="number"
+										min={1}
+										value={quantity}
+										onChange={(e) => setQuantity(Math.max(1, Number(e.target.value) || 1))}
+										className="w-16 text-center text-sm font-semibold bg-transparent focus:outline-none"
+									/>
+									<button
+										onClick={() => setQuantity((q) => q + 1)}
+										className="p-2.5 hover:bg-muted transition-colors cursor-pointer"
+										aria-label="Increase quantity"
+									>
+										<Plus className="w-3.5 h-3.5" />
+									</button>
+								</div>
+							</div>
+
+							<button
+								onClick={handleCheckout}
+								disabled={soldOut}
+								className={`w-full py-3.5 rounded-full text-xs font-bold uppercase tracking-[0.18em] transition-all ${
+									soldOut
+										? 'bg-muted text-muted-foreground cursor-not-allowed'
+										: 'bg-primary text-primary-foreground hover:opacity-90 hover:scale-[1.01] active:scale-95 cursor-pointer shadow-lg'
+								}`}
+							>
+								{soldOut ? 'Sold Out' : 'Proceed to Checkout'}
+							</button>
+
+							<div className="flex items-start gap-2.5 mt-5 p-4 bg-secondary rounded-2xl">
+								<AlertTriangle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+								<p className="text-[11px] text-foreground/75 leading-relaxed">{FINAL_SALE_NOTICE}</p>
+							</div>
+						</div>
+					</div>
+
+					{/* Manifest + tiers */}
+					<div className="lg:col-span-3 space-y-10">
+						{/* Manifest inventory table */}
+						<div>
+							<h2 className="text-lg font-bold text-foreground tracking-luxury uppercase mb-4">
+								Manifest Inventory
+							</h2>
+							<div className="border border-border rounded-3xl overflow-hidden overflow-x-auto">
+								<table className="w-full text-sm min-w-[640px]">
+									<thead>
+										<tr className="bg-secondary text-left">
+											{['Model', 'Storage Capacity', 'Carrier', 'Grade', 'Quantity', 'Color'].map((h) => (
+												<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">
+													{h}
+												</th>
+											))}
+										</tr>
+									</thead>
+									<tbody>
+										{variants.length > 0 ? (
+											variants.map((variant, index) => (
+												<tr key={variant.id} className={index % 2 === 1 ? 'bg-muted/40' : ''}>
+													<td className="px-5 py-3.5 font-medium text-foreground">
+														{lot.brand ? `${lot.brand} ` : ''}{specValue('Model') !== '—' ? specValue('Model') : lot.name}
+													</td>
+													<td className="px-5 py-3.5 text-foreground/75">{specValue('Storage Capacity')}</td>
+													<td className="px-5 py-3.5 text-foreground/75">{specValue('Carrier')}</td>
+													<td className="px-5 py-3.5 text-foreground/75">
+														{specValue('Grade') !== '—' ? specValue('Grade') : lot.condition}
+													</td>
+													<td className="px-5 py-3.5 font-semibold text-foreground">{variant.stock_quantity}</td>
+													<td className="px-5 py-3.5 text-foreground/75">{variant.color ?? '—'}</td>
+												</tr>
+											))
+										) : (
+											<tr>
+												<td className="px-5 py-3.5 font-medium text-foreground">
+													{lot.brand ? `${lot.brand} ` : ''}{lot.name}
+												</td>
+												<td className="px-5 py-3.5 text-foreground/75">{specValue('Storage Capacity')}</td>
+												<td className="px-5 py-3.5 text-foreground/75">{specValue('Carrier')}</td>
+												<td className="px-5 py-3.5 text-foreground/75 capitalize">{lot.condition}</td>
+												<td className="px-5 py-3.5 font-semibold text-foreground">—</td>
+												<td className="px-5 py-3.5 text-foreground/75">{lotColors.join(', ') || '—'}</td>
+											</tr>
+										)}
+									</tbody>
+								</table>
+							</div>
+							{lotColors.length > 0 && variants.length > 0 && (
+								<p className="text-xs text-muted-foreground mt-3">
+									Lot colors: {lotColors.join(', ')}
+								</p>
+							)}
+						</div>
+
+						{/* Bulk pricing tiers */}
+						<div>
+							<h2 className="text-lg font-bold text-foreground tracking-luxury uppercase mb-4">
+								Bulk Pricing Tiers
+							</h2>
+							{tiers.length === 0 ? (
+								<div className="border border-dashed border-border rounded-3xl p-10 text-center">
+									<p className="text-sm text-muted-foreground">
+										No quantity price breaks — the lot price applies to all quantities.
+									</p>
+								</div>
+							) : (
+								<div className="border border-border rounded-3xl overflow-hidden">
+									<table className="w-full text-sm">
+										<thead>
+											<tr className="bg-secondary text-left">
+												<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">Quantity Range</th>
+												<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">Price Per Unit</th>
+											</tr>
+										</thead>
+										<tbody>
+											{tiers.map((tier, index) => {
+												const isActive = activeTier?.id === tier.id
+												return (
+													<tr
+														key={tier.id}
+														className={`transition-colors ${isActive ? 'bg-primary/5' : index % 2 === 1 ? 'bg-muted/40' : ''}`}
+													>
+														<td className="px-5 py-3.5">
+															<span className={isActive ? 'font-semibold text-primary' : 'text-foreground/80'}>
+																{tier.min_quantity}
+																{tier.max_quantity == null ? '+' : ` – ${tier.max_quantity}`} units
+															</span>
+															{isActive && (
+																<span className="ml-2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider">
+																	Your Tier
+																</span>
+															)}
+														</td>
+														<td className={`px-5 py-3.5 font-semibold ${isActive ? 'text-primary' : 'text-foreground'}`}>
+															${Number(tier.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+														</td>
+													</tr>
+												)
+											})}
+										</tbody>
+									</table>
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<Footer />
+		</main>
+	)
 }

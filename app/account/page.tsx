@@ -1,154 +1,125 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { User, Package, Heart, LogOut } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import Link from 'next/link'
+import { TableShimmer } from '@/components/shimmer'
+import { useAuth } from '@/contexts/auth-context'
+import { supabase } from '@/lib/supabase'
+import type { OrderRecord } from '@/lib/types'
 
 export default function AccountPage() {
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
+	const { user, loading: authLoading, signOut } = useAuth()
+	const router = useRouter()
+	const [orders, setOrders] = useState<OrderRecord[] | null>(null)
 
-      {/* Header */}
-      <section className="bg-primary text-primary-foreground py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold">My Account</h1>
-          <p className="opacity-90 mt-2">Manage your profile and preferences</p>
-        </div>
-      </section>
+	useEffect(() => {
+		if (authLoading) return
+		if (!user) {
+			router.push('/auth/signin')
+			return
+		}
+		supabase
+			.from('orders')
+			.select('*, order_items ( id, product_id, quantity, unit_price_at_purchase, products ( name ) )')
+			.eq('user_id', user.id)
+			.order('created_at', { ascending: false })
+			.then(({ data }) => setOrders(data ?? []))
+	}, [user, authLoading, router])
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Sidebar Menu */}
-          <div className="lg:col-span-1">
-            <div className="bg-card border border-border rounded-lg overflow-hidden sticky top-24">
-              <nav className="space-y-1 p-4">
-                <Link href="#profile" className="flex items-center gap-3 px-4 py-3 text-foreground hover:bg-muted rounded-lg transition font-semibold">
-                  <span className="text-lg">👤</span>
-                  Profile
-                </Link>
-                <Link href="#orders" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition">
-                  <span className="text-lg">📦</span>
-                  Orders
-                </Link>
-                <Link href="#wishlist" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition">
-                  <span className="text-lg">❤️</span>
-                  Wishlist
-                </Link>
-                <Link href="#settings" className="flex items-center gap-3 px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition">
-                  <span className="text-lg">⚙️</span>
-                  Settings
-                </Link>
-                <button className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-muted rounded-lg transition">
-                  <span className="text-lg">🚪</span>
-                  Logout
-                </button>
-              </nav>
-            </div>
-          </div>
+	if (authLoading || !user) {
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+					<TableShimmer />
+				</div>
+				<Footer />
+			</main>
+		)
+	}
 
-          {/* Main Content */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* Profile Section */}
-            <div id="profile" className="bg-card border border-border rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Profile Information</h2>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1">First Name</label>
-                    <input type="text" defaultValue="John" className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-muted-foreground mb-1">Last Name</label>
-                    <input type="text" defaultValue="Doe" className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background" />
-                  </div>
-                </div>
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-                <div>
-                  <label className="block text-sm font-semibold text-muted-foreground mb-1">Email</label>
-                  <input type="email" defaultValue="john@example.com" className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background" />
-                </div>
+			<section className="bg-primary text-primary-foreground py-10">
+				<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+					<h1 className="text-3xl font-bold tracking-luxury uppercase">My Account</h1>
+					<p className="opacity-90 mt-2">Manage your profile and view your order history</p>
+				</div>
+			</section>
 
-                <div>
-                  <label className="block text-sm font-semibold text-muted-foreground mb-1">Phone</label>
-                  <input type="tel" defaultValue="+1 (555) 123-4567" className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background" />
-                </div>
+			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+				<div className="bg-card border border-border rounded-3xl p-7 flex items-center justify-between flex-wrap gap-4">
+					<div className="flex items-center gap-4">
+						<div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+							<User className="w-6 h-6" />
+						</div>
+						<div>
+							<p className="text-sm font-semibold text-card-foreground">{user.email}</p>
+							<p className="text-xs text-muted-foreground mt-0.5">Signed in</p>
+						</div>
+					</div>
+					<button
+						onClick={() => signOut()}
+						className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-border text-xs font-semibold uppercase tracking-[0.14em] text-foreground/75 hover:border-destructive hover:text-destructive transition-all cursor-pointer"
+					>
+						<LogOut className="w-3.5 h-3.5" />
+						Sign Out
+					</button>
+				</div>
 
-                <div className="flex gap-4">
-                  <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
-                    Save Changes
-                  </button>
-                  <button className="px-6 py-2 border border-border rounded-lg hover:bg-muted transition font-semibold">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
+				<div className="bg-card border border-border rounded-3xl p-7">
+					<div className="flex items-center gap-2.5 mb-6">
+						<Package className="w-4.5 h-4.5 text-primary" />
+						<h2 className="text-sm font-bold uppercase tracking-[0.16em] text-card-foreground">Order History</h2>
+					</div>
 
-            {/* Orders Section */}
-            <div id="orders" className="bg-card border border-border rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Order History</h2>
-              <div className="text-center py-8 text-muted-foreground">
-                <p className="mb-4">No orders yet</p>
-                <Link href="/products" className="inline-block px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold">
-                  Start Shopping
-                </Link>
-              </div>
-            </div>
+					{orders === null ? (
+						<TableShimmer rows={3} />
+					) : orders.length === 0 ? (
+						<div className="text-center py-10">
+							<p className="text-sm text-muted-foreground mb-5">No orders yet.</p>
+							<Link
+								href="/products"
+								className="inline-block px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.16em] hover:opacity-90 transition-all"
+							>
+								Start Shopping
+							</Link>
+						</div>
+					) : (
+						<div className="space-y-3">
+							{orders.map((order) => (
+								<div key={order.id} className="flex items-center justify-between p-4 rounded-2xl bg-muted/40">
+									<div>
+										<p className="text-sm font-semibold text-card-foreground">{order.reference ?? order.id}</p>
+										<p className="text-xs text-muted-foreground mt-0.5">
+											{new Date(order.created_at).toLocaleDateString()} · {order.status}
+										</p>
+									</div>
+									<p className="text-sm font-bold text-card-foreground">
+										${Number(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									</p>
+								</div>
+							))}
+						</div>
+					)}
+				</div>
 
-            {/* Address Section */}
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Addresses</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="border border-border rounded-lg p-4">
-                  <h3 className="font-semibold text-foreground mb-2">Billing Address</h3>
-                  <p className="text-sm text-muted-foreground">123 Main Street</p>
-                  <p className="text-sm text-muted-foreground">New York, NY 10001</p>
-                  <p className="text-sm text-muted-foreground">USA</p>
-                  <button className="mt-3 px-4 py-2 text-primary hover:underline text-sm font-semibold">
-                    Edit
-                  </button>
-                </div>
+				<Link href="/wishlist" className="flex items-center justify-between bg-card border border-border rounded-3xl p-7 hover:border-primary transition-colors group">
+					<div className="flex items-center gap-2.5">
+						<Heart className="w-4.5 h-4.5 text-primary" />
+						<span className="text-sm font-bold uppercase tracking-[0.16em] text-card-foreground">View Wishlist</span>
+					</div>
+					<span className="text-primary group-hover:translate-x-1 transition-transform">→</span>
+				</Link>
+			</div>
 
-                <div className="border border-border rounded-lg p-4">
-                  <h3 className="font-semibold text-foreground mb-2">Shipping Address</h3>
-                  <p className="text-sm text-muted-foreground">Same as billing</p>
-                  <button className="mt-3 px-4 py-2 text-primary hover:underline text-sm font-semibold">
-                    Add Another Address
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Security Section */}
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h2 className="text-2xl font-bold text-foreground mb-6">Security</h2>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center pb-4 border-b border-border">
-                  <div>
-                    <h3 className="font-semibold text-foreground">Password</h3>
-                    <p className="text-sm text-muted-foreground">Last changed 3 months ago</p>
-                  </div>
-                  <button className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition font-semibold text-sm">
-                    Change Password
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center pt-4">
-                  <div>
-                    <h3 className="font-semibold text-foreground">Two-Factor Authentication</h3>
-                    <p className="text-sm text-muted-foreground">Not enabled</p>
-                  </div>
-                  <button className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition font-semibold text-sm">
-                    Enable
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }

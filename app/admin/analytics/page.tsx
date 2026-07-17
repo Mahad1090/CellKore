@@ -1,127 +1,159 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { mockAnalytics } from '@/lib/mock-admin-data'
-import { TrendingUp, Users, ShoppingCart, DollarSign } from 'lucide-react'
+import { Users } from 'lucide-react'
+import {
+	ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+	PieChart, Pie, Cell, Legend,
+} from 'recharts'
+import { PageTitle, Panel, EmptyState } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
 
 interface Analytics {
-  totalRevenue: number
-  totalOrders: number
-  averageOrderValue: number
-  totalCustomers: number
-  newCustomersThisMonth: number
-  topProducts: Array<{ name: string; sales: number }>
-  ordersByStatus: Record<string, number>
+	monthlyRevenue: { month: string; revenue: number }[]
+	topCategories: { name: string; revenue: number }[]
+	orderStatusBreakdown: Record<string, number>
+	paymentStatusBreakdown: Record<string, number>
+	totalSubscribers: number
 }
 
+const PIE_COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--muted-foreground)']
+
 export default function AdminAnalyticsPage() {
-  const [analytics, setAnalytics] = useState<Analytics>(mockAnalytics)
-  const [loading, setLoading] = useState(false)
+	const [data, setData] = useState<Analytics | null | undefined>(undefined)
 
-  const fetchAnalytics = async () => {
-    // Using mock data
-    setAnalytics(mockAnalytics as Analytics)
-  }
+	useEffect(() => {
+		fetch('/api/admin/analytics')
+			.then((res) => res.json())
+			.then((json) => setData(json.monthlyRevenue ? json : null))
+			.catch(() => setData(null))
+	}, [])
 
-  if (loading) {
-    return (
-      <div className="p-8 bg-slate-900 min-h-screen">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-slate-400 text-center py-8">Loading analytics...</p>
-        </div>
-      </div>
-    )
-  }
+	if (data === undefined) {
+		return (
+			<div>
+				<PageTitle title="Analytics" subtitle="Revenue and performance metrics" />
+				<TableShimmer rows={8} />
+			</div>
+		)
+	}
 
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Analytics</h1>
-          <p className="text-slate-400">Business insights and performance metrics</p>
-        </div>
+	if (data === null) {
+		return (
+			<div>
+				<PageTitle title="Analytics" subtitle="Revenue and performance metrics" />
+				<EmptyState message="Analytics could not be loaded." />
+			</div>
+		)
+	}
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Revenue */}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Total Revenue</p>
-                <p className="text-3xl font-bold text-white">
-                  ${analytics?.totalRevenue.toFixed(2)}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-green-900/30">
-                <DollarSign className="w-6 h-6 text-green-400" />
-              </div>
-            </div>
-          </div>
+	const toPie = (breakdown: Record<string, number>) =>
+		Object.entries(breakdown).map(([name, value]) => ({ name, value }))
 
-          {/* Total Orders */}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Total Orders</p>
-                <p className="text-3xl font-bold text-white">{analytics?.totalOrders}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-blue-900/30">
-                <ShoppingCart className="w-6 h-6 text-blue-400" />
-              </div>
-            </div>
-          </div>
+	const orderPie = toPie(data.orderStatusBreakdown)
+	const paymentPie = toPie(data.paymentStatusBreakdown)
 
-          {/* Average Order Value */}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Average Order Value</p>
-                <p className="text-3xl font-bold text-white">
-                  ${analytics?.averageOrderValue.toFixed(2)}
-                </p>
-              </div>
-              <div className="p-3 rounded-lg bg-purple-900/30">
-                <TrendingUp className="w-6 h-6 text-purple-400" />
-              </div>
-            </div>
-          </div>
+	return (
+		<div>
+			<PageTitle title="Analytics" subtitle="Revenue and performance metrics" />
 
-          {/* Total Customers */}
-          <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium mb-1">Total Customers</p>
-                <p className="text-3xl font-bold text-white">{analytics?.totalCustomers}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-orange-900/30">
-                <Users className="w-6 h-6 text-orange-400" />
-              </div>
-            </div>
-          </div>
-        </div>
+			<div className="grid lg:grid-cols-3 gap-6 mb-6">
+				<Panel title="Monthly Revenue (Paid Orders)" className="lg:col-span-2">
+					<div className="h-72">
+						<ResponsiveContainer width="100%" height="100%">
+							<BarChart data={data.monthlyRevenue}>
+								<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+								<XAxis dataKey="month" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
+								<YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} />
+								<Tooltip
+									contentStyle={{
+										backgroundColor: 'var(--card)',
+										border: '1px solid var(--border)',
+										borderRadius: 12,
+										fontSize: 12,
+									}}
+									formatter={(value) => [`$${Number(value ?? 0).toLocaleString()}`, 'Revenue']}
+								/>
+								<Bar dataKey="revenue" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+							</BarChart>
+						</ResponsiveContainer>
+					</div>
+				</Panel>
 
-        {/* Order Status Breakdown */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6">
-          <h2 className="text-lg font-semibold text-white mb-6">Order Status Breakdown</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.entries(analytics?.ordersByStatus || {}).map(([status, count]) => (
-              <div key={status} className="bg-slate-700/50 rounded-lg p-4">
-                <p className="text-slate-400 text-sm mb-1 capitalize">{status}</p>
-                <p className="text-2xl font-bold text-white">{count}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+				<div className="space-y-6">
+					<Panel title="Newsletter Subscribers">
+						<div className="flex items-center gap-4">
+							<div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
+								<Users className="w-5 h-5 text-primary" />
+							</div>
+							<div>
+								<p className="text-3xl font-bold text-card-foreground">{data.totalSubscribers}</p>
+								<p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mt-1">Total Subscribers</p>
+							</div>
+						</div>
+					</Panel>
 
-        {/* Revenue Chart Placeholder */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 mt-6">
-          <h2 className="text-lg font-semibold text-white mb-6">Revenue Trend</h2>
-          <div className="h-64 flex items-center justify-center bg-slate-700/30 rounded-lg">
-            <p className="text-slate-400">Chart visualization coming soon</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+					<Panel title="Top Selling Categories">
+						{data.topCategories.length === 0 ? (
+							<p className="text-xs text-muted-foreground">No sales data yet.</p>
+						) : (
+							<div className="space-y-3">
+								{data.topCategories.map((category) => {
+									const max = data.topCategories[0].revenue || 1
+									return (
+										<div key={category.name}>
+											<div className="flex justify-between text-xs mb-1.5">
+												<span className="text-foreground/80 font-medium">{category.name}</span>
+												<span className="text-muted-foreground">${category.revenue.toLocaleString()}</span>
+											</div>
+											<div className="h-2 rounded-full bg-secondary overflow-hidden">
+												<div
+													className="h-full bg-primary rounded-full transition-all duration-700"
+													style={{ width: `${Math.max(4, (category.revenue / max) * 100)}%` }}
+												/>
+											</div>
+										</div>
+									)
+								})}
+							</div>
+						)}
+					</Panel>
+				</div>
+			</div>
+
+			<div className="grid md:grid-cols-2 gap-6">
+				{[
+					{ title: 'Order Status Breakdown', data: orderPie },
+					{ title: 'Payment Status Breakdown', data: paymentPie },
+				].map((chart) => (
+					<Panel key={chart.title} title={chart.title}>
+						{chart.data.length === 0 ? (
+							<p className="text-xs text-muted-foreground">No orders yet.</p>
+						) : (
+							<div className="h-64">
+								<ResponsiveContainer width="100%" height="100%">
+									<PieChart>
+										<Pie data={chart.data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} paddingAngle={3}>
+											{chart.data.map((_, index) => (
+												<Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+											))}
+										</Pie>
+										<Tooltip
+											contentStyle={{
+												backgroundColor: 'var(--card)',
+												border: '1px solid var(--border)',
+												borderRadius: 12,
+												fontSize: 12,
+											}}
+										/>
+										<Legend wrapperStyle={{ fontSize: 11 }} />
+									</PieChart>
+								</ResponsiveContainer>
+							</div>
+						)}
+					</Panel>
+				))}
+			</div>
+		</div>
+	)
 }

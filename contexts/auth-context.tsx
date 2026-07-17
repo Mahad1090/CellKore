@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUser } from '@/lib/auth'
+import { mergeGuestCartIntoAccount, getLocalCart } from '@/lib/cart'
 
 interface AuthContextType {
   user: User | null
@@ -32,10 +32,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+
+      // Guest-cart merge: push localStorage cart items into the account cart
+      // when the user signs in or registers.
+      if (event === 'SIGNED_IN' && session?.user && getLocalCart().length > 0) {
+        mergeGuestCartIntoAccount(session.user.id).catch(() => undefined)
+      }
     })
 
     return () => subscription.unsubscribe()

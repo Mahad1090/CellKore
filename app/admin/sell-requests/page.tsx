@@ -1,292 +1,213 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { mockSellRequests } from '@/lib/mock-admin-data'
-import { Eye, Edit, Trash2 } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { Eye, Search, Loader2 } from 'lucide-react'
+import { PageTitle, StatusBadge, EmptyState, Modal, adminButton, adminInput } from '@/components/admin/ui'
+import { TableShimmer } from '@/components/shimmer'
+import { useToast } from '@/components/ui/toast'
+import { useAdmin } from '@/contexts/admin-context'
+import type { SellPhoneRequest, SellPhoneStatus } from '@/lib/types'
 
-interface SellRequest {
-  id: string
-  device_brand: string
-  device_model: string
-  condition: string
-  description: string | null
-  contact_phone: string | null
-  contact_email: string | null
-  status: string
-  offered_price: number | null
-  submitted_at: string
-}
+const STATUSES: SellPhoneStatus[] = ['submitted', 'reviewed', 'quoted', 'contacted', 'closed']
 
 export default function AdminSellRequestsPage() {
-  const [requests, setRequests] = useState<SellRequest[]>(mockSellRequests)
-  const [loading, setLoading] = useState(false)
-  const [selectedRequest, setSelectedRequest] = useState<SellRequest | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    status: '',
-    offered_price: '',
-  })
+	const { toast } = useToast()
+	const { can } = useAdmin()
+	const [requests, setRequests] = useState<SellPhoneRequest[] | null>(null)
+	const [search, setSearch] = useState('')
+	const [selected, setSelected] = useState<SellPhoneRequest | null>(null)
+	const [offeredPrice, setOfferedPrice] = useState('')
+	const [status, setStatus] = useState<SellPhoneStatus>('submitted')
+	const [saving, setSaving] = useState(false)
 
-  const fetchRequests = async () => {
-    // Using mock data
-    setRequests(mockSellRequests)
-  }
+	const load = useCallback(() => {
+		fetch('/api/admin/sell-requests')
+			.then((res) => res.json())
+			.then((json) => setRequests(json.requests ?? []))
+			.catch(() => setRequests([]))
+	}, [])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+	useEffect(load, [load])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+	const openDetail = (request: SellPhoneRequest) => {
+		setSelected(request)
+		setOfferedPrice(request.offered_price != null ? String(request.offered_price) : '')
+		setStatus(request.status)
+	}
 
-    try {
-      const data = {
-        status: formData.status,
-        offered_price: formData.offered_price ? parseFloat(formData.offered_price) : null,
-      }
+	const save = async () => {
+		if (!selected) return
+		setSaving(true)
+		try {
+			const res = await fetch(`/api/admin/sell-requests/${selected.id}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					status,
+					offered_price: offeredPrice === '' ? null : Number(offeredPrice),
+				}),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Request updated', variant: 'success' })
+			setSelected(null)
+			load()
+		} catch (err) {
+			toast({ title: 'Update failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSaving(false)
+		}
+	}
 
-      const { error } = await supabase
-        .from('sell_phone_requests')
-        .update(data)
-        .eq('id', editingId)
+	const filtered = (requests ?? []).filter(
+		(r) =>
+			!search.trim() ||
+			`${r.device_brand} ${r.device_model} ${r.contact_email ?? ''} ${r.contact_phone ?? ''}`
+				.toLowerCase()
+				.includes(search.toLowerCase())
+	)
 
-      if (error) throw error
+	const writable = can('sell-requests:write')
+	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
 
-      setEditingId(null)
-      setFormData({ status: '', offered_price: '' })
-      fetchRequests()
-    } catch (error) {
-      console.error('Error updating request:', error)
-      alert('Error updating request. Please try again.')
-    }
-  }
+	return (
+		<div>
+			<PageTitle title="Sell Phone Requests" subtitle="Customer device quote queue" />
 
-  const startEditingRequest = (request: SellRequest) => {
-    setEditingId(request.id)
-    setFormData({
-      status: request.status,
-      offered_price: request.offered_price?.toString() || '',
-    })
-  }
+			<div className="relative mb-6 max-w-sm">
+				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				<input
+					placeholder="Search device or contact..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className={`${adminInput} pl-11`}
+				/>
+			</div>
 
-  const deleteRequest = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this request?')) return
+			{requests === null ? (
+				<TableShimmer />
+			) : filtered.length === 0 ? (
+				<EmptyState message="No sell requests found." />
+			) : (
+				<div className="border border-border rounded-3xl overflow-hidden bg-card overflow-x-auto">
+					<table className="w-full text-sm min-w-[720px]">
+						<thead>
+							<tr className="bg-secondary text-left">
+								{['Device', 'Condition', 'Contact', 'Submitted', 'Offered Price', 'Status', ''].map((h) => (
+									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{filtered.map((request) => (
+								<tr key={request.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+									<td className="px-5 py-3.5 font-medium text-card-foreground">
+										{request.device_brand} {request.device_model}
+									</td>
+									<td className="px-5 py-3.5 text-foreground/75 capitalize">{request.condition}</td>
+									<td className="px-5 py-3.5 text-foreground/75 text-xs">
+										{request.contact_email ?? request.contact_phone ?? '—'}
+									</td>
+									<td className="px-5 py-3.5 text-foreground/75 text-xs">
+										{new Date(request.submitted_at).toLocaleDateString()}
+									</td>
+									<td className="px-5 py-3.5 font-semibold text-card-foreground">
+										{request.offered_price != null ? `$${Number(request.offered_price).toFixed(2)}` : '—'}
+									</td>
+									<td className="px-5 py-3.5"><StatusBadge value={request.status} /></td>
+									<td className="px-5 py-3.5">
+										<button
+											onClick={() => openDetail(request)}
+											className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
+											aria-label="View details"
+										>
+											<Eye className="w-4 h-4" />
+										</button>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
 
-    try {
-      const { error } = await supabase.from('sell_phone_requests').delete().eq('id', id)
-      if (error) throw error
-      setRequests(requests.filter(r => r.id !== id))
-    } catch (error) {
-      console.error('Error deleting request:', error)
-    }
-  }
+			{selected && (
+				<Modal open onClose={() => setSelected(null)} title="Sell Request Details" wide>
+					<div className="grid md:grid-cols-2 gap-8">
+						<div className="space-y-5">
+							<div>
+								<p className={label}>Device</p>
+								<p className="text-sm font-semibold text-card-foreground">
+									{selected.device_brand} {selected.device_model}
+								</p>
+								<p className="text-xs text-muted-foreground capitalize mt-1">Condition: {selected.condition}</p>
+							</div>
+							{selected.description && (
+								<div>
+									<p className={label}>Details & Damage Notes</p>
+									<p className="text-xs text-foreground/75 whitespace-pre-line leading-relaxed bg-secondary rounded-2xl p-4">
+										{selected.description}
+									</p>
+								</div>
+							)}
+							<div>
+								<p className={label}>Contact</p>
+								<p className="text-xs text-foreground/85">{selected.contact_email ?? '—'}</p>
+								<p className="text-xs text-foreground/85 mt-0.5">{selected.contact_phone ?? '—'}</p>
+							</div>
+							{(selected.sell_phone_images ?? []).length > 0 && (
+								<div>
+									<p className={label}>Submitted Photos</p>
+									<div className="grid grid-cols-3 gap-2.5">
+										{selected.sell_phone_images!.map((image) => (
+											<a key={image.id} href={image.image_url} target="_blank" rel="noreferrer" className="block aspect-square rounded-xl overflow-hidden bg-muted border border-border hover:opacity-80 transition-opacity">
+												<img src={image.image_url} alt="Device" className="w-full h-full object-cover" />
+											</a>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'submitted': return 'bg-yellow-900/30 text-yellow-400'
-      case 'reviewed': return 'bg-blue-900/30 text-blue-400'
-      case 'quoted': return 'bg-purple-900/30 text-purple-400'
-      case 'contacted': return 'bg-green-900/30 text-green-400'
-      case 'closed': return 'bg-red-900/30 text-red-400'
-      default: return 'bg-slate-600/30 text-slate-300'
-    }
-  }
-
-  return (
-    <div className="p-8 bg-slate-900 min-h-screen">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Sell Requests</h1>
-          <p className="text-slate-400">Manage customer phone sell requests</p>
-        </div>
-
-        {/* Requests List */}
-        <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">Loading requests...</p>
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400">No sell requests yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-700 border-b border-slate-600">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Device</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Condition</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Contact</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Status</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Offered Price</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-white">Submitted</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-white">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((request) => (
-                    <tr key={request.id} className="border-b border-slate-700 hover:bg-slate-700/50 transition">
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">{request.device_brand} {request.device_model}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-200 capitalize">
-                          {request.condition}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm">
-                          {request.contact_phone && <p className="text-slate-300">{request.contact_phone}</p>}
-                          {request.contact_email && <p className="text-slate-400">{request.contact_email}</p>}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                          {request.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-white font-medium">{request.offered_price ? `$${request.offered_price.toFixed(2)}` : '—'}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-slate-400 text-sm">
-                          {new Date(request.submitted_at).toLocaleDateString()}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => setSelectedRequest(request)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-green-400"
-                            title="View details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => startEditingRequest(request)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-blue-400"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteRequest(request.id)}
-                            className="p-2 hover:bg-slate-600 rounded transition text-red-400"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* Edit Modal */}
-        {editingId && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 max-w-md w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Update Request</h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="submitted">Submitted</option>
-                    <option value="reviewed">Reviewed</option>
-                    <option value="quoted">Quoted</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Offered Price</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400">$</span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      name="offered_price"
-                      value={formData.offered_price}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-4 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition"
-                  >
-                    Update
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditingId(null)
-                      setFormData({ status: '', offered_price: '' })
-                    }}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Details Modal */}
-        {selectedRequest && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-slate-800 rounded-lg border border-slate-700 p-6 max-w-md w-full">
-              <h2 className="text-lg font-semibold text-white mb-4">Request Details</h2>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="text-slate-400">Device</p>
-                  <p className="text-white font-medium">{selectedRequest.device_brand} {selectedRequest.device_model}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Condition</p>
-                  <p className="text-white font-medium capitalize">{selectedRequest.condition}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Description</p>
-                  <p className="text-white">{selectedRequest.description || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Phone</p>
-                  <p className="text-white">{selectedRequest.contact_phone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Email</p>
-                  <p className="text-white">{selectedRequest.contact_email || '—'}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedRequest(null)}
-                  className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-lg transition"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
+						<div className="space-y-5">
+							<div>
+								<label className={label}>Offered Price (USD)</label>
+								<input
+									type="number"
+									step="0.01"
+									value={offeredPrice}
+									onChange={(e) => setOfferedPrice(e.target.value)}
+									className={adminInput}
+									placeholder="0.00"
+									disabled={!writable}
+								/>
+							</div>
+							<div>
+								<label className={label}>Status</label>
+								<select
+									value={status}
+									onChange={(e) => setStatus(e.target.value as SellPhoneStatus)}
+									className={`${adminInput} cursor-pointer capitalize`}
+									disabled={!writable}
+								>
+									{STATUSES.map((s) => (
+										<option key={s} value={s}>{s}</option>
+									))}
+								</select>
+								<p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
+									submitted → reviewed → quoted → contacted → closed
+								</p>
+							</div>
+							{writable && (
+								<button onClick={save} disabled={saving} className={`${adminButton} w-full justify-center`}>
+									{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+									Save Changes
+								</button>
+							)}
+						</div>
+					</div>
+				</Modal>
+			)}
+		</div>
+	)
 }

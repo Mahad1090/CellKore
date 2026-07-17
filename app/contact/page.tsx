@@ -1,338 +1,173 @@
 'use client'
 
-import React, { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Phone, Mail, MessageCircle, Check, Loader2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
-import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 import { supabase } from '@/lib/supabase'
+import { fetchCountryContacts } from '@/lib/data'
+import type { CountryContactInfo } from '@/lib/types'
 
-export const dynamic = 'force-dynamic'
-export const prerender = false
+const COUNTRY_LABELS: Record<string, string> = { US: 'United States Office', CA: 'Canada Office' }
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    subject: '',
-    message: '',
-  })
+	const { toast } = useToast()
+	const [contacts, setContacts] = useState<CountryContactInfo[] | null>(null)
+	const [submitted, setSubmitted] = useState(false)
+	const [submitting, setSubmitting] = useState(false)
+	const [form, setForm] = useState({ name: '', email: '', phone: '', country: 'US', message: '' })
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+	useEffect(() => {
+		fetchCountryContacts()
+			.then(setContacts)
+			.catch(() => setContacts([]))
+	}, [])
 
-  const contactChannels = [
-    {
-      country: 'US',
-      label: 'United States',
-      whatsapp: '+1 (212) 555-0199',
-      email: 'usa@cellkore.com',
-      landline: '+1 (212) 555-0100',
-    },
-    {
-      country: 'Canada',
-      label: 'Canada',
-      whatsapp: '+1 (416) 555-0199',
-      email: 'canada@cellkore.com',
-      landline: '+1 (416) 555-0100',
-    },
-  ]
+	const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+		setForm((f) => ({ ...f, [field]: e.target.value }))
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrorMessage(null)
-    setSubmitting(true)
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+			toast({ title: 'Missing details', description: 'Name, email and a message are required.', variant: 'error' })
+			return
+		}
+		setSubmitting(true)
+		try {
+			const { error } = await supabase.from('contact_inquiries').insert({
+				name: form.name.trim(),
+				email: form.email.trim(),
+				phone: form.phone.trim() || null,
+				country: form.country,
+				message: form.message.trim(),
+				status: 'new',
+			})
+			if (error) throw error
+			setSubmitted(true)
+		} catch (err) {
+			toast({
+				title: 'Submission failed',
+				description: err instanceof Error ? err.message : 'Please try again in a moment.',
+				variant: 'error',
+			})
+		} finally {
+			setSubmitting(false)
+		}
+	}
 
-    const name = `${formData.firstName} ${formData.lastName}`.trim()
-    const message = formData.subject ? `[${formData.subject}] ${formData.message}` : formData.message
+	const inputClass =
+		'w-full px-4 py-3 border border-border rounded-xl bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all'
 
-    const { error } = await supabase.from('contact_inquiries').insert({
-      name,
-      email: formData.email,
-      phone: formData.phone || null,
-      message,
-    })
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
 
-    setSubmitting(false)
+			<section className="bg-primary text-primary-foreground py-12">
+				<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Contact</p>
+					<h1 className="text-3xl md:text-4xl font-bold tracking-luxury uppercase">Get in Touch</h1>
+				</div>
+			</section>
 
-    if (error) {
-      console.error('Error submitting contact inquiry:', error)
-      setErrorMessage('Something went wrong sending your message. Please try again.')
-      return
-    }
+			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14 grid lg:grid-cols-5 gap-10">
+				{/* Office contact info from the database */}
+				<div className="lg:col-span-2 space-y-5">
+					{contacts === null ? (
+						Array.from({ length: 2 }).map((_, i) => (
+							<div key={i} className="animate-pulse bg-muted rounded-3xl h-44" />
+						))
+					) : (
+						contacts
+							.filter((c) => c.whatsapp_number || c.email || c.landline)
+							.map((contact) => (
+								<div key={contact.id} className="bg-card border border-border rounded-3xl p-7">
+									<h2 className="text-xs font-bold uppercase tracking-[0.18em] text-card-foreground mb-5">
+										{COUNTRY_LABELS[contact.country] ?? contact.country}
+									</h2>
+									<div className="space-y-4 text-sm">
+										{contact.whatsapp_number && (
+											<a
+												href={`https://wa.me/${contact.whatsapp_number.replace(/\D/g, '')}`}
+												target="_blank"
+												rel="noreferrer"
+												className="flex items-center gap-3 text-foreground/80 hover:text-primary transition-colors"
+											>
+												<MessageCircle className="w-4 h-4 text-primary shrink-0" />
+												{contact.whatsapp_number}
+											</a>
+										)}
+										{contact.email && (
+											<a href={`mailto:${contact.email}`} className="flex items-center gap-3 text-foreground/80 hover:text-primary transition-colors">
+												<Mail className="w-4 h-4 text-primary shrink-0" />
+												{contact.email}
+											</a>
+										)}
+										{contact.landline && (
+											<a href={`tel:${contact.landline}`} className="flex items-center gap-3 text-foreground/80 hover:text-primary transition-colors">
+												<Phone className="w-4 h-4 text-primary shrink-0" />
+												{contact.landline}
+											</a>
+										)}
+									</div>
+								</div>
+							))
+					)}
+					{contacts !== null && contacts.every((c) => !c.whatsapp_number && !c.email && !c.landline) && (
+						<div className="bg-card border border-dashed border-border rounded-3xl p-7">
+							<p className="text-sm text-muted-foreground">
+								Office contact channels will appear here once published.
+							</p>
+						</div>
+					)}
+				</div>
 
-    setSubmitted(true)
-    setFormData({ firstName: '', lastName: '', email: '', phone: '', subject: '', message: '' })
-    setTimeout(() => setSubmitted(false), 3000)
-  }
+				{/* Inquiry form */}
+				<div className="lg:col-span-3">
+					{submitted ? (
+						<div className="bg-card border border-border rounded-3xl p-10 text-center">
+							<div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-6">
+								<Check className="w-7 h-7 text-primary" />
+							</div>
+							<h2 className="text-xl font-bold text-card-foreground mb-3">Message Received</h2>
+							<p className="text-sm text-foreground/75 leading-relaxed">
+								Thank you for reaching out. Our team will get back to you as soon as possible.
+							</p>
+						</div>
+					) : (
+						<form onSubmit={handleSubmit} className="bg-card border border-border rounded-3xl p-8 space-y-4">
+							<div className="grid sm:grid-cols-2 gap-4">
+								<input required placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
+								<input required type="email" placeholder="Email address" value={form.email} onChange={set('email')} className={inputClass} />
+								<input type="tel" placeholder="Phone (optional)" value={form.phone} onChange={set('phone')} className={inputClass} />
+								<select value={form.country} onChange={set('country')} className={`${inputClass} cursor-pointer`}>
+									<option value="US">United States</option>
+									<option value="CA">Canada</option>
+									<option value="Other">Other</option>
+								</select>
+							</div>
+							<textarea
+								required
+								placeholder="How can we help?"
+								value={form.message}
+								onChange={set('message')}
+								rows={6}
+								className={`${inputClass} resize-none`}
+							/>
+							<button
+								type="submit"
+								disabled={submitting}
+								className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60"
+							>
+								{submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+								{submitting ? 'Sending...' : 'Send Message'}
+							</button>
+						</form>
+					)}
+				</div>
+			</div>
 
-  return (
-    <main className="min-h-screen bg-background">
-      <Navigation />
-
-      {/* Header */}
-      <section className="bg-primary text-primary-foreground py-12 md:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Contact Us</h1>
-          <p className="text-lg md:text-xl opacity-90">
-            We&apos;d love to hear from you. Get in touch with our team.
-          </p>
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <div className="bg-card border border-border rounded-lg p-6">
-            <MapPin className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-bold text-foreground mb-2">Headquarters</h3>
-            <p className="text-muted-foreground">123 Tech Street</p>
-            <p className="text-muted-foreground text-sm">Silicon Valley, CA 94025</p>
-          </div>
-
-          <div className="bg-card border border-border rounded-lg p-6">
-            <Phone className="w-8 h-8 text-primary mb-4" />
-            <h3 className="font-bold text-foreground mb-2">General Support</h3>
-            <p className="text-muted-foreground">1-800-CELL-CORE</p>
-            <p className="text-muted-foreground text-sm mt-1">Available 24/7</p>
-          </div>
-        </div>
-
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">Country Contact Channels</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {contactChannels.map((channel) => (
-              <div key={channel.country} className="bg-card border border-border rounded-lg p-6">
-                <div className="flex items-center justify-between gap-4 mb-6">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground mb-1">{channel.country}</p>
-                    <h3 className="text-xl font-bold text-foreground">{channel.label}</h3>
-                  </div>
-                  <span className="px-3 py-1 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-                    Regional support
-                  </span>
-                </div>
-
-                <div className="space-y-4 text-sm">
-                  <div className="flex items-start gap-3">
-                    <MessageCircle className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-foreground">WhatsApp</p>
-                      <a href={`https://wa.me/${channel.whatsapp.replace(/[^\d]/g, '')}`} className="text-primary hover:underline">
-                        {channel.whatsapp}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Mail className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-foreground">Email</p>
-                      <a href={`mailto:${channel.email}`} className="text-primary hover:underline">
-                        {channel.email}
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-primary mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-foreground">Landline</p>
-                      <a href={`tel:${channel.landline}`} className="text-primary hover:underline">
-                        {channel.landline}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Contact Form & Map */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Contact Form */}
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-foreground">Send us a Message</h2>
-            <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-8 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">First Name*</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">Last Name*</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Email*</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Subject*</label>
-                <select
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
-                >
-                  <option value="">Select...</option>
-                  <option>Product Inquiry</option>
-                  <option>Order Status</option>
-                  <option>Technical Support</option>
-                  <option>Wholesale</option>
-                  <option>Feedback</option>
-                  <option>Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">Message*</label>
-                <textarea
-                  name="message"
-                  value={formData.message}
-                  onChange={handleInputChange}
-                  rows={5}
-                  required
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-                />
-              </div>
-
-              {errorMessage && (
-                <div className="p-4 bg-red-100 text-red-700 rounded-lg text-sm">{errorMessage}</div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {submitting ? 'Sending...' : 'Send Message'}
-              </button>
-
-              {submitted && (
-                <div className="p-4 bg-green-100 text-green-700 rounded-lg text-sm">
-                  Thank you! We&apos;ll get back to you soon.
-                </div>
-              )}
-            </form>
-          </div>
-
-          {/* Business Hours & Locations */}
-          <div>
-            <h2 className="text-2xl font-bold mb-6 text-foreground">Business Information</h2>
-
-            {/* Hours */}
-            <div className="bg-card border border-border rounded-lg p-8 mb-6">
-              <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-primary" />
-                Business Hours
-              </h3>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Monday - Friday</span>
-                  <span>8:00 AM - 8:00 PM EST</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Saturday</span>
-                  <span>10:00 AM - 6:00 PM EST</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sunday</span>
-                  <span>12:00 PM - 5:00 PM EST</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Departments */}
-            <div className="bg-card border border-border rounded-lg p-8">
-              <h3 className="font-bold text-foreground mb-4">Departments</h3>
-              <div className="space-y-4 text-sm">
-                <div>
-                  <p className="font-semibold text-foreground">Sales</p>
-                  <p className="text-muted-foreground">sales@cellkore.com</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Support</p>
-                  <p className="text-muted-foreground">support@cellkore.com</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">Wholesale</p>
-                  <p className="text-muted-foreground">wholesale@cellkore.com</p>
-                </div>
-                <div>
-                  <p className="font-semibold text-foreground">General</p>
-                  <p className="text-muted-foreground">info@cellkore.com</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* FAQ Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-muted rounded-lg">
-        <h2 className="text-3xl font-bold mb-8 text-foreground text-center">Frequently Asked Questions</h2>
-        <div className="max-w-3xl mx-auto space-y-6">
-          {[
-            { q: 'How can I track my order?', a: 'You can track your order using the tracking number sent to your email after purchase. You can also check status in your account.' },
-            { q: 'What is your return policy?', a: 'We offer 30-day returns for all products. Items must be in original condition with all packaging and accessories.' },
-            { q: 'Do you offer refurbished products?', a: 'Yes! We offer certified refurbished products with full warranty. All refurbished items go through rigorous testing.' },
-            { q: 'How do I contact customer support?', a: 'You can reach us through the US or Canada WhatsApp, email, or landline details listed above, or through our website contact form.' },
-          ].map((item, idx) => (
-            <div key={idx} className="bg-card border border-border rounded-lg p-6">
-              <h3 className="font-semibold text-foreground mb-2">{item.q}</h3>
-              <p className="text-muted-foreground">{item.a}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <Footer />
-    </main>
-  )
+			<Footer />
+		</main>
+	)
 }
