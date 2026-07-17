@@ -4,12 +4,30 @@ import React, { useState } from 'react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { Phone, Mail, MapPin, Clock, MessageCircle } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 export const prerender = false
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: '',
+  })
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+  }
 
   const contactChannels = [
     {
@@ -28,9 +46,31 @@ export default function ContactPage() {
     },
   ]
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMessage(null)
+    setSubmitting(true)
+
+    const name = `${formData.firstName} ${formData.lastName}`.trim()
+    const message = formData.subject ? `[${formData.subject}] ${formData.message}` : formData.message
+
+    const { error } = await supabase.from('contact_inquiries').insert({
+      name,
+      email: formData.email,
+      phone: formData.phone || null,
+      message,
+    })
+
+    setSubmitting(false)
+
+    if (error) {
+      console.error('Error submitting contact inquiry:', error)
+      setErrorMessage('Something went wrong sending your message. Please try again.')
+      return
+    }
+
     setSubmitted(true)
+    setFormData({ firstName: '', lastName: '', email: '', phone: '', subject: '', message: '' })
     setTimeout(() => setSubmitted(false), 3000)
   }
 
@@ -126,23 +166,61 @@ export default function ContactPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-2">First Name*</label>
-                  <input type="text" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
+                  <input
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-foreground mb-2">Last Name*</label>
-                  <input type="text" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
+                  <input
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Email*</label>
-                <input type="email" required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-2">Phone</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Subject*</label>
-                <select required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background">
-                  <option>Select...</option>
+                <select
+                  name="subject"
+                  value={formData.subject}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary bg-background"
+                >
+                  <option value="">Select...</option>
                   <option>Product Inquiry</option>
                   <option>Order Status</option>
                   <option>Technical Support</option>
@@ -154,14 +232,26 @@ export default function ContactPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-2">Message*</label>
-                <textarea rows={5} required className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary" />
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleInputChange}
+                  rows={5}
+                  required
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
+                />
               </div>
+
+              {errorMessage && (
+                <div className="p-4 bg-red-100 text-red-700 rounded-lg text-sm">{errorMessage}</div>
+              )}
 
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold"
+                disabled={submitting}
+                className="w-full px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Send Message
+                {submitting ? 'Sending...' : 'Send Message'}
               </button>
 
               {submitted && (

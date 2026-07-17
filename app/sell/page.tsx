@@ -4,6 +4,7 @@ import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useState } from 'react'
 import { Upload, Check } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function SellYourPhonePage() {
   const [formData, setFormData] = useState({
@@ -20,6 +21,8 @@ export default function SellYourPhonePage() {
     phone: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [images, setImages] = useState<File[]>([])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -33,9 +36,40 @@ export default function SellYourPhonePage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Sell Phone Form Submitted:', { formData, imageCount: images.length })
+    setErrorMessage(null)
+    setSubmitting(true)
+
+    // sell_phone_requests only has a single free-text "description" column,
+    // so we fold the extra device details (storage/ram/color/damage/name)
+    // into it with clear labels rather than losing that information.
+    const detailLines = [
+      `Submitted by: ${formData.name}`,
+      formData.storage && `Storage: ${formData.storage}`,
+      formData.ram && `RAM: ${formData.ram}`,
+      formData.color && `Color: ${formData.color}`,
+      formData.damage && `Damage: ${formData.damage}`,
+      formData.description && `Additional details: ${formData.description}`,
+    ].filter(Boolean)
+
+    const { error } = await supabase.from('sell_phone_requests').insert({
+      device_brand: formData.brand,
+      device_model: formData.model,
+      condition: formData.condition,
+      description: detailLines.join('\n'),
+      contact_phone: formData.phone || null,
+      contact_email: formData.email || null,
+    })
+
+    setSubmitting(false)
+
+    if (error) {
+      console.error('Error submitting sell request:', error)
+      setErrorMessage('Something went wrong submitting your request. Please try again.')
+      return
+    }
+
     setSubmitted(true)
     setTimeout(() => {
       setSubmitted(false)
@@ -289,12 +323,17 @@ export default function SellYourPhonePage() {
               </div>
             </div>
 
+            {errorMessage && (
+              <div className="p-4 bg-red-100 text-red-700 rounded-lg text-sm">{errorMessage}</div>
+            )}
+
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-bold text-lg"
+              disabled={submitting}
+              className="w-full px-8 py-4 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition font-bold text-lg disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Get Instant Quote
+              {submitting ? 'Submitting...' : 'Get Instant Quote'}
             </button>
 
             <p className="text-center text-muted-foreground text-sm">
