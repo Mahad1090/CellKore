@@ -35,6 +35,10 @@ function ProductsPageContent() {
 	const [categories, setCategories] = useState<Category[]>([])
 	const [products, setProducts] = useState<Product[] | null>(null)
 
+	const isIphoneSelected = selectedCategory === 'iphones' || selectedCategory === 'iphone'
+	const isSamsungSelected = selectedCategory === 'samsungs' || selectedCategory === 'samsung'
+	const isIpadSelected = selectedCategory === 'ipads' || selectedCategory === 'ipad'
+
 	useEffect(() => {
 		setSelectedCategory(searchParams.get('category') || 'all')
 		setSearchQuery(searchParams.get('search') || '')
@@ -72,10 +76,72 @@ function ProductsPageContent() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="bg-primary text-primary-foreground py-10">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Catalog</p>
-					<h1 className="text-3xl md:text-4xl font-bold tracking-luxury uppercase">Shop Devices</h1>
+			<section className="relative bg-primary text-primary-foreground pt-36 pb-24 overflow-hidden min-h-[450px] flex items-end">
+				{isIphoneSelected && (
+					<>
+						<video
+							src="/iphone_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
+				{isSamsungSelected && (
+					<>
+						<video
+							src="/samsung_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
+				{isIpadSelected && (
+					<>
+						<video
+							src="/ipad_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
+				<div className="relative w-full px-4 sm:px-8 lg:px-12 z-10">
+					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">
+						{(isIphoneSelected || isSamsungSelected || isIpadSelected) ? (
+							<span className="text-amber-400 font-semibold">Shop</span>
+						) : (
+							'Catalog'
+						)}
+					</p>
+					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
+						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : 'Shop Devices'}
+					</h1>
+					{isIphoneSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished iPhones. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
+					{isSamsungSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished Samsung Galaxy devices. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
+					{isIpadSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished iPads. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
 				</div>
 			</section>
 
