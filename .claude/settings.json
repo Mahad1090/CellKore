@@ -6,7 +6,10 @@
       "Bash(git -C /d/CellKore mv admin-role-migration.sql sql/admin-role-migration.sql)",
       "Bash(git -C /d/CellKore mv database.sql sql/database.sql)",
       "Bash(git -C /d/CellKore mv supabase-setup.sql sql/supabase-setup.sql)",
-      "Bash(git -C /d/CellKore status)"
+      "Bash(git -C /d/CellKore status)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)"
     ]
   }
 }
