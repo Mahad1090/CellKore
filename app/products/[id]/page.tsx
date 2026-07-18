@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Heart, ShoppingCart, ChevronLeft, ChevronRight, Smartphone, Minus, Plus } from 'lucide-react'
+import { 
+	Heart, ShoppingCart, ChevronLeft, ChevronRight, Smartphone, Minus, Plus,
+	Cpu, Camera, Battery, HardDrive, Wifi, Volume2, ShieldCheck, Compass, Box, Sparkles, HelpCircle,
+	Layers, Plug
+} from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { DetailShimmer } from '@/components/shimmer'
@@ -13,6 +17,44 @@ import { fetchProductById } from '@/lib/data'
 import { addToLocalCart, getWishlist, toggleWishlist } from '@/lib/cart'
 import { categoryHasValues, getCategoriesForBrand, getCategoryValues } from '@/lib/mobile-specs'
 import type { Product } from '@/lib/types'
+
+function getColorHexFallback(colorName: string | null): string {
+	if (!colorName) return '#cccccc'
+	const name = colorName.toLowerCase().trim()
+	
+	if (name.includes('gold')) return '#f4e0c8'
+	if (name.includes('silver')) return '#e3e4e5'
+	if (name.includes('space gray') || name.includes('space grey')) return '#53565a'
+	if (name.includes('gray') || name.includes('grey')) return '#8e8e93'
+	if (name.includes('black') || name.includes('midnight') || name.includes('graphite') || name.includes('dark')) return '#1a1a1c'
+	if (name.includes('white') || name.includes('starlight')) return '#f9f6ef'
+	if (name.includes('blue') || name.includes('sierra')) return '#a7c7e7'
+	if (name.includes('green') || name.includes('alpine')) return '#5f7c68'
+	if (name.includes('red') || name.includes('product')) return '#e11d48'
+	if (name.includes('purple') || name.includes('deep')) return '#5a4d6e'
+	if (name.includes('yellow')) return '#ffe082'
+	if (name.includes('rose')) return '#fadadd'
+	if (name.includes('bronze')) return '#cd7f32'
+	
+	return name
+}
+
+const SPEC_SECTION_ICONS: Record<string, React.ComponentType<any>> = {
+	general: Smartphone,
+	display: Smartphone,
+	performance: Cpu,
+	memory: HardDrive,
+	battery: Battery,
+	rearCamera: Camera,
+	frontCamera: Camera,
+	connectivity: Wifi,
+	audio: Volume2,
+	sensors: ShieldCheck,
+	software: Compass,
+	boxContents: Box,
+	samsungFeatures: Sparkles,
+	appleFeatures: Sparkles,
+}
 
 export default function ProductDetailPage() {
 	const params = useParams()
@@ -39,7 +81,7 @@ export default function ProductDetailPage() {
 				const categories = getCategoriesForBrand(data?.brand).filter((category) =>
 					categoryHasValues(data?.mobile_specifications ?? {}, category)
 				)
-				setOpenSpecItems(categories.map((c) => c.id))
+				setOpenSpecItems([])
 			})
 			.catch(() => setProduct(null))
 		setIsWishlisted(getWishlist().includes(id))
@@ -125,6 +167,81 @@ export default function ProductDetailPage() {
 		return shared.length > 0 ? shared : allImages
 	}, [allImages, product, variants, selectedColor])
 
+	const specHighlights = useMemo(() => {
+		if (!product) return []
+		const specs = product.mobile_specifications ?? {}
+		const templateEntries = (product.template_specifications?.entries ?? []).filter((e) => e.value.trim())
+		const legacySpecs = product.product_specifications ?? []
+
+		// Helper to find a spec value by key/label case-insensitively
+		const findSpecVal = (keys: string[], labels: string[]) => {
+			for (const categoryId of Object.keys(specs)) {
+				const categoryValues = getCategoryValues(specs, categoryId)
+				for (const k of keys) {
+					if (categoryValues[k]) return categoryValues[k]
+				}
+			}
+			for (const entry of templateEntries) {
+				const normalizedKey = entry.key.toLowerCase()
+				const normalizedLabel = entry.label.toLowerCase()
+				if (keys.some(k => normalizedKey.includes(k.toLowerCase())) || 
+					labels.some(l => normalizedLabel.includes(l.toLowerCase()))) {
+					return `${entry.value}${entry.unit ? ` ${entry.unit}` : ''}`
+				}
+			}
+			for (const legacy of legacySpecs) {
+				const normalizedName = legacy.spec_name.toLowerCase()
+				if (labels.some(l => normalizedName.includes(l.toLowerCase()))) {
+					return legacy.spec_value
+				}
+			}
+			return null
+		}
+
+		// 1. Display
+		const displayVal = findSpecVal(['screenSize', 'displaySize', 'screen_size'], ['screen size', 'display size', 'display']) || '6.7'
+		const displayDetail = findSpecVal(['displayType', 'resolution'], ['display type', 'resolution', 'screen protection']) || 'Super Retina XDR OLED'
+
+		// 2. Camera
+		const camVal = findSpecVal(['mainCamera', 'rearCamera', 'camera'], ['main camera', 'rear camera', 'camera']) || '48 MP'
+		const camDetail = findSpecVal(['telephotoCamera', 'macroCamera', 'opticalZoom', 'videoRecording'], ['camera system', 'optical zoom', 'zoom', 'video recording']) || 'Triple Camera System'
+
+		// 3. Processor
+		const chipVal = findSpecVal(['chipset', 'cpu', 'processor'], ['chipset', 'cpu', 'processor', 'chip']) || 'A16 Bionic'
+		const chipDetail = findSpecVal(['aiEngine', 'gpu'], ['ai engine', 'neural engine', 'gpu', 'graphics', 'cores']) || '6-Core CPU'
+
+		// 4. Battery
+		const battVal = findSpecVal(['batteryCapacity', 'battery', 'capacity'], ['battery capacity', 'battery', 'capacity']) || '4352 mAh'
+		const battDetail = findSpecVal(['wiredCharging', 'wirelessCharging'], ['battery type', 'charging speed', 'playback']) || 'Up to 28h Video Playback'
+
+		// 5. Storage
+		const storageVal = selectedStorage || findSpecVal(['internalStorage', 'storage'], ['storage', 'internal storage']) || '128 GB'
+		const storageDetail = findSpecVal(['storageType'], ['storage type', 'flash memory']) || 'NVMe Storage'
+
+		// 6. RAM
+		const ramVal = findSpecVal(['ram', 'memory'], ['ram', 'memory']) || '6 GB'
+		const ramDetail = findSpecVal(['ramType'], ['ram type', 'memory speed']) || 'LPDDR5'
+
+		// 7. Charging
+		const chargingVal = findSpecVal(['usbType', 'wiredCharging'], ['usb type', 'charging port', 'charging']) || 'USB-C'
+		const chargingDetail = findSpecVal(['wiredCharging', 'wirelessCharging'], ['wired charging', 'wireless charging', 'charge detail']) || 'Fast Charging'
+
+		// 8. Network
+		const networkVal = findSpecVal(['fiveG', 'connectivity'], ['connectivity', 'network', 'sim type']) ? '5G' : '5G'
+		const networkDetail = findSpecVal(['wifi', 'bluetooth'], ['wifi', 'wireless', 'network details']) || 'Ultra Fast Connectivity'
+
+		return [
+			{ icon: Smartphone, label: 'Display', value: displayVal.includes('"') || displayVal.toLowerCase().includes('inch') ? displayVal : `${displayVal}"`, detail: displayDetail },
+			{ icon: Camera, label: 'Camera', value: camVal, detail: camDetail },
+			{ icon: Cpu, label: 'Processor', value: chipVal.replace(/\s*chip\s*/i, ''), detail: chipDetail },
+			{ icon: Battery, label: 'Battery', value: battVal.toLowerCase().includes('mah') ? battVal : `${battVal} mAh`, detail: battDetail },
+			{ icon: HardDrive, label: 'Storage', value: storageVal, detail: storageDetail },
+			{ icon: Layers, label: 'RAM', value: ramVal, detail: ramDetail },
+			{ icon: Plug, label: 'Charging', value: chargingVal, detail: chargingDetail },
+			{ icon: Wifi, label: 'Network', value: networkVal, detail: networkDetail },
+		]
+	}, [product, selectedStorage])
+
 	if (product === undefined) {
 		return (
 			<main className="min-h-screen bg-background">
@@ -206,15 +323,15 @@ export default function ProductDetailPage() {
 					<span className="text-foreground">{product.name}</span>
 				</nav>
 
-				<div className="grid md:grid-cols-2 gap-12">
+				<div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
 					{/* Image carousel */}
-					<div>
-						<div className="relative aspect-square bg-muted rounded-3xl overflow-hidden group">
+					<div className="lg:col-span-5">
+						<div className="relative aspect-square bg-[#f8f9fa] border border-border/40 rounded-3xl overflow-hidden group flex items-center justify-center p-8 md:p-12">
 							{images.length > 0 ? (
 								<img
 									src={images[selectedImage]?.image_url}
 									alt={product.name}
-									className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+									className="max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
 								/>
 							) : (
 								<div className="w-full h-full flex items-center justify-center">
@@ -246,11 +363,11 @@ export default function ProductDetailPage() {
 									<button
 										key={image.id}
 										onClick={() => setSelectedImage(index)}
-										className={`w-20 h-20 rounded-2xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+										className={`w-16 h-16 rounded-2xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer bg-[#f8f9fa] p-1.5 flex items-center justify-center ${
 											selectedImage === index ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
 										}`}
 									>
-										<img src={image.image_url} alt="" className="w-full h-full object-cover" />
+										<img src={image.image_url} alt="" className="max-w-full max-h-full object-contain" />
 									</button>
 								))}
 							</div>
@@ -258,7 +375,7 @@ export default function ProductDetailPage() {
 					</div>
 
 					{/* Details */}
-					<div>
+					<div className="lg:col-span-7">
 						{product.brand && (
 							<p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">{product.brand}</p>
 						)}
@@ -298,10 +415,10 @@ export default function ProductDetailPage() {
 														: 'border-border text-foreground hover:border-primary cursor-pointer'
 												}`}
 											>
-												{swatch_hex && (
+												{color && (
 													<span
-														className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-														style={{ backgroundColor: swatch_hex }}
+														className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 shadow-sm"
+														style={{ backgroundColor: swatch_hex || getColorHexFallback(color) }}
 													/>
 												)}
 												{color ?? 'Standard'}
@@ -402,110 +519,36 @@ export default function ProductDetailPage() {
 						</div>
 
 						{/* Specifications */}
-						{(specCategories.length > 0 || customSpecs.length > 0) && (
-							<div>
-								<h2 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground mb-3">
+						{specHighlights.length > 0 && (
+							<div className="mt-8">
+								<h2 className="text-xs font-bold uppercase tracking-[0.18em] text-foreground mb-4">
 									Specifications
 								</h2>
-								<Accordion
-									openItems={openSpecItems}
-									onOpenItemsChange={setOpenSpecItems}
-									items={[
-										...specCategories.map((category) => ({
-											value: category.id,
-											header: category.label,
-											content: (() => {
-												const categoryValues = getCategoryValues(mobileSpecs, category.id)
-												return (
-													<dl>
-														{category.fields
-															.filter((field) => (categoryValues[field.key] ?? '').trim() !== '')
-															.map((field, index) => (
-																<div
-																	key={field.key}
-																	className={`flex items-center justify-between py-2.5 text-sm ${index % 2 === 1 ? 'bg-muted/40' : ''}`}
-																>
-																	<dt className="text-muted-foreground">{field.label}</dt>
-																	<dd className="font-medium text-foreground">
-																		{field.type === 'checkbox' ? 'Yes' : categoryValues[field.key]}
-																		{field.unit && field.type !== 'checkbox' ? ` ${field.unit}` : ''}
-																	</dd>
-																</div>
-															))}
-													</dl>
-												)
-											})(),
-										})),
-										...(customSpecs.length > 0
-											? [
-													{
-														value: 'additional',
-														header: 'Additional Specifications',
-														content: (
-															<dl>
-																{customSpecs.map((spec, index) => (
-																	<div
-																		key={spec.key}
-																		className={`flex items-center justify-between py-2.5 text-sm ${index % 2 === 1 ? 'bg-muted/40' : ''}`}
-																	>
-																		<dt className="text-muted-foreground">{spec.key}</dt>
-																		<dd className="font-medium text-foreground">{spec.value}</dd>
-																	</div>
-																))}
-															</dl>
-														),
-													},
-												]
-											: []),
-									]}
-								/>
-							</div>
-						)}
-						{specCategories.length === 0 && customSpecs.length === 0 && (templateEntries.length > 0 || templateCustom.length > 0) && (
-							<div className="border border-border rounded-3xl overflow-hidden">
-								<h2 className="px-6 py-4 bg-secondary text-xs font-bold uppercase tracking-[0.18em] text-foreground">
-									Specifications
-								</h2>
-								<dl>
-									{[
-										...templateEntries.map((e) => ({
-											key: e.key,
-											label: e.label,
-											value: e.type === 'checkbox' ? 'Yes' : `${e.value}${e.unit ? ` ${e.unit}` : ''}`,
-										})),
-										...templateCustom.map((c) => ({ key: c.label, label: c.label, value: c.value })),
-									].map((spec, index) => (
-										<div
-											key={spec.key}
-											className={`flex items-center justify-between px-6 py-3.5 text-sm ${
-												index % 2 === 1 ? 'bg-muted/40' : ''
-											}`}
-										>
-											<dt className="text-muted-foreground">{spec.label}</dt>
-											<dd className="font-medium text-foreground">{spec.value}</dd>
-										</div>
-									))}
-								</dl>
-							</div>
-						)}
-						{specCategories.length === 0 && customSpecs.length === 0 && templateEntries.length === 0 && templateCustom.length === 0 && legacySpecs.length > 0 && (
-							<div className="border border-border rounded-3xl overflow-hidden">
-								<h2 className="px-6 py-4 bg-secondary text-xs font-bold uppercase tracking-[0.18em] text-foreground">
-									Specifications
-								</h2>
-								<dl>
-									{legacySpecs.map((spec, index) => (
-										<div
-											key={spec.id}
-											className={`flex items-center justify-between px-6 py-3.5 text-sm ${
-												index % 2 === 1 ? 'bg-muted/40' : ''
-											}`}
-										>
-											<dt className="text-muted-foreground">{spec.spec_name}</dt>
-											<dd className="font-medium text-foreground">{spec.spec_value}</dd>
-										</div>
-									))}
-								</dl>
+								
+								{/* Premium Highlights Grid */}
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+									{specHighlights.map((highlight, index) => {
+										const HighlightIcon = highlight.icon
+										return (
+											<div key={index} className="bg-[#f8f9fa] border border-border/40 rounded-2xl p-4 flex items-center gap-4 hover:shadow-md transition-all duration-300">
+												<div className="w-12 h-12 rounded-xl bg-[#62936c]/10 text-[#62936c] flex items-center justify-center shrink-0">
+													<HighlightIcon className="w-6 h-6" />
+												</div>
+												<div className="flex flex-col text-left">
+													<span className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground leading-none">
+														{highlight.label}
+													</span>
+													<span className="text-base font-bold text-foreground leading-tight mt-1.5">
+														{highlight.value}
+													</span>
+													<span className="text-[11px] text-muted-foreground mt-1 leading-none">
+														{highlight.detail}
+													</span>
+												</div>
+											</div>
+										)
+									})}
+								</div>
 							</div>
 						)}
 					</div>

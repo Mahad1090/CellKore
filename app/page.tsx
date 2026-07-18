@@ -76,22 +76,52 @@ export default function Home() {
 					</div>
 				) : (
 					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-						{categories.map((category) => (
-							<Link key={category.id} href={`/products?category=${category.slug}`}>
-								<div className="bg-card border border-border/80 rounded-2xl p-6 text-center shadow-sm hover:shadow-xl hover:border-primary hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center group">
-									<div className="mb-4 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 group-hover:scale-105 transition-all duration-300 overflow-hidden">
-										{category.image_url ? (
-											<img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+						{categories.map((category) => {
+							const isIphone = category.slug === 'iphones' || category.slug === 'iphone'
+							const isSamsung = category.slug === 'samsungs' || category.slug === 'samsung'
+							const isIpad = category.slug === 'ipads' || category.slug === 'ipad'
+							const isTablet = category.slug === 'tablets' || category.slug === 'tablet'
+							const isWatch = category.slug === 'watches' || category.slug === 'watch'
+							const isLaptop = category.slug === 'laptops' || category.slug === 'laptop'
+							const hasCustomCover = isIphone || isSamsung || isIpad || isTablet || isWatch || isLaptop
+							
+							let coverImage = null
+							if (isIphone) coverImage = '/iphone_category.png'
+							else if (isSamsung) coverImage = '/samsung_category.png'
+							else if (isIpad) coverImage = '/ipad_category.png'
+							else if (isTablet) coverImage = '/tablets_category.png'
+							else if (isWatch) coverImage = '/watches_category.png'
+							else if (isLaptop) coverImage = '/laptop_category.png'
+
+							return (
+								<Link key={category.id} href={`/products?category=${category.slug}`}>
+									<div className={`bg-card border border-border/80 rounded-2xl text-center shadow-sm hover:shadow-xl hover:border-primary hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center group relative overflow-hidden ${
+										hasCustomCover ? 'p-0' : 'p-6'
+									}`}>
+										{hasCustomCover ? (
+											<img 
+												src={coverImage || ''} 
+												alt={category.name} 
+												className="w-full h-full object-cover scale-[1.09] transition-transform duration-500 group-hover:scale-[1.15]" 
+											/>
 										) : (
-											<LayoutGrid className="w-8 h-8 text-primary" />
+											<>
+												<div className="mb-4 w-16 h-16 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 group-hover:scale-105 transition-all duration-300 overflow-hidden">
+													{category.image_url ? (
+														<img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+													) : (
+														<LayoutGrid className="w-8 h-8 text-primary" />
+													)}
+												</div>
+												<h3 className="font-semibold text-foreground text-sm tracking-wide group-hover:text-primary transition-colors duration-300">
+													{category.name}
+												</h3>
+											</>
 										)}
 									</div>
-									<h3 className="font-semibold text-foreground text-sm tracking-wide group-hover:text-primary transition-colors duration-300">
-										{category.name}
-									</h3>
-								</div>
-							</Link>
-						))}
+								</Link>
+							)
+						})}
 					</div>
 				)}
 			</section>
@@ -116,7 +146,7 @@ export default function Home() {
 						</p>
 					</div>
 				) : (
-					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
 						{products.map((product) => (
 							<ProductCard key={product.id} product={product} />
 						))}

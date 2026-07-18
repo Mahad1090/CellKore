@@ -136,7 +136,20 @@ export default function AdminCategoriesPage() {
 									<td className="px-5 py-3.5">
 										<div className="flex items-center gap-3">
 											<div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
-												{category.image_url && <img src={category.image_url} alt="" className="w-full h-full object-cover" />}
+												{(category.image_url || category.slug === 'iphones' || category.slug === 'iphone' || category.slug === 'samsungs' || category.slug === 'samsung' || category.slug === 'ipads' || category.slug === 'ipad') && (
+													<img 
+														src={(category.slug === 'iphones' || category.slug === 'iphone') 
+															? '/iphone_category.png' 
+															: (category.slug === 'samsungs' || category.slug === 'samsung')
+															? '/samsung_category.png'
+															: (category.slug === 'ipads' || category.slug === 'ipad')
+															? '/ipad_category.png'
+															: category.image_url ?? ''
+														} 
+														alt="" 
+														className="w-full h-full object-cover" 
+													/>
+												)}
 											</div>
 											<span className="font-medium text-card-foreground">{category.name}</span>
 										</div>

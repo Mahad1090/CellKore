@@ -38,6 +38,9 @@ function ProductsPageContent() {
 	const isIphoneSelected = selectedCategory === 'iphones' || selectedCategory === 'iphone'
 	const isSamsungSelected = selectedCategory === 'samsungs' || selectedCategory === 'samsung'
 	const isIpadSelected = selectedCategory === 'ipads' || selectedCategory === 'ipad'
+	const isLaptopSelected = selectedCategory === 'laptops' || selectedCategory === 'laptop'
+	const isTabletSelected = selectedCategory === 'tablets' || selectedCategory === 'tablet'
+	const isWatchSelected = selectedCategory === 'watches' || selectedCategory === 'watch'
 
 	useEffect(() => {
 		setSelectedCategory(searchParams.get('category') || 'all')
@@ -116,16 +119,55 @@ function ProductsPageContent() {
 						<div className="absolute inset-0 bg-black/45" />
 					</>
 				)}
+				{isLaptopSelected && (
+					<>
+						<video
+							src="/laptop_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
+				{isTabletSelected && (
+					<>
+						<video
+							src="/tablet_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
+				{isWatchSelected && (
+					<>
+						<video
+							src="/watch_banner.mp4"
+							autoPlay
+							loop
+							muted
+							playsInline
+							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
+						/>
+						<div className="absolute inset-0 bg-black/45" />
+					</>
+				)}
 				<div className="relative w-full px-4 sm:px-8 lg:px-12 z-10">
 					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">
-						{(isIphoneSelected || isSamsungSelected || isIpadSelected) ? (
+						{(isIphoneSelected || isSamsungSelected || isIpadSelected || isLaptopSelected || isTabletSelected || isWatchSelected) ? (
 							<span className="text-amber-400 font-semibold">Shop</span>
 						) : (
 							'Catalog'
 						)}
 					</p>
 					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
-						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : 'Shop Devices'}
+						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : 'Shop Devices'}
 					</h1>
 					{isIphoneSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
@@ -142,6 +184,21 @@ function ProductsPageContent() {
 							Premium, certified pre-owned and refurbished iPads. Fully tested, unlocked, and backed by our complete warranty.
 						</p>
 					)}
+					{isLaptopSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished laptops. Fully tested, cleared, and backed by our complete warranty.
+						</p>
+					)}
+					{isTabletSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished tablets. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
+					{isWatchSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished smartwatches. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
 				</div>
 			</section>
 
@@ -156,16 +213,6 @@ function ProductsPageContent() {
 						className="px-4 py-2.5 border border-border rounded-full bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all w-full sm:w-64"
 					/>
 					<div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-						<button
-							onClick={() => setSelectedCategory('all')}
-							className={`px-4 py-2 rounded-full text-[10px] font-semibold uppercase tracking-[0.14em] border transition-all cursor-pointer whitespace-nowrap ${
-								selectedCategory === 'all'
-									? 'bg-primary text-primary-foreground border-primary'
-									: 'border-border text-foreground/70 hover:border-primary hover:text-primary'
-							}`}
-						>
-							All
-						</button>
 						{categories.map((category) => (
 							<button
 								key={category.id}
@@ -199,7 +246,7 @@ function ProductsPageContent() {
 						<p className="text-muted-foreground text-sm">No products match your filters in this marketplace.</p>
 					</div>
 				) : (
-					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
 						{sorted.map((product) => (
 							<ProductCard key={product.id} product={product} />
 						))}

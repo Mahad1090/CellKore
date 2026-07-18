@@ -15,10 +15,10 @@ import { getLocalCart, getWishlist } from '@/lib/cart'
 import type { Category, Product } from '@/lib/types'
 import { primaryImage } from '@/lib/types'
 
-const MARKETPLACE_OPTIONS: { value: Marketplace; label: string }[] = [
-	{ value: 'US', label: 'US Marketplace' },
-	{ value: 'CA', label: 'Canada Marketplace' },
-	{ value: 'BOTH', label: 'US & Canada' },
+const MARKETPLACE_OPTIONS: { value: Marketplace; label: string; flag: string }[] = [
+	{ value: 'US', label: 'US Marketplace', flag: '🇺🇸' },
+	{ value: 'CA', label: 'Canada Marketplace', flag: '🇨🇦' },
+	{ value: 'BOTH', label: 'US & Canada', flag: '🇺🇸🇨🇦' },
 ]
 
 export function Navigation() {
@@ -35,6 +35,9 @@ export function Navigation() {
 	const [categories, setCategories] = useState<Category[]>([])
 	const [intBannerDismissed, setIntBannerDismissed] = useState(false)
 	const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+	const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+	const profileMenuRef = useRef<HTMLDivElement>(null)
+	const [drawerCategoriesOpen, setDrawerCategoriesOpen] = useState(false)
 
 	useEffect(() => {
 		const refreshCounts = () => {
@@ -47,6 +50,18 @@ export function Navigation() {
 		return () => {
 			window.removeEventListener('storage', refreshCounts)
 			window.removeEventListener('cellkore-cart-change', refreshCounts)
+		}
+	}, [])
+
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+				setProfileMenuOpen(false)
+			}
+		}
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
 		}
 	}, [])
 
@@ -64,12 +79,8 @@ export function Navigation() {
 
 	const navLinks = [
 		{ href: '/', label: 'Home', icon: Home },
-		{ href: '/products', label: 'Products', icon: Smartphone },
-		{ href: '/marketplace', label: 'Marketplace', icon: Store },
-		{ href: '/sell', label: 'Sell Your Phone', icon: DollarSign },
-		{ href: '/wholesale', label: 'Wholesale', icon: Package },
-		{ href: '/about', label: 'About', icon: Info },
-		{ href: '/contact', label: 'Contact', icon: Mail },
+		{ href: '/about', label: 'About Us', icon: Info },
+		{ href: '/contact', label: 'Contact Us', icon: Mail },
 	]
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,11 +146,10 @@ export function Navigation() {
 								<button
 									key={option.value}
 									onClick={() => setMarketplace(option.value)}
-									className={`px-4 py-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold transition-colors cursor-pointer ${
-										marketplace === option.value
-											? 'bg-primary text-primary-foreground'
-											: 'text-foreground/70 hover:bg-muted'
-									}`}
+									className={`px-4 py-1.5 text-[10px] uppercase tracking-[0.14em] font-semibold transition-colors cursor-pointer ${marketplace === option.value
+										? 'bg-primary text-primary-foreground'
+										: 'text-foreground/70 hover:bg-muted'
+										}`}
 								>
 									{option.label}
 								</button>
@@ -156,11 +166,11 @@ export function Navigation() {
 				</div>
 			)}
 
-			<nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
+			<nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[110px] md:min-h-[136px] py-4 gap-4">
 						{/* Left Block */}
-						<div className="flex items-center w-1/3 justify-start gap-2">
+						<div className="flex items-center w-1/3 justify-start gap-3">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -169,14 +179,43 @@ export function Navigation() {
 								{mobileMenuOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
 							</button>
 
+							<div className="hidden md:flex items-center space-x-4 lg:space-x-6">
+								{navLinks.map((link) => (
+									<Link
+										key={link.href}
+										href={link.href}
+										className="relative text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] font-semibold tracking-[0.12em] lg:tracking-[0.18em] uppercase py-1 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-primary after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
+									>
+										{link.label}
+									</Link>
+								))}
+							</div>
+						</div>
+
+						{/* Center Block - Logo + tagline */}
+						<div className="flex flex-col items-center justify-center w-1/3">
+							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
+								<img
+									src="/cellkore_apple_green.png"
+									alt="CellKore Logo"
+									className="h-24 md:h-32 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
+								/>
+								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1">
+									Your Premium Electronics Hub
+								</span>
+							</Link>
+						</div>
+
+						{/* Right Block - Actions */}
+						<div className="flex items-center justify-end w-1/3 space-x-2 lg:space-x-3">
 							{/* Persistent marketplace selector */}
-							<div className="relative">
+							<div className="relative mr-1 md:mr-2">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
 									className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
-									<Globe className="w-3.5 h-3.5" />
+									<span className="text-xs mr-0.5">{currentMarket?.flag ?? '🌐'}</span>
 									<span className="hidden sm:inline">{currentMarket?.label ?? 'Marketplace'}</span>
 									<span className="sm:hidden">{marketplace}</span>
 									<ChevronDown className="w-3 h-3" />
@@ -190,36 +229,19 @@ export function Navigation() {
 													setMarketplace(option.value)
 													setMarketMenuOpen(false)
 												}}
-												className={`w-full text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors cursor-pointer ${
-													marketplace === option.value
-														? 'bg-secondary text-primary'
-														: 'text-foreground/75 hover:bg-muted'
-												}`}
+												className={`w-full text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors cursor-pointer flex items-center gap-2 ${marketplace === option.value
+													? 'bg-secondary text-primary'
+													: 'text-foreground/75 hover:bg-muted'
+													}`}
 											>
-												{option.label}
+												<span className="text-xs">{option.flag}</span>
+												<span>{option.label}</span>
 											</button>
 										))}
 									</div>
 								)}
 							</div>
-						</div>
 
-						{/* Center Block - Logo + tagline */}
-						<div className="flex flex-col items-center justify-center w-1/3">
-							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
-								<img
-									src="/logo.jpeg"
-									alt="CellKore Logo"
-									className="h-24 md:h-32 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
-								/>
-								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1">
-									Your Premium Electronics Hub
-								</span>
-							</Link>
-						</div>
-
-						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-1/3 space-x-2 lg:space-x-3">
 							<div className="hidden xl:flex items-center max-w-[200px] mr-2">
 								<form onSubmit={handleSearchSubmit} className="w-full">
 									<div className="relative">
@@ -276,25 +298,16 @@ export function Navigation() {
 								<Search className="w-4.5 h-4.5" />
 							</button>
 
-							{/* For Buyers → terms */}
-							<Link
-								href="/terms"
-								className="hidden lg:flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em]"
-							>
-								<BookOpen className="w-3.5 h-3.5" />
-								For Buyers
-							</Link>
-
-							<Link href="/wishlist" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-primary">
-								<Heart className="w-4.5 h-4.5" />
+							<Link href="/wishlist" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-rose-500">
+								<Heart className={`w-4.5 h-4.5 transition-colors duration-300 ${wishlistCount > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
 								{wishlistCount > 0 && (
-									<span className="absolute top-0 right-0 bg-primary text-primary-foreground text-[9px] rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">
+									<span className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold animate-pulse">
 										{wishlistCount}
 									</span>
 								)}
 							</Link>
 
-							<Link href="/cart" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-primary">
+							<Link href="/cart" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-primary mr-1">
 								<ShoppingCart className="w-4.5 h-4.5" />
 								{cartCount > 0 && (
 									<span className="absolute top-0 right-0 bg-primary text-primary-foreground text-[9px] rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">
@@ -303,65 +316,61 @@ export function Navigation() {
 								)}
 							</Link>
 
-							{user ? (
-								<div className="hidden sm:flex items-center gap-3">
-									<span className="text-[11px] text-foreground/75 font-light tracking-wider truncate max-w-[80px]">{user.email}</span>
-									<Button
-										onClick={() => signOut()}
-										variant="outline"
-										className="text-[10px] border-border/80 hover:bg-muted hover:border-primary hover:text-primary text-foreground font-medium tracking-[0.18em] uppercase px-4 py-1.5 rounded-full cursor-pointer transition-all"
-									>
-										Sign Out
-									</Button>
-								</div>
-							) : (
-								<div className="hidden sm:flex items-center gap-1.5">
-									<Link href="/auth/signin">
-										<Button variant="ghost" className="text-[10px] text-foreground hover:text-primary hover:bg-transparent font-medium tracking-[0.18em] uppercase cursor-pointer px-3">
-											Sign In
-										</Button>
-									</Link>
-									<Link href="/auth/signup">
-										<Button className="text-[10px] bg-primary hover:opacity-90 text-primary-foreground font-medium tracking-[0.18em] uppercase px-5 py-2.5 rounded-full cursor-pointer shadow-sm border border-accent/20 transition-all">
-											Sign Up
-										</Button>
-									</Link>
-								</div>
-							)}
-						</div>
-					</div>
-
-					{/* Primary nav row */}
-					<div className="hidden md:flex items-center justify-center py-3 border-t border-accent/10">
-						<div className="flex items-center space-x-6 lg:space-x-8 xl:space-x-12">
-							{navLinks.map((link) => (
-								<Link
-									key={link.href}
-									href={link.href}
-									className="relative text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] font-medium tracking-[0.12em] lg:tracking-[0.18em] uppercase py-1 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
+							{/* Profile Dropdown */}
+							<div className="relative animate-fade-in" ref={profileMenuRef}>
+								<button
+									onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+									className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
-									{link.label}
-								</Link>
-							))}
-						</div>
-					</div>
-
-					{/* Dynamic category navigation (categories table, is_active, sort_order) */}
-					{categories.length > 0 && (
-						<div className="hidden md:flex items-center justify-center pb-3">
-							<div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-								{categories.map((category) => (
-									<Link
-										key={category.id}
-										href={`/products?category=${category.slug}`}
-										className="px-4 py-1.5 rounded-full border border-border/70 text-[10px] font-medium uppercase tracking-[0.14em] text-foreground/70 hover:text-primary hover:border-primary hover:bg-secondary transition-all whitespace-nowrap"
-									>
-										{category.name}
-									</Link>
-								))}
+									<User className="w-3.5 h-3.5" />
+									<span>Profile</span>
+									<ChevronDown className="w-3 h-3 transition-transform duration-300" style={{ transform: profileMenuOpen ? 'rotate(180deg)' : 'none' }} />
+								</button>
+								{profileMenuOpen && (
+									<div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
+										{user ? (
+											<div className="py-2">
+												<div className="px-5 py-3 border-b border-border">
+													<p className="text-[10px] text-muted-foreground uppercase tracking-wider">Signed in as</p>
+													<p className="text-xs font-semibold text-foreground truncate mt-0.5">{user.email}</p>
+												</div>
+												<Link href="/account" onClick={() => setProfileMenuOpen(false)}>
+													<span className="block px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/75 hover:bg-muted hover:text-primary transition-colors cursor-pointer">
+														My Account
+													</span>
+												</Link>
+												<button
+													onClick={() => {
+														signOut()
+														setProfileMenuOpen(false)
+													}}
+													className="w-full text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-red-500 hover:bg-muted transition-colors cursor-pointer border-t border-border"
+												>
+													Sign Out
+												</button>
+											</div>
+										) : (
+											<div className="py-1">
+												<Link href="/auth/signin" onClick={() => setProfileMenuOpen(false)}>
+													<span className="block px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/75 hover:bg-muted hover:text-primary transition-colors cursor-pointer">
+														Sign In
+													</span>
+												</Link>
+												<Link href="/auth/signup" onClick={() => setProfileMenuOpen(false)}>
+													<span className="block px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/75 hover:bg-muted hover:text-primary transition-colors cursor-pointer border-t border-border">
+														Sign Up
+													</span>
+												</Link>
+											</div>
+										)}
+									</div>
+								)}
 							</div>
 						</div>
-					)}
+					</div>
+
+
+
 				</div>
 			</nav>
 
@@ -376,7 +385,7 @@ export function Navigation() {
 						<div>
 							<div className="relative flex flex-col items-center justify-center pb-6 border-b border-border/60">
 								<Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
-									<img src="/logo.jpeg" alt="CellKore Logo" className="h-24 w-auto object-contain rounded" />
+									<img src="/cellkore_apple_green.png" alt="CellKore Logo" className="h-24 w-auto object-contain rounded" />
 								</Link>
 								<button
 									onClick={() => setMobileMenuOpen(false)}
@@ -387,94 +396,111 @@ export function Navigation() {
 								</button>
 							</div>
 
-							<nav className="mt-8 space-y-2">
-								{navLinks.map((link) => {
-									const Icon = link.icon
-									return (
-										<Link
-											key={link.href}
-											href={link.href}
-											className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-											onClick={() => setMobileMenuOpen(false)}
-										>
-											<Icon className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-											<span className="group-hover:translate-x-1 transition-transform duration-300">{link.label}</span>
-										</Link>
-									)
-								})}
+							<nav className="mt-8 space-y-1">
+								{/* Home */}
 								<Link
-									href="/terms"
+									href="/"
 									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
 									onClick={() => setMobileMenuOpen(false)}
 								>
-									<BookOpen className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">For Buyers</span>
+									<Home className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Home</span>
+								</Link>
+
+								{/* Products */}
+								<Link
+									href="/products"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Smartphone className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Products</span>
+								</Link>
+
+								{/* Marketplace */}
+								<Link
+									href="/marketplace"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Store className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Marketplace</span>
+								</Link>
+
+								{/* Sell Your Phone */}
+								<Link
+									href="/sell"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<DollarSign className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Phone</span>
+								</Link>
+
+								{/* Wholesale */}
+								<Link
+									href="/wholesale"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Package className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Wholesale</span>
+								</Link>
+
+								{/* Shop by Category Accordion */}
+								{categories.length > 0 && (
+									<div className="space-y-1">
+										<button
+											onClick={() => setDrawerCategoriesOpen(!drawerCategoriesOpen)}
+											className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase cursor-pointer"
+										>
+											<span className="flex items-center gap-4">
+												<Globe className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+												<span>Shop Categories</span>
+											</span>
+											<ChevronDown className="w-3.5 h-3.5 transition-transform duration-300" style={{ transform: drawerCategoriesOpen ? 'rotate(180deg)' : 'none' }} />
+										</button>
+										{drawerCategoriesOpen && (
+											<div className="pl-12 pr-4 py-2 space-y-3 border-l border-border/80 ml-6 animate-in fade-in slide-in-from-top-1 duration-200">
+												{categories.map((category) => (
+													<Link
+														key={category.id}
+														href={`/products?category=${category.slug}`}
+														onClick={() => setMobileMenuOpen(false)}
+														className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/70 hover:text-primary transition-colors"
+													>
+														{category.name}
+													</Link>
+												))}
+											</div>
+										)}
+									</div>
+								)}
+
+								{/* About Us */}
+								<Link
+									href="/about"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Info className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">About Us</span>
+								</Link>
+
+								{/* Contact Us */}
+								<Link
+									href="/contact"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Mail className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Contact Us</span>
 								</Link>
 							</nav>
-
-							{categories.length > 0 && (
-								<div className="mt-8 pt-6 border-t border-border/60">
-									<p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground mb-4">Shop by Category</p>
-									<div className="flex flex-wrap gap-2">
-										{categories.map((category) => (
-											<Link
-												key={category.id}
-												href={`/products?category=${category.slug}`}
-												onClick={() => setMobileMenuOpen(false)}
-												className="px-3.5 py-1.5 rounded-full border border-border/70 text-[10px] font-medium uppercase tracking-[0.12em] text-foreground/70 hover:text-primary hover:border-primary transition-all"
-											>
-												{category.name}
-											</Link>
-										))}
-									</div>
-								</div>
-							)}
-						</div>
-
-						<div className="pt-6 border-t border-border/60 mt-8">
-							{user ? (
-								<div className="space-y-4">
-									<div className="flex items-center gap-3 bg-secondary p-3 rounded-2xl border border-border/60">
-										<div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-											<User className="w-5 h-5" />
-										</div>
-										<div className="flex-1 min-w-0">
-											<p className="text-[10px] text-muted-foreground uppercase tracking-widest">Logged In As</p>
-											<p className="text-xs text-foreground font-medium truncate mt-0.5">{user.email}</p>
-										</div>
-									</div>
-									<button
-										onClick={() => {
-											signOut()
-											setMobileMenuOpen(false)
-										}}
-										className="w-full text-center py-3 bg-background hover:bg-muted border border-border/80 text-foreground text-xs font-semibold tracking-widest uppercase rounded-full cursor-pointer transition-all"
-									>
-										Sign Out
-									</button>
-								</div>
-							) : (
-								<div className="flex flex-col gap-3">
-									<Link
-										href="/auth/signin"
-										className="w-full text-center py-3 border border-border/80 hover:bg-muted text-foreground text-xs font-semibold tracking-widest uppercase rounded-full transition-all"
-										onClick={() => setMobileMenuOpen(false)}
-									>
-										Sign In
-									</Link>
-									<Link
-										href="/auth/signup"
-										className="w-full text-center py-3 bg-primary hover:opacity-95 text-primary-foreground text-xs font-bold tracking-widest uppercase rounded-full transition-all"
-										onClick={() => setMobileMenuOpen(false)}
-									>
-										Sign Up
-									</Link>
-								</div>
-							)}
-						</div>
 					</div>
 				</div>
-			)}
+			</div>
+		)}
 		</div>
 	)
 }
