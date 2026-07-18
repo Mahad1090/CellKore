@@ -102,7 +102,9 @@ export default function Home() {
 											<img 
 												src={coverImage || ''} 
 												alt={category.name} 
-												className="w-full h-full object-cover scale-[1.09] transition-transform duration-500 group-hover:scale-[1.15]" 
+												className={`w-full h-full object-cover scale-100 transition-transform duration-500 group-hover:scale-[1.05] ${
+													isSamsung ? 'object-[40%_center]' : 'object-center'
+												}`} 
 											/>
 										) : (
 											<>
