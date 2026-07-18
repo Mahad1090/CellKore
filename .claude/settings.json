@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat \"/c/Users/HP/AppData/Local/Temp/claude/d--CellKore/e740b164-6d3a-49dc-a59d-031a385acd89/tasks/bium2akw4.output\")",
+      "Read(//c/Users/HP/AppData/Local/Temp/claude/d--CellKore/e740b164-6d3a-49dc-a59d-031a385acd89/tasks/**)",
+      "Bash(git -C /d/CellKore mv admin-role-migration.sql sql/admin-role-migration.sql)",
+      "Bash(git -C /d/CellKore mv database.sql sql/database.sql)",
+      "Bash(git -C /d/CellKore mv supabase-setup.sql sql/supabase-setup.sql)",
+      "Bash(git -C /d/CellKore status)"
+    ]
+  }
+}

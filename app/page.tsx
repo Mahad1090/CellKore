@@ -34,7 +34,15 @@ export default function Home() {
 
 			{/* Hero Section */}
 			<section className="relative text-white w-full min-h-[420px] py-16 sm:py-0 sm:min-h-0 sm:aspect-video sm:max-h-[500px] overflow-hidden flex items-center justify-center">
-				<video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
+				<video
+					autoPlay
+					loop
+					muted
+					playsInline
+					preload="auto"
+					poster="/hero_banner_poster.jpg"
+					className="absolute inset-0 w-full h-full object-cover z-0"
+				>
 					<source src="/hero_banner_video.mp4" type="video/mp4" />
 				</video>
 				<div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/50 to-primary/40 z-10"></div>

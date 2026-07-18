@@ -42,6 +42,20 @@ function ProductsPageContent() {
 	const isTabletSelected = selectedCategory === 'tablets' || selectedCategory === 'tablet'
 	const isWatchSelected = selectedCategory === 'watches' || selectedCategory === 'watch'
 
+	const bannerVideo = isIphoneSelected
+		? 'iphone_banner'
+		: isSamsungSelected
+			? 'samsung_banner'
+			: isIpadSelected
+				? 'ipad_banner'
+				: isLaptopSelected
+					? 'laptop_banner'
+					: isTabletSelected
+						? 'tablet_banner'
+						: isWatchSelected
+							? 'watch_banner'
+							: null
+
 	useEffect(() => {
 		setSelectedCategory(searchParams.get('category') || 'all')
 		setSearchQuery(searchParams.get('search') || '')
@@ -80,79 +94,17 @@ function ProductsPageContent() {
 			<Navigation />
 
 			<section className="relative bg-primary text-primary-foreground pt-36 pb-24 overflow-hidden min-h-[450px] flex items-end">
-				{isIphoneSelected && (
+				{bannerVideo && (
 					<>
 						<video
-							src="/iphone_banner.mp4"
+							key={bannerVideo}
+							src={`/${bannerVideo}.mp4`}
+							poster={`/${bannerVideo}_poster.jpg`}
 							autoPlay
 							loop
 							muted
 							playsInline
-							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
-						/>
-						<div className="absolute inset-0 bg-black/45" />
-					</>
-				)}
-				{isSamsungSelected && (
-					<>
-						<video
-							src="/samsung_banner.mp4"
-							autoPlay
-							loop
-							muted
-							playsInline
-							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
-						/>
-						<div className="absolute inset-0 bg-black/45" />
-					</>
-				)}
-				{isIpadSelected && (
-					<>
-						<video
-							src="/ipad_banner.mp4"
-							autoPlay
-							loop
-							muted
-							playsInline
-							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
-						/>
-						<div className="absolute inset-0 bg-black/45" />
-					</>
-				)}
-				{isLaptopSelected && (
-					<>
-						<video
-							src="/laptop_banner.mp4"
-							autoPlay
-							loop
-							muted
-							playsInline
-							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
-						/>
-						<div className="absolute inset-0 bg-black/45" />
-					</>
-				)}
-				{isTabletSelected && (
-					<>
-						<video
-							src="/tablet_banner.mp4"
-							autoPlay
-							loop
-							muted
-							playsInline
-							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
-						/>
-						<div className="absolute inset-0 bg-black/45" />
-					</>
-				)}
-				{isWatchSelected && (
-					<>
-						<video
-							src="/watch_banner.mp4"
-							autoPlay
-							loop
-							muted
-							playsInline
+							preload="auto"
 							className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
 						/>
 						<div className="absolute inset-0 bg-black/45" />
