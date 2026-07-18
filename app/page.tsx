@@ -33,7 +33,7 @@ export default function Home() {
 			<Navigation />
 
 			{/* Hero Section */}
-			<section className="relative text-white w-full aspect-video max-h-[500px] overflow-hidden flex items-center justify-center">
+			<section className="relative text-white w-full min-h-[420px] py-16 sm:py-0 sm:min-h-0 sm:aspect-video sm:max-h-[500px] overflow-hidden flex items-center justify-center">
 				<video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover z-0">
 					<source src="/hero_banner_video.mp4" type="video/mp4" />
 				</video>
@@ -41,10 +41,10 @@ export default function Home() {
 
 				<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
 					<div className="text-center">
-						<h1 className="text-4xl md:text-6xl font-bold mb-4 tracking-luxury uppercase drop-shadow-md">
+						<h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 tracking-luxury uppercase drop-shadow-md">
 							Welcome to CellKore
 						</h1>
-						<p className="text-lg md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm">
+						<p className="text-base sm:text-lg md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm">
 							Your Premium Electronics Hub — buy, wholesale, and sell devices with confidence
 						</p>
 						<div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -67,7 +67,7 @@ export default function Home() {
 
 			{/* Categories (dynamic) */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-				<h2 className="text-3xl font-bold mb-8 text-foreground tracking-luxury uppercase">Shop by Category</h2>
+				<h2 className="text-2xl sm:text-3xl font-bold mb-8 text-foreground tracking-luxury uppercase">Shop by Category</h2>
 				{categories === null ? (
 					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
 						{Array.from({ length: 6 }).map((_, i) => (
@@ -130,8 +130,8 @@ export default function Home() {
 
 			{/* Latest Products (marketplace-filtered) */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-				<div className="flex items-end justify-between mb-8">
-					<h2 className="text-3xl font-bold text-foreground tracking-luxury uppercase">Featured Products</h2>
+				<div className="flex flex-wrap items-end justify-between gap-3 mb-8">
+					<h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-luxury uppercase">Featured Products</h2>
 					<Link
 						href="/products"
 						className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary hover:opacity-80 transition-opacity"
@@ -159,8 +159,8 @@ export default function Home() {
 			{/* Wholesale CTA */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 				<div className="bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-3xl p-8 md:p-12 text-center shadow-lg">
-					<h2 className="text-3xl font-bold mb-4 tracking-luxury uppercase">Wholesale Program Available</h2>
-					<p className="text-lg opacity-90 mb-6 font-light">
+					<h2 className="text-2xl sm:text-3xl font-bold mb-4 tracking-luxury uppercase">Wholesale Program Available</h2>
+					<p className="text-base sm:text-lg opacity-90 mb-6 font-light">
 						Are you a business owner? Get bulk pricing and exclusive wholesale lot manifests
 					</p>
 					<Link

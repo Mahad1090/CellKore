@@ -168,7 +168,7 @@ export function Navigation() {
 
 			<nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between min-h-[110px] md:min-h-[136px] py-4 gap-4">
+					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4">
 						{/* Left Block */}
 						<div className="flex items-center w-1/3 justify-start gap-3">
 							<button
@@ -198,7 +198,7 @@ export function Navigation() {
 								<img
 									src="/cellkore_apple_green.png"
 									alt="CellKore Logo"
-									className="h-24 md:h-32 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
+									className="h-14 sm:h-20 md:h-32 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
 								/>
 								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1">
 									Your Premium Electronics Hub
@@ -207,13 +207,13 @@ export function Navigation() {
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-1/3 space-x-2 lg:space-x-3">
+						<div className="flex items-center justify-end w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3">
 							{/* Persistent marketplace selector */}
 							<div className="relative mr-1 md:mr-2">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
-									className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
+									className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
 									<span className="text-xs mr-0.5">{currentMarket?.flag ?? '🌐'}</span>
 									<span className="hidden sm:inline">{currentMarket?.label ?? 'Marketplace'}</span>
@@ -221,7 +221,7 @@ export function Navigation() {
 									<ChevronDown className="w-3 h-3" />
 								</button>
 								{marketMenuOpen && (
-									<div className="absolute top-full left-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[190px] animate-in fade-in slide-in-from-top-2 duration-200">
+									<div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[190px] animate-in fade-in slide-in-from-top-2 duration-200">
 										{MARKETPLACE_OPTIONS.map((option) => (
 											<button
 												key={option.value}
@@ -320,10 +320,10 @@ export function Navigation() {
 							<div className="relative animate-fade-in" ref={profileMenuRef}>
 								<button
 									onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-									className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
+									className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
 									<User className="w-3.5 h-3.5" />
-									<span>Profile</span>
+									<span className="hidden sm:inline">Profile</span>
 									<ChevronDown className="w-3 h-3 transition-transform duration-300" style={{ transform: profileMenuOpen ? 'rotate(180deg)' : 'none' }} />
 								</button>
 								{profileMenuOpen && (
