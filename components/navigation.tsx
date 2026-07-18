@@ -15,11 +15,49 @@ import { getLocalCart, getWishlist } from '@/lib/cart'
 import type { Category, Product } from '@/lib/types'
 import { primaryImage } from '@/lib/types'
 
-const MARKETPLACE_OPTIONS: { value: Marketplace; label: string; flag: string }[] = [
-	{ value: 'US', label: 'US Marketplace', flag: '🇺🇸' },
-	{ value: 'CA', label: 'Canada Marketplace', flag: '🇨🇦' },
-	{ value: 'BOTH', label: 'US & Canada', flag: '🇺🇸🇨🇦' },
+const MARKETPLACE_OPTIONS: { value: Marketplace; label: string }[] = [
+	{ value: 'US', label: 'US Marketplace' },
+	{ value: 'CA', label: 'Canada Marketplace' },
+	{ value: 'BOTH', label: 'US & Canada' },
 ]
+
+function UsFlag({ className }: { className?: string }) {
+	return (
+		<svg viewBox="0 0 20 14" className={className} aria-hidden="true">
+			<rect width="20" height="14" rx="1.5" fill="#fff" />
+			{[0, 2, 4, 6, 8, 10, 12].map((y) => (
+				<rect key={y} y={y} width="20" height="1.0769" fill="#B22234" />
+			))}
+			<rect width="8" height="7.5385" rx="1" fill="#3C3B6E" />
+		</svg>
+	)
+}
+
+function CaFlag({ className }: { className?: string }) {
+	return (
+		<svg viewBox="0 0 20 14" className={className} aria-hidden="true">
+			<rect width="20" height="14" rx="1.5" fill="#fff" />
+			<rect width="5" height="14" fill="#FF0000" />
+			<rect x="15" width="5" height="14" fill="#FF0000" />
+			<path
+				d="M10 3.2l0.55 1.45 1.45-0.65-0.45 1.45 1.5 0.15-1.05 1.1 0.9 1.15-1.5-0.1 0.15 1.5-1.25-0.8-0.3 1.5-0.3-1.5-1.25 0.8 0.15-1.5-1.5 0.1 0.9-1.15-1.05-1.1 1.5-0.15-0.45-1.45 1.45 0.65z"
+				fill="#FF0000"
+			/>
+		</svg>
+	)
+}
+
+function MarketFlag({ value, className }: { value: Marketplace; className?: string }) {
+	if (value === 'BOTH') {
+		return (
+			<span className="inline-flex -space-x-1.5">
+				<UsFlag className={className} />
+				<CaFlag className={className} />
+			</span>
+		)
+	}
+	return value === 'US' ? <UsFlag className={className} /> : <CaFlag className={className} />
+}
 
 export function Navigation() {
 	const router = useRouter()
@@ -170,10 +208,10 @@ export function Navigation() {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4">
 						{/* Left Block */}
-						<div className="flex items-center w-1/3 justify-start gap-3">
+						<div className="flex items-center w-auto md:w-1/3 justify-start gap-2 md:gap-3">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-								className="p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
+								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
 								aria-label="Toggle Menu"
 							>
 								{mobileMenuOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
@@ -193,7 +231,7 @@ export function Navigation() {
 						</div>
 
 						{/* Center Block - Logo + tagline */}
-						<div className="flex flex-col items-center justify-center w-1/3">
+						<div className="flex flex-col items-center justify-center flex-1 min-w-0 md:flex-none md:w-1/3">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
 									src="/cellkore_apple_green.png"
@@ -207,17 +245,20 @@ export function Navigation() {
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3">
+						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3">
 							{/* Persistent marketplace selector */}
-							<div className="relative mr-1 md:mr-2">
+							<div className="relative md:mr-2">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
 									className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
-									<span className="text-xs mr-0.5">{currentMarket?.flag ?? '🌐'}</span>
+									{currentMarket ? (
+										<MarketFlag value={currentMarket.value} className="w-4 h-3 mr-0.5 rounded-[2px] shadow-sm" />
+									) : (
+										<Globe className="w-3.5 h-3.5 mr-0.5" />
+									)}
 									<span className="hidden sm:inline">{currentMarket?.label ?? 'Marketplace'}</span>
-									<span className="sm:hidden">{marketplace}</span>
 									<ChevronDown className="w-3 h-3" />
 								</button>
 								{marketMenuOpen && (
@@ -234,7 +275,7 @@ export function Navigation() {
 													: 'text-foreground/75 hover:bg-muted'
 													}`}
 											>
-												<span className="text-xs">{option.flag}</span>
+												<MarketFlag value={option.value} className="w-4 h-3 rounded-[2px] shadow-sm" />
 												<span>{option.label}</span>
 											</button>
 										))}
@@ -292,13 +333,13 @@ export function Navigation() {
 
 							<button
 								onClick={() => router.push('/products')}
-								className="xl:hidden p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
+								className="xl:hidden p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
 								aria-label="Search products"
 							>
 								<Search className="w-4.5 h-4.5" />
 							</button>
 
-							<Link href="/wishlist" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-rose-500">
+							<Link href="/wishlist" className="relative p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-rose-500">
 								<Heart className={`w-4.5 h-4.5 transition-colors duration-300 ${wishlistCount > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
 								{wishlistCount > 0 && (
 									<span className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold animate-pulse">
@@ -307,7 +348,7 @@ export function Navigation() {
 								)}
 							</Link>
 
-							<Link href="/cart" className="relative p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-primary mr-1">
+							<Link href="/cart" className="relative p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground hover:text-primary sm:mr-1">
 								<ShoppingCart className="w-4.5 h-4.5" />
 								{cartCount > 0 && (
 									<span className="absolute top-0 right-0 bg-primary text-primary-foreground text-[9px] rounded-full w-4.5 h-4.5 flex items-center justify-center font-bold">
@@ -320,11 +361,11 @@ export function Navigation() {
 							<div className="relative animate-fade-in" ref={profileMenuRef}>
 								<button
 									onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-									className="flex items-center gap-1.5 px-2.5 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
+									className="flex items-center gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
 								>
 									<User className="w-3.5 h-3.5" />
 									<span className="hidden sm:inline">Profile</span>
-									<ChevronDown className="w-3 h-3 transition-transform duration-300" style={{ transform: profileMenuOpen ? 'rotate(180deg)' : 'none' }} />
+									<ChevronDown className="hidden sm:block w-3 h-3 transition-transform duration-300" style={{ transform: profileMenuOpen ? 'rotate(180deg)' : 'none' }} />
 								</button>
 								{profileMenuOpen && (
 									<div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
