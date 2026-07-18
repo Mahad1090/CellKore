@@ -17,30 +17,33 @@ export type AdminPermission =
 	| 'analytics:read'
 	| 'newsletter:read'
 
-/**
- * Role capability matrix:
- *  - super_admin: everything, incl. system config and admin accounts
- *  - editor: catalog/wholesale/CMS writes; read-only orders & inquiries
- *  - support: sell-request / inquiry / order status writes; read-only catalog
- */
-const MATRIX: Record<AdminPermission, AdminRole[]> = {
-	'products:read': ['super_admin', 'editor', 'support'],
-	'products:write': ['super_admin', 'editor'],
-	'categories:write': ['super_admin', 'editor'],
-	'wholesale:write': ['super_admin', 'editor'],
-	'cms:write': ['super_admin', 'editor'],
-	'orders:read': ['super_admin', 'editor', 'support'],
-	'orders:write': ['super_admin', 'support'],
-	'sell-requests:read': ['super_admin', 'editor', 'support'],
-	'sell-requests:write': ['super_admin', 'support'],
-	'inquiries:read': ['super_admin', 'editor', 'support'],
-	'inquiries:write': ['super_admin', 'support'],
-	'settings:write': ['super_admin'],
-	'admin-users:write': ['super_admin'],
-	'analytics:read': ['super_admin', 'editor', 'support'],
-	'newsletter:read': ['super_admin', 'editor', 'support'],
+export function normalizeAdminRole(role: AdminRole | string): AdminRole {
+	return role === 'super_admin' ? 'super_admin' : 'admin'
 }
 
-export function roleHasPermission(role: AdminRole, permission: AdminPermission): boolean {
-	return MATRIX[permission]?.includes(role) ?? false
+/**
+ * Role capability matrix:
+ *  - super_admin: everything, including admin account management
+ *  - admin: everything except creating/updating/deleting admin accounts
+ */
+const MATRIX: Record<AdminPermission, AdminRole[]> = {
+	'products:read': ['super_admin', 'admin'],
+	'products:write': ['super_admin', 'admin'],
+	'categories:write': ['super_admin', 'admin'],
+	'wholesale:write': ['super_admin', 'admin'],
+	'cms:write': ['super_admin', 'admin'],
+	'orders:read': ['super_admin', 'admin'],
+	'orders:write': ['super_admin', 'admin'],
+	'sell-requests:read': ['super_admin', 'admin'],
+	'sell-requests:write': ['super_admin', 'admin'],
+	'inquiries:read': ['super_admin', 'admin'],
+	'inquiries:write': ['super_admin', 'admin'],
+	'settings:write': ['super_admin', 'admin'],
+	'admin-users:write': ['super_admin'],
+	'analytics:read': ['super_admin', 'admin'],
+	'newsletter:read': ['super_admin', 'admin'],
+}
+
+export function roleHasPermission(role: AdminRole | string, permission: AdminPermission): boolean {
+	return MATRIX[permission]?.includes(normalizeAdminRole(role)) ?? false
 }

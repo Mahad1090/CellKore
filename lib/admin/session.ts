@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
-import { roleHasPermission, type AdminPermission } from '@/lib/admin/rbac'
+import { normalizeAdminRole, roleHasPermission, type AdminPermission } from '@/lib/admin/rbac'
 import type { AdminRole } from '@/lib/types'
 
 export const ADMIN_COOKIE = 'cellkore_admin_token'
@@ -37,7 +37,7 @@ export async function verifyAdminToken(token: string): Promise<AdminSessionPaylo
 			sub: payload.sub,
 			email: String(payload.email ?? ''),
 			name: String(payload.name ?? ''),
-			role: payload.role as AdminRole,
+			role: normalizeAdminRole(String(payload.role)),
 		}
 	} catch {
 		return null
@@ -73,7 +73,7 @@ export async function requireAdmin(
 		return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
 	}
 
-	const role = adminRow.role as AdminRole
+	const role = normalizeAdminRole(adminRow.role as AdminRole)
 	if (permission && !roleHasPermission(role, permission)) {
 		return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
 	}

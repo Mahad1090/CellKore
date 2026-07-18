@@ -6,12 +6,12 @@ import { PageTitle, EmptyState, Modal, adminButton, adminButtonGhost, adminInput
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
+import { normalizeAdminRole } from '@/lib/admin/rbac'
 import type { AdminUser, AdminRole } from '@/lib/types'
 
 const ROLES: { value: AdminRole; label: string; description: string }[] = [
-	{ value: 'super_admin', label: 'Super Admin', description: 'Full access incl. system config and admin accounts' },
-	{ value: 'editor', label: 'Editor', description: 'Catalog, wholesale & CMS writes; read-only orders' },
-	{ value: 'support', label: 'Support', description: 'Sell requests, inquiries & order statuses' },
+	{ value: 'super_admin', label: 'Super Admin', description: 'Full access, including admin account management' },
+	{ value: 'admin', label: 'Admin', description: 'Full access except creating, editing, or deleting admin accounts' },
 ]
 
 interface AdminForm {
@@ -22,7 +22,7 @@ interface AdminForm {
 	role: AdminRole
 }
 
-const EMPTY: AdminForm = { full_name: '', email: '', password: '', role: 'editor' }
+const EMPTY: AdminForm = { full_name: '', email: '', password: '', role: 'admin' }
 
 export default function AdminUsersPage() {
 	const { toast, confirm } = useToast()
@@ -103,6 +103,15 @@ export default function AdminUsersPage() {
 
 	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
 
+	const openEditor = (admin: AdminUser) =>
+		setEditing({
+			id: admin.id,
+			full_name: admin.full_name,
+			email: admin.email,
+			password: '',
+			role: normalizeAdminRole(admin.role),
+		})
+
 	return (
 		<div>
 			<PageTitle
@@ -151,9 +160,7 @@ export default function AdminUsersPage() {
 									<td className="px-5 py-3.5">
 										<div className="flex items-center gap-1.5 justify-end">
 											<button
-												onClick={() =>
-													setEditing({ id: admin.id, full_name: admin.full_name, email: admin.email, password: '', role: admin.role })
-												}
+												onClick={() => openEditor(admin)}
 												className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
 												aria-label="Edit"
 											>

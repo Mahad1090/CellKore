@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { createServiceClient } from '@/lib/supabase-server'
 import { signAdminToken, ADMIN_COOKIE } from '@/lib/admin/session'
+import { normalizeAdminRole } from '@/lib/admin/rbac'
 
 export async function POST(request: NextRequest) {
 	const { email, password } = await request.json().catch(() => ({}))
@@ -25,11 +26,12 @@ export async function POST(request: NextRequest) {
 		sub: admin.id,
 		email: admin.email,
 		name: admin.full_name,
-		role: admin.role,
+		role: normalizeAdminRole(admin.role),
 	})
+	const role = normalizeAdminRole(admin.role)
 
 	const response = NextResponse.json({
-		admin: { id: admin.id, email: admin.email, name: admin.full_name, role: admin.role },
+		admin: { id: admin.id, email: admin.email, name: admin.full_name, role },
 	})
 	response.cookies.set(ADMIN_COOKIE, token, {
 		httpOnly: true,

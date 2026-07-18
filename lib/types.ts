@@ -18,7 +18,7 @@ export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'deliv
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded' | 'failed'
 export type InquiryStatus = 'new' | 'responded'
 export type SellPhoneStatus = 'submitted' | 'reviewed' | 'quoted' | 'contacted' | 'closed'
-export type AdminRole = 'super_admin' | 'editor' | 'support'
+export type AdminRole = 'super_admin' | 'admin'
 
 export interface Category {
 	id: string

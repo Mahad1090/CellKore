@@ -6,8 +6,7 @@ import { useAdmin } from '@/contexts/admin-context'
 
 const ROLE_LABELS: Record<string, string> = {
 	super_admin: 'Super Admin',
-	editor: 'Editor',
-	support: 'Support',
+	admin: 'Admin',
 }
 
 export function AdminHeader() {

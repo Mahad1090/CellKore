@@ -30,7 +30,7 @@ create type repair_status as enum (
   'rejected',
   'completed'
 );
-create type admin_role as enum ('super_admin', 'editor', 'support');
+create type admin_role as enum ('super_admin', 'admin');
 
 -- ---------------------------------------------------------------------
 -- USERS & ACCESS
@@ -65,7 +65,7 @@ create table admin_users (
   full_name text not null,
   email text not null unique,
   password_hash text not null,
-  role admin_role not null default 'editor',
+  role admin_role not null default 'admin',
   created_at timestamptz not null default now()
 );
 

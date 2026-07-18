@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
 
-const ROLES = ['super_admin', 'editor', 'support']
+const ROLES = ['super_admin', 'admin'] as const
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	const auth = await requireAdmin(request, 'admin-users:write')
