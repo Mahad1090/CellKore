@@ -234,7 +234,7 @@ export function Navigation() {
 						<div className="flex flex-col items-center justify-center flex-1 min-w-0 md:flex-none md:w-1/3">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
-									src="/cellkore_apple_green.png"
+									src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
 									className="h-14 sm:h-20 md:h-32 w-auto object-contain rounded transition-transform group-hover:scale-105 duration-300"
 								/>
@@ -426,7 +426,7 @@ export function Navigation() {
 						<div>
 							<div className="relative flex flex-col items-center justify-center pb-6 border-b border-border/60">
 								<Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
-									<img src="/cellkore_apple_green.png" alt="CellKore Logo" className="h-24 w-auto object-contain rounded" />
+									<img src="/cellkore_apple_green.webp" alt="CellKore Logo" className="h-24 w-auto object-contain rounded" />
 								</Link>
 								<button
 									onClick={() => setMobileMenuOpen(false)}

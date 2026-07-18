@@ -94,12 +94,12 @@ export default function Home() {
 							const hasCustomCover = isIphone || isSamsung || isIpad || isTablet || isWatch || isLaptop
 							
 							let coverImage = null
-							if (isIphone) coverImage = '/iphone_category.png'
-							else if (isSamsung) coverImage = '/samsung_category.png'
-							else if (isIpad) coverImage = '/ipad_category.png'
-							else if (isTablet) coverImage = '/tablets_category.png'
-							else if (isWatch) coverImage = '/watches_category.png'
-							else if (isLaptop) coverImage = '/laptop_category.png'
+							if (isIphone) coverImage = '/iphone_category.webp'
+							else if (isSamsung) coverImage = '/samsung_category.webp'
+							else if (isIpad) coverImage = '/ipad_category.webp'
+							else if (isTablet) coverImage = '/tablets_category.webp'
+							else if (isWatch) coverImage = '/watches_category.webp'
+							else if (isLaptop) coverImage = '/laptop_category.webp'
 
 							return (
 								<Link key={category.id} href={`/products?category=${category.slug}`}>

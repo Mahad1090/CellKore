@@ -139,11 +139,11 @@ export default function AdminCategoriesPage() {
 												{(category.image_url || category.slug === 'iphones' || category.slug === 'iphone' || category.slug === 'samsungs' || category.slug === 'samsung' || category.slug === 'ipads' || category.slug === 'ipad') && (
 													<img 
 														src={(category.slug === 'iphones' || category.slug === 'iphone') 
-															? '/iphone_category.png' 
+															? '/iphone_category.webp' 
 															: (category.slug === 'samsungs' || category.slug === 'samsung')
-															? '/samsung_category.png'
+															? '/samsung_category.webp'
 															: (category.slug === 'ipads' || category.slug === 'ipad')
-															? '/ipad_category.png'
+															? '/ipad_category.webp'
 															: category.image_url ?? ''
 														} 
 														alt="" 
