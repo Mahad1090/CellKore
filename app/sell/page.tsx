@@ -182,12 +182,23 @@ export default function SellYourPhonePage() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="bg-primary text-primary-foreground py-12">
-				<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Sell Your Phone</p>
-					<h1 className="text-3xl md:text-4xl font-bold tracking-luxury uppercase">Get an Official Quote</h1>
-					<p className="opacity-90 mt-3 font-light">
-						Tell us about your device — our team will review it and get back to you with an offer.
+			<section className="relative text-white w-full min-h-[420px] md:min-h-[480px] py-16 md:py-24 overflow-hidden flex items-center justify-center text-center">
+				<video
+					key="sell-ur-phone-new"
+					autoPlay
+					loop
+					muted
+					playsInline
+					preload="auto"
+					src="/sell_ur_phone_banner.mp4?v=2"
+					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
+				/>
+				<div className="absolute inset-0 bg-black/55 z-10" />
+				<div className="relative z-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+					<p className="text-xs md:text-sm uppercase tracking-[0.25em] text-white/80 mb-3 font-medium">Sell Your Device</p>
+					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase text-white drop-shadow-md">Get an Official Quote</h1>
+					<p className="text-white/90 mt-4 text-xs md:text-sm font-light max-w-xl mx-auto leading-relaxed drop-shadow-sm">
+						Tell us about your device — our expert team will review your submission and return an official valuation quote.
 					</p>
 				</div>
 			</section>

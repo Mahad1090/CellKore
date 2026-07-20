@@ -69,6 +69,7 @@ export function Navigation() {
 	const [searchQuery, setSearchQuery] = useState('')
 	const [searchResults, setSearchResults] = useState<Product[]>([])
 	const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+	const [searchModalOpen, setSearchModalOpen] = useState(false)
 	const [marketMenuOpen, setMarketMenuOpen] = useState(false)
 	const [categories, setCategories] = useState<Category[]>([])
 	const [intBannerDismissed, setIntBannerDismissed] = useState(false)
@@ -251,18 +252,18 @@ export function Navigation() {
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
-									className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
+									className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-xs font-bold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer"
 								>
 									{currentMarket ? (
-										<MarketFlag value={currentMarket.value} className="w-4 h-3 mr-0.5 rounded-[2px] shadow-sm" />
+										<MarketFlag value={currentMarket.value} className="w-4.5 h-3.5 mr-0.5 rounded-[2px] shadow-sm shrink-0" />
 									) : (
-										<Globe className="w-3.5 h-3.5 mr-0.5" />
+										<Globe className="w-4 h-4 mr-0.5 shrink-0" />
 									)}
-									<span className="hidden sm:inline">{currentMarket?.label ?? 'Marketplace'}</span>
-									<ChevronDown className="w-3 h-3" />
+									<span className="hidden sm:inline whitespace-nowrap">{currentMarket?.label ?? 'Marketplace'}</span>
+									<ChevronDown className="w-3.5 h-3.5 shrink-0" />
 								</button>
 								{marketMenuOpen && (
-									<div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[190px] animate-in fade-in slide-in-from-top-2 duration-200">
+									<div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
 										{MARKETPLACE_OPTIONS.map((option) => (
 											<button
 												key={option.value}
@@ -270,12 +271,12 @@ export function Navigation() {
 													setMarketplace(option.value)
 													setMarketMenuOpen(false)
 												}}
-												className={`w-full text-left px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors cursor-pointer flex items-center gap-2 ${marketplace === option.value
+												className={`w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer flex items-center gap-2.5 whitespace-nowrap ${marketplace === option.value
 													? 'bg-secondary text-primary'
 													: 'text-foreground/75 hover:bg-muted'
 													}`}
 											>
-												<MarketFlag value={option.value} className="w-4 h-3 rounded-[2px] shadow-sm" />
+												<MarketFlag value={option.value} className="w-4.5 h-3.5 rounded-[2px] shadow-sm shrink-0" />
 												<span>{option.label}</span>
 											</button>
 										))}
@@ -283,57 +284,10 @@ export function Navigation() {
 								)}
 							</div>
 
-							<div className="hidden xl:flex items-center max-w-[200px] mr-2">
-								<form onSubmit={handleSearchSubmit} className="w-full">
-									<div className="relative">
-										<input
-											type="text"
-											placeholder="Search..."
-											value={searchQuery}
-											onChange={handleSearchChange}
-											onFocus={() => searchQuery && setShowSearchDropdown(true)}
-											onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
-											className="w-36 focus:w-44 px-3.5 py-1.5 pr-8 border border-border/80 rounded-full bg-background/50 text-foreground placeholder-muted-foreground text-xs focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all duration-300 font-light"
-										/>
-										<Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-										{showSearchDropdown && searchResults.length > 0 && (
-											<div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-2xl shadow-xl z-50 max-h-80 overflow-y-auto w-72 no-scrollbar">
-												{searchResults.map((product) => (
-													<button
-														key={product.id}
-														onClick={() => {
-															router.push(`/products/${product.id}`)
-															setSearchQuery('')
-															setShowSearchDropdown(false)
-														}}
-														className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left border-b border-border last:border-b-0 cursor-pointer"
-													>
-														{primaryImage(product) ? (
-															<img
-																src={primaryImage(product)!}
-																alt={product.name}
-																className="w-10 h-10 object-cover rounded-lg"
-															/>
-														) : (
-															<div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-																<Smartphone className="w-4 h-4 text-muted-foreground" />
-															</div>
-														)}
-														<div className="flex-1 min-w-0">
-															<p className="font-medium text-card-foreground text-sm truncate">{product.name}</p>
-															<p className="text-xs text-muted-foreground">${Number(product.base_price).toFixed(2)}</p>
-														</div>
-													</button>
-												))}
-											</div>
-										)}
-									</div>
-								</form>
-							</div>
-
+							{/* Search Icon Trigger */}
 							<button
-								onClick={() => router.push('/products')}
-								className="xl:hidden p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
+								onClick={() => setSearchModalOpen(true)}
+								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
 								aria-label="Search products"
 							>
 								<Search className="w-4.5 h-4.5" />
@@ -541,7 +495,85 @@ export function Navigation() {
 					</div>
 				</div>
 			</div>
-		)}
+			)}
+			{/* Search Modal Overlay */}
+			{searchModalOpen && (
+				<div className="fixed inset-0 z-[10000] flex items-start justify-center pt-20 px-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-200">
+					<div
+						className="fixed inset-0"
+						onClick={() => setSearchModalOpen(false)}
+					/>
+					<div className="relative w-full max-w-2xl bg-card border border-border rounded-3xl shadow-2xl p-6 z-10 animate-in zoom-in-95 duration-200">
+						<div className="flex items-center justify-between gap-3 pb-4 border-b border-border">
+							<form
+								onSubmit={(e) => {
+									handleSearchSubmit(e)
+									setSearchModalOpen(false)
+								}}
+								className="flex items-center gap-3 flex-1"
+							>
+								<Search className="w-5 h-5 text-primary shrink-0" />
+								<input
+									type="text"
+									autoFocus
+									placeholder="Search devices, brands, models..."
+									value={searchQuery}
+									onChange={handleSearchChange}
+									className="w-full bg-transparent text-foreground placeholder:text-muted-foreground text-base focus:outline-none font-medium"
+								/>
+							</form>
+							<button
+								onClick={() => setSearchModalOpen(false)}
+								className="p-2 hover:bg-muted rounded-full text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+								aria-label="Close search"
+							>
+								<X className="w-5 h-5" />
+							</button>
+						</div>
+
+						{/* Instant Auto-complete Product Results */}
+						{searchQuery && searchResults.length > 0 && (
+							<div className="mt-4 max-h-80 overflow-y-auto space-y-2 no-scrollbar">
+								<p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground mb-2">Matching Products</p>
+								{searchResults.map((product) => (
+									<button
+										key={product.id}
+										onClick={() => {
+											router.push(`/products/${product.id}`)
+											setSearchQuery('')
+											setSearchModalOpen(false)
+										}}
+										className="w-full flex items-center gap-4 p-3 hover:bg-muted/80 rounded-2xl transition-colors text-left group cursor-pointer border border-transparent hover:border-border"
+									>
+										{primaryImage(product) ? (
+											<img
+												src={primaryImage(product)!}
+												alt={product.name}
+												className="w-12 h-12 object-cover rounded-xl border border-border"
+											/>
+										) : (
+											<div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+												<Smartphone className="w-5 h-5 text-muted-foreground" />
+											</div>
+										)}
+										<div className="flex-1 min-w-0">
+											<p className="font-semibold text-card-foreground text-sm group-hover:text-primary transition-colors truncate">
+												{product.name}
+											</p>
+											<p className="text-xs text-muted-foreground">${Number(product.base_price).toFixed(2)}</p>
+										</div>
+									</button>
+								))}
+							</div>
+						)}
+						{searchQuery && searchResults.length === 0 && (
+							<div className="py-8 text-center text-muted-foreground text-sm">
+								No devices found matching "{searchQuery}"
+							</div>
+						)}
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }
