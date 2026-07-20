@@ -48,7 +48,7 @@ function SuccessContent() {
 					reference for any support inquiries. All sales are final per our No Return & Exchange Policy.
 				</p>
 				<Link
-					href="/products"
+					href="/products?category=iphones"
 					className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 				>
 					Continue Shopping

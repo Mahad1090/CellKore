@@ -258,7 +258,7 @@ export default function ProductDetailPage() {
 				<Navigation />
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
 					<h1 className="text-3xl font-bold text-foreground mb-4">Product Not Found</h1>
-					<Link href="/products" className="text-primary hover:underline text-sm">
+					<Link href="/products?category=iphones" className="text-primary hover:underline text-sm">
 						Back to Products
 					</Link>
 				</div>
@@ -318,7 +318,7 @@ export default function ProductDetailPage() {
 				<nav className="text-xs text-muted-foreground mb-8 uppercase tracking-[0.14em]">
 					<Link href="/" className="hover:text-primary transition-colors">Home</Link>
 					<span className="mx-2">/</span>
-					<Link href="/products" className="hover:text-primary transition-colors">Products</Link>
+					<Link href="/products?category=iphones" className="hover:text-primary transition-colors">Products</Link>
 					<span className="mx-2">/</span>
 					<span className="text-foreground">{product.name}</span>
 				</nav>

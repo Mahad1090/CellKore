@@ -39,7 +39,7 @@ export default function WishlistPage() {
 						<Heart className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
 						<p className="text-muted-foreground text-sm mb-6">Your wishlist is empty.</p>
 						<Link
-							href="/products"
+							href="/products?category=iphones"
 							className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 						>
 							Discover Products
