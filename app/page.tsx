@@ -284,17 +284,17 @@ export default function Home() {
 						>
 							<source src="/sell_ur_phone_banner.mp4?v=4" type="video/mp4" />
 						</video>
-						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
-						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl ml-auto text-right flex flex-col items-end">
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-l from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
 								Sell Your Device
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
 								Turn your pre-owned smartphones, tablets, and laptops into cash. Submit your device details in seconds to receive an official top-dollar quote from our team.
 							</p>
-							<div className="flex flex-wrap items-center justify-end gap-4">
+							<div className="flex flex-wrap items-center justify-start gap-4">
 								<Link
 									href="/sell"
 									className="px-7 py-3 bg-white text-black hover:bg-white/90 transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
@@ -443,17 +443,17 @@ export default function Home() {
 						>
 							<source src="/us_marketplace_banner.mp4" type="video/mp4" />
 						</video>
-						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
-						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl ml-auto text-right flex flex-col items-end">
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-l from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
 								Regional Marketplaces
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
 								Browse curated inventory tailored specifically to your marketplace region. Enjoy localized pricing, fast regional dispatch, and zero customs hassle.
 							</p>
-							<div className="flex flex-wrap items-center justify-end gap-4">
+							<div className="flex flex-wrap items-center justify-start gap-4">
 								<div className="flex items-center gap-4 text-xs text-white/80 font-medium mr-2">
 									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-blue-400" /> United States</span>
 									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-blue-400" /> Canada</span>
