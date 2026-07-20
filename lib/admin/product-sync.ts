@@ -27,6 +27,7 @@ export interface ProductPayload {
 		model_name?: string | null
 		condition?: ProductCondition | null
 		carrier_lock?: CarrierLockStatus | null
+		image_url?: string | null
 		stock_quantity: number
 		price_adjustment: number
 	}[]
@@ -61,6 +62,7 @@ export async function syncProductRelations(
 							model_name: variant.model_name ?? null,
 							condition: variant.condition ?? null,
 							carrier_lock: variant.carrier_lock ?? null,
+							image_url: variant.image_url ?? null,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})
@@ -79,6 +81,7 @@ export async function syncProductRelations(
 							model_name: variant.model_name ?? null,
 							condition: variant.condition ?? null,
 							carrier_lock: variant.carrier_lock ?? null,
+							image_url: variant.image_url ?? null,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})

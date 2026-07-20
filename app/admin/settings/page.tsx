@@ -10,9 +10,16 @@ import { useAdmin } from '@/contexts/admin-context'
 import { SHIPPING_COUNTRIES } from '@/lib/shipping-countries'
 import type { SocialLink, TaxRate } from '@/lib/types'
 
+const TABS = [
+	{ id: 'tax', label: 'Tax Rates' },
+	{ id: 'social', label: 'Social Links' },
+] as const
+type TabId = (typeof TABS)[number]['id']
+
 export default function AdminSettingsPage() {
 	const { toast, confirm } = useToast()
 	const { can } = useAdmin()
+	const [tab, setTab] = useState<TabId>('tax')
 	const [links, setLinks] = useState<SocialLink[] | null>(null)
 	const [newLink, setNewLink] = useState({ platform: '', url: '' })
 	const [saving, setSaving] = useState(false)
@@ -151,10 +158,27 @@ export default function AdminSettingsPage() {
 	const writable = can('settings:write')
 
 	return (
-		<div className="space-y-14">
-			<div>
-				<PageTitle title="Tax Rates" subtitle="Flat checkout tax % applied per shipping country" />
+		<div>
+			<PageTitle title="Settings" subtitle="Tax rates and storefront footer links" />
 
+			<div className="flex items-center gap-2 mb-8 border-b border-border">
+				{TABS.map((t) => (
+					<button
+						key={t.id}
+						onClick={() => setTab(t.id)}
+						className={`px-4 py-2.5 text-xs font-bold uppercase tracking-[0.14em] border-b-2 -mb-px transition-colors cursor-pointer ${
+							tab === t.id
+								? 'border-primary text-primary'
+								: 'border-transparent text-muted-foreground hover:text-foreground'
+						}`}
+					>
+						{t.label}
+					</button>
+				))}
+			</div>
+
+			{tab === 'tax' && (
+				<div>
 				{writable && (
 					<Panel title="Add Country Tax Rate" className="max-w-3xl mb-8">
 						<div className="grid sm:grid-cols-3 gap-3 items-center">
@@ -245,11 +269,11 @@ export default function AdminSettingsPage() {
 						</table>
 					</div>
 				)}
-			</div>
+				</div>
+			)}
 
-			<div>
-				<PageTitle title="Settings & Social Links" subtitle="Platforms shown in the storefront footer" />
-
+			{tab === 'social' && (
+				<div>
 				{writable && (
 					<Panel title="Add Platform" className="max-w-3xl mb-8">
 						<div className="grid sm:grid-cols-3 gap-3">
@@ -331,6 +355,7 @@ export default function AdminSettingsPage() {
 					</div>
 				)}
 			</div>
+			)}
 		</div>
 	)
 }

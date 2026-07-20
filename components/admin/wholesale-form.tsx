@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wand2, Upload, Loader2, Star } from 'lucide-react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star, ImageOff } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
-import type { Category, MarketplaceType, ProductCondition } from '@/lib/types'
+import type { CarrierLockStatus, Category, ProductType, ProductCondition } from '@/lib/types'
 
 const DEFAULT_SPEC_KEYS = [
 	'Display Size',
@@ -25,7 +25,14 @@ interface SpecRow {
 
 interface VariantRow {
 	id?: string
+	model_name: string
+	storage: string
+	ram: string
 	color: string
+	swatch_hex: string
+	condition: ProductCondition
+	carrier_lock: CarrierLockStatus
+	image_url: string
 	stock_quantity: number
 	price_adjustment: number
 }
@@ -42,16 +49,29 @@ export interface WholesaleFormValue {
 	sku: string
 	brand: string
 	category_id: string
+	product_type_id: string
 	condition: ProductCondition
 	base_price: string
 	description: string
 	is_active: boolean
 	specs: SpecRow[]
 	variants: VariantRow[]
-	marketplaces: MarketplaceType[]
 	images: ImageRow[]
 	wholesale_colors: string
 	lot_quantity: string
+}
+
+const EMPTY_VARIANT: VariantRow = {
+	model_name: '',
+	storage: '',
+	ram: '',
+	color: '',
+	swatch_hex: '#cccccc',
+	condition: 'new',
+	carrier_lock: 'unlocked',
+	image_url: '',
+	stock_quantity: 0,
+	price_adjustment: 0,
 }
 
 export const EMPTY_WHOLESALE: WholesaleFormValue = {
@@ -59,13 +79,13 @@ export const EMPTY_WHOLESALE: WholesaleFormValue = {
 	sku: '',
 	brand: '',
 	category_id: '',
+	product_type_id: '',
 	condition: 'new',
 	base_price: '',
 	description: '',
 	is_active: true,
 	specs: [],
 	variants: [],
-	marketplaces: ['US'],
 	images: [],
 	wholesale_colors: '',
 	lot_quantity: '',
@@ -78,6 +98,7 @@ export function wholesaleToForm(product: any): WholesaleFormValue {
 		sku: product.sku ?? '',
 		brand: product.brand ?? '',
 		category_id: product.category_id ?? '',
+		product_type_id: product.product_type_id ?? '',
 		condition: product.condition ?? 'new',
 		base_price: String(product.base_price ?? ''),
 		description: product.description ?? '',
@@ -89,11 +110,17 @@ export function wholesaleToForm(product: any): WholesaleFormValue {
 		})),
 		variants: (product.product_variants ?? []).map((v: any) => ({
 			id: v.id,
+			model_name: v.model_name ?? '',
+			storage: v.storage ?? '',
+			ram: v.ram ?? '',
 			color: v.color ?? '',
+			swatch_hex: v.swatch_hex ?? '#cccccc',
+			condition: v.condition ?? 'new',
+			carrier_lock: v.carrier_lock ?? 'unlocked',
+			image_url: v.image_url ?? '',
 			stock_quantity: v.stock_quantity ?? 0,
 			price_adjustment: Number(v.price_adjustment ?? 0),
 		})),
-		marketplaces: (product.product_marketplaces ?? []).map((m: any) => m.marketplace),
 		images: (product.product_images ?? [])
 			.sort((a: any, b: any) => a.sort_order - b.sort_order)
 			.map((img: any) => ({ image_url: img.image_url, sort_order: img.sort_order, is_primary: img.is_primary })),
@@ -112,6 +139,7 @@ export function formToWholesalePayload(form: WholesaleFormValue) {
 		sku: form.sku.trim() || null,
 		brand: form.brand.trim() || null,
 		category_id: form.category_id || null,
+		product_type_id: form.product_type_id || null,
 		condition: form.condition,
 		base_price: Number(form.base_price),
 		description: form.description.trim() || null,
@@ -122,14 +150,22 @@ export function formToWholesalePayload(form: WholesaleFormValue) {
 			.filter((s) => specName(s) && s.value.trim())
 			.map((s) => ({ spec_name: specName(s), spec_value: s.value.trim() })),
 		variants: form.variants
-			.filter((v) => v.color.trim() || v.stock_quantity > 0)
+			.filter((v) => v.model_name.trim() || v.color.trim() || v.stock_quantity > 0)
 			.map((v) => ({
 				id: v.id,
+				model_name: v.model_name.trim() || null,
+				storage: v.storage.trim() || null,
+				ram: v.ram.trim() || null,
 				color: v.color.trim() || null,
+				condition: v.condition,
+				carrier_lock: v.carrier_lock,
+				image_url: v.image_url.trim() || null,
+				swatch_hex: v.color.trim() ? v.swatch_hex || null : null,
 				stock_quantity: Math.max(0, Math.floor(Number(v.stock_quantity) || 0)),
 				price_adjustment: Number(v.price_adjustment) || 0,
 			})),
-		marketplaces: form.marketplaces,
+		// Wholesale lots always list in every marketplace — there is no per-lot marketplace choice.
+		marketplaces: ['US', 'CA'],
 		images: form.images
 			.filter((img) => img.image_url.trim())
 			.map((img, index) => ({ ...img, sort_order: index })),
@@ -148,7 +184,7 @@ function generateSku(form: WholesaleFormValue): string {
 	)
 	const color = form.variants.find((v) => v.color.trim())?.color ?? ''
 	const colorPart = compact(color, 2)
-	const storage = form.specs.find((s) => specName(s) === 'Storage Capacity')?.value ?? ''
+	const storage = form.variants.find((v) => v.storage.trim())?.storage ?? ''
 	const storagePart = storage.replace(/[^0-9]/g, '')
 
 	return ['CK', `LOT-${brandPart}${namePart}` || 'LOT', colorPart, storagePart]
@@ -160,12 +196,14 @@ export function WholesaleFormModal({
 	open,
 	initial,
 	categories,
+	productTypes,
 	onClose,
 	onSaved,
 }: {
 	open: boolean
 	initial: WholesaleFormValue
 	categories: Category[]
+	productTypes: ProductType[]
 	onClose: () => void
 	onSaved: () => void
 }) {
@@ -173,7 +211,7 @@ export function WholesaleFormModal({
 	const [form, setForm] = useState<WholesaleFormValue>(initial)
 	const [saving, setSaving] = useState(false)
 	const [uploading, setUploading] = useState(false)
-	const [uploadVariantColor, setUploadVariantColor] = useState('')
+	const [uploadingVariantRow, setUploadingVariantRow] = useState<number | null>(null)
 
 	useEffect(() => {
 		setForm(initial)
@@ -181,6 +219,12 @@ export function WholesaleFormModal({
 
 	const set = <K extends keyof WholesaleFormValue>(field: K, value: WholesaleFormValue[K]) =>
 		setForm((f) => ({ ...f, [field]: value }))
+
+	const handleProductTypeChange = (id: string) => {
+		set('product_type_id', id)
+		const type = productTypes.find((t) => t.id === id)
+		if (type?.category_id) set('category_id', type.category_id)
+	}
 
 	const save = async () => {
 		if (!form.name.trim() || !form.base_price || Number.isNaN(Number(form.base_price))) {
@@ -225,12 +269,7 @@ export function WholesaleFormModal({
 		try {
 			const next = [...form.images]
 			for (const file of Array.from(files)) {
-				const path = productImagePath(
-					form.name,
-					form.id ?? 'new',
-					file.name,
-					uploadVariantColor.trim() || undefined
-				)
+				const path = productImagePath(form.name, form.id ?? 'new', file.name)
 				const url = await uploadViaAdminApi(path, file)
 				next.push({ image_url: url, sort_order: next.length, is_primary: next.length === 0 })
 			}
@@ -240,6 +279,26 @@ export function WholesaleFormModal({
 			toast({ title: 'Upload failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		} finally {
 			setUploading(false)
+		}
+	}
+
+	const setVariant = (index: number, patch: Partial<VariantRow>) => {
+		const next = [...form.variants]
+		next[index] = { ...next[index], ...patch }
+		set('variants', next)
+	}
+
+	const handleVariantImageUpload = async (index: number, file: File | undefined) => {
+		if (!file) return
+		setUploadingVariantRow(index)
+		try {
+			const path = productImagePath(form.name || 'wholesale-lot', form.id ?? 'new', file.name, form.variants[index]?.model_name || undefined)
+			const url = await uploadViaAdminApi(path, file)
+			setVariant(index, { image_url: url })
+		} catch (err) {
+			toast({ title: 'Upload failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setUploadingVariantRow(null)
 		}
 	}
 
@@ -283,12 +342,24 @@ export function WholesaleFormModal({
 						</select>
 					</div>
 					<div>
-						<label className={label}>Condition</label>
+						<label className={label}>Product Type</label>
+						<select value={form.product_type_id} onChange={(e) => handleProductTypeChange(e.target.value)} className={`${adminInput} cursor-pointer`}>
+							<option value="">No product type</option>
+							{productTypes.map((t) => (
+								<option key={t.id} value={t.id}>{t.name}</option>
+							))}
+						</select>
+					</div>
+					<div>
+						<label className={label}>Condition (default)</label>
 						<select value={form.condition} onChange={(e) => set('condition', e.target.value as ProductCondition)} className={`${adminInput} cursor-pointer`}>
 							<option value="new">New</option>
 							<option value="used">Used</option>
 							<option value="refurbished">Refurbished</option>
 						</select>
+						<p className="text-[10px] text-muted-foreground mt-1.5 leading-normal">
+							Used for display when an item row has no condition of its own.
+						</p>
 					</div>
 					<div>
 						<label className={label}>Base Price (USD)</label>
@@ -306,36 +377,10 @@ export function WholesaleFormModal({
 					</div>
 				</div>
 
-				{/* Marketplaces */}
-				<div>
-					<label className={label}>Marketplace</label>
-					<div className="flex gap-4">
-						{(['US', 'CA'] as MarketplaceType[]).map((market) => (
-							<label
-								key={market}
-								className={`flex items-center gap-2.5 px-4 py-2.5 border rounded-full cursor-pointer transition-colors ${
-									form.marketplaces[0] === market ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'
-								}`}
-							>
-								<input
-									type="radio"
-									name="marketplace"
-									checked={form.marketplaces[0] === market}
-									onChange={() => set('marketplaces', [market])}
-									className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
-								/>
-								<span className="text-xs font-semibold text-foreground">
-									{market === 'US' ? 'US Marketplace' : 'Canada Marketplace'}
-								</span>
-							</label>
-						))}
-					</div>
-				</div>
-
 				{/* Lot Details Panel (Lot Quantity and Lot Colors) */}
 				<div className="border border-border rounded-2xl p-5 space-y-5 bg-secondary/10">
 					<h4 className="text-[11px] font-bold uppercase tracking-wider text-foreground">Wholesale Lot Details</h4>
-					
+
 					<div>
 						<label className={label}>Lot Quantity *</label>
 						<input
@@ -366,74 +411,114 @@ export function WholesaleFormModal({
 				{/* Variants grid */}
 				<div>
 					<div className="flex items-center justify-between mb-3">
-						<label className={label}>Variants — Stock & Price Adjustments</label>
+						<label className={label}>Item Composition</label>
 						<button
 							type="button"
-							onClick={() => set('variants', [...form.variants, { color: '', stock_quantity: 0, price_adjustment: 0 }])}
+							onClick={() => set('variants', [...form.variants, { ...EMPTY_VARIANT }])}
 							className={`${adminButtonGhost} px-3.5 py-1.5`}
 						>
 							<Plus className="w-3 h-3" />
-							Add Variant
+							Add Row
 						</button>
 					</div>
 					{form.variants.length > 0 && (
 						<div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
-							<table className="w-full text-sm min-w-[480px]">
+							<table className="w-full text-sm min-w-[980px]">
 								<thead>
 									<tr className="bg-secondary text-left">
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Color</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Stock Qty</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Adj. (±)</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Photo</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Phone Name</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Capacity</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">RAM</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Color</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Condition</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Carrier Lock</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Stock Qty</th>
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Price Adj. (±)</th>
 										<th className="w-12" />
 									</tr>
 								</thead>
 								<tbody>
 									{form.variants.map((variant, index) => (
 										<tr key={index} className="border-t border-border">
-											<td className="px-3 py-2">
-												<input
-													value={variant.color}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, color: e.target.value }
-														set('variants', next)
-													}}
-													className={adminInput}
-													placeholder="Midnight Blue"
-												/>
+											<td className="px-2 py-2">
+												<label className="relative flex items-center justify-center w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border cursor-pointer shrink-0 group">
+													{uploadingVariantRow === index ? (
+														<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+													) : variant.image_url ? (
+														<img src={variant.image_url} alt="" className="w-full h-full object-cover" />
+													) : (
+														<ImageOff className="w-4 h-4 text-muted-foreground" />
+													)}
+													<span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+														<Upload className="w-3.5 h-3.5 text-white" />
+													</span>
+													<input
+														type="file"
+														accept="image/*"
+														className="hidden"
+														onChange={(e) => { handleVariantImageUpload(index, e.target.files?.[0]); e.target.value = '' }}
+													/>
+												</label>
 											</td>
-											<td className="px-3 py-2">
+											<td className="px-2 py-2">
+												<input value={variant.model_name} onChange={(e) => setVariant(index, { model_name: e.target.value })} className={adminInput} placeholder="iPhone 12" />
+											</td>
+											<td className="px-2 py-2">
+												<input value={variant.storage} onChange={(e) => setVariant(index, { storage: e.target.value })} className={adminInput} placeholder="128GB" />
+											</td>
+											<td className="px-2 py-2">
+												<input value={variant.ram} onChange={(e) => setVariant(index, { ram: e.target.value })} className={adminInput} placeholder="4GB" />
+											</td>
+											<td className="px-2 py-2">
+												<div className="flex items-center gap-1.5">
+													<input
+														type="color"
+														value={variant.swatch_hex || '#cccccc'}
+														onChange={(e) => setVariant(index, { swatch_hex: e.target.value })}
+														className="w-7 h-7 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
+														title="Swatch color"
+													/>
+													<input value={variant.color} onChange={(e) => setVariant(index, { color: e.target.value })} className={adminInput} placeholder="Midnight Blue" />
+												</div>
+											</td>
+											<td className="px-2 py-2">
+												<select value={variant.condition} onChange={(e) => setVariant(index, { condition: e.target.value as ProductCondition })} className={`${adminInput} cursor-pointer`}>
+													<option value="new">New</option>
+													<option value="used">Used</option>
+													<option value="refurbished">Refurbished</option>
+												</select>
+											</td>
+											<td className="px-2 py-2">
+												<select value={variant.carrier_lock} onChange={(e) => setVariant(index, { carrier_lock: e.target.value as CarrierLockStatus })} className={`${adminInput} cursor-pointer`}>
+													<option value="locked">Locked</option>
+													<option value="unlocked">Unlocked</option>
+												</select>
+											</td>
+											<td className="px-2 py-2">
 												<input
 													type="number"
 													min={0}
 													value={variant.stock_quantity}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, stock_quantity: Number(e.target.value) }
-														set('variants', next)
-													}}
-													className={adminInput}
+													onChange={(e) => setVariant(index, { stock_quantity: Number(e.target.value) })}
+													className={`${adminInput} w-20`}
 												/>
 											</td>
-											<td className="px-3 py-2">
+											<td className="px-2 py-2">
 												<input
 													type="number"
 													step="0.01"
 													value={variant.price_adjustment}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, price_adjustment: Number(e.target.value) }
-														set('variants', next)
-													}}
+													onChange={(e) => setVariant(index, { price_adjustment: Number(e.target.value) })}
 													className={adminInput}
 												/>
 											</td>
-											<td className="px-3 py-2">
+											<td className="px-2 py-2">
 												<button
 													type="button"
 													onClick={() => set('variants', form.variants.filter((_, i) => i !== index))}
 													className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-													aria-label="Remove variant"
+													aria-label="Remove row"
 												>
 													<Trash2 className="w-4 h-4" />
 												</button>
@@ -514,20 +599,12 @@ export function WholesaleFormModal({
 				{/* Image manager */}
 				<div>
 					<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-						<label className={label}>Images</label>
-						<div className="flex items-center gap-2">
-							<input
-								placeholder="Variant color folder (optional)"
-								value={uploadVariantColor}
-								onChange={(e) => setUploadVariantColor(e.target.value)}
-								className={`${adminInput} w-52`}
-							/>
-							<label className={`${adminButtonGhost} px-3.5 py-2 cursor-pointer`}>
-								{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-								Upload
-								<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleUpload(e.target.files); e.target.value = '' }} />
-							</label>
-						</div>
+						<label className={label}>Lot Photos</label>
+						<label className={`${adminButtonGhost} px-3.5 py-2 cursor-pointer`}>
+							{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+							Upload
+							<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleUpload(e.target.files); e.target.value = '' }} />
+						</label>
 					</div>
 					<div className="space-y-2.5">
 						{form.images.map((image, index) => (

@@ -9,9 +9,11 @@ interface BulkItem {
 	storage: string | null
 	ram: string | null
 	color: string | null
+	swatch_hex: string | null
 	quantity: number
 	condition: ProductCondition
 	carrier_lock: CarrierLockStatus
+	image_url: string | null
 }
 
 interface BulkPayload {
@@ -81,6 +83,9 @@ export async function POST(request: NextRequest) {
 	if (payload.items.some((row) => !row.model_name?.trim() || !row.quantity || row.quantity <= 0)) {
 		return NextResponse.json({ error: 'Every item row needs a phone name and a positive quantity' }, { status: 400 })
 	}
+	if (payload.items.some((row) => !row.image_url?.trim())) {
+		return NextResponse.json({ error: 'Every item row needs a photo' }, { status: 400 })
+	}
 
 	const service = createServiceClient()
 
@@ -136,12 +141,13 @@ export async function POST(request: NextRequest) {
 			lot_quantity: quantityPerLot,
 			variants: payload.items.map((row) => ({
 				color: row.color || null,
-				swatch_hex: null,
+				swatch_hex: row.swatch_hex || null,
 				storage: row.storage || null,
 				ram: row.ram || null,
 				model_name: row.model_name.trim(),
 				condition: row.condition,
 				carrier_lock: row.carrier_lock,
+				image_url: row.image_url || null,
 				stock_quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)),
 				price_adjustment: 0,
 			})),
