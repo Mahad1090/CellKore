@@ -20,6 +20,24 @@ interface CategoryForm {
 
 const EMPTY: CategoryForm = { name: '', slug: '', image_url: '', is_active: true, sort_order: 0 }
 
+const DEFAULT_CATEGORY_COVERS: Record<string, string> = {
+	iphones: '/iphone_category.webp',
+	iphone: '/iphone_category.webp',
+	samsungs: '/samsung_category.webp',
+	samsung: '/samsung_category.webp',
+	ipads: '/ipad_category.webp',
+	ipad: '/ipad_category.webp',
+	tablets: '/tablets_category.webp',
+	tablet: '/tablets_category.webp',
+	watches: '/watches_category.webp',
+	watch: '/watches_category.webp',
+	laptops: '/laptop_category.webp',
+	laptop: '/laptop_category.webp',
+	'spare-parts': '/spare_parts_category.png?v=2',
+	spare_parts: '/spare_parts_category.png?v=2',
+	accessories: '/accessories_category.png?v=1',
+}
+
 export default function AdminCategoriesPage() {
 	const { toast, confirm } = useToast()
 	const { can } = useAdmin()
@@ -131,25 +149,14 @@ export default function AdminCategoriesPage() {
 							</tr>
 						</thead>
 						<tbody>
-							{categories.map((category) => (
+							{categories.map((category) => {
+								const coverImage = category.image_url || DEFAULT_CATEGORY_COVERS[category.slug] || ''
+								return (
 								<tr key={category.id} className="border-t border-border hover:bg-muted/40 transition-colors">
 									<td className="px-5 py-3.5">
 										<div className="flex items-center gap-3">
 											<div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
-												{(category.image_url || category.slug === 'iphones' || category.slug === 'iphone' || category.slug === 'samsungs' || category.slug === 'samsung' || category.slug === 'ipads' || category.slug === 'ipad') && (
-													<img 
-														src={(category.slug === 'iphones' || category.slug === 'iphone') 
-															? '/iphone_category.webp' 
-															: (category.slug === 'samsungs' || category.slug === 'samsung')
-															? '/samsung_category.webp'
-															: (category.slug === 'ipads' || category.slug === 'ipad')
-															? '/ipad_category.webp'
-															: category.image_url ?? ''
-														} 
-														alt="" 
-														className="w-full h-full object-cover" 
-													/>
-												)}
+												{coverImage && <img src={coverImage} alt="" className="w-full h-full object-cover" />}
 											</div>
 											<span className="font-medium text-card-foreground">{category.name}</span>
 										</div>
@@ -195,7 +202,7 @@ export default function AdminCategoriesPage() {
 										)}
 									</td>
 								</tr>
-							))}
+							)})}
 						</tbody>
 					</table>
 				</div>

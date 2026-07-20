@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Wrench, ShieldCheck, Clock, Award, Upload, Check, X, ImageIcon, Loader2, Smartphone, Laptop, Tablet, Watch } from 'lucide-react'
+import { Wrench, Upload, Check, X, ImageIcon, Loader2, Smartphone, Laptop, Tablet, Watch } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
@@ -237,34 +237,6 @@ export default function RepairPage() {
 					<p className="text-white/90 mt-4 text-xs md:text-sm font-light max-w-xl mx-auto leading-relaxed drop-shadow-sm">
 						Professional screen, battery, component, and chip-level repairs for smartphones, tablets, laptops, and smartwatches.
 					</p>
-				</div>
-			</section>
-
-			{/* Trust Badges */}
-			<section className="border-b border-border bg-muted/40 py-8">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-						<div className="flex flex-col items-center">
-							<ShieldCheck className="w-6 h-6 text-primary mb-2" />
-							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Certified Parts</h3>
-							<p className="text-[11px] text-muted-foreground mt-0.5">Grade-A genuine replacement components</p>
-						</div>
-						<div className="flex flex-col items-center">
-							<Clock className="w-6 h-6 text-primary mb-2" />
-							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Fast Turnaround</h3>
-							<p className="text-[11px] text-muted-foreground mt-0.5">Same-day diagnostic & rapid turnaround</p>
-						</div>
-						<div className="flex flex-col items-center">
-							<Award className="w-6 h-6 text-primary mb-2" />
-							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">90-Day Warranty</h3>
-							<p className="text-[11px] text-muted-foreground mt-0.5">Comprehensive coverage on all repairs</p>
-						</div>
-						<div className="flex flex-col items-center">
-							<Wrench className="w-6 h-6 text-primary mb-2" />
-							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Free Quote</h3>
-							<p className="text-[11px] text-muted-foreground mt-0.5">No upfront fee for repair assessment</p>
-						</div>
-					</div>
 				</div>
 			</section>
 

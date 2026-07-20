@@ -237,7 +237,7 @@ export function Footer() {
 					<div className="flex items-center gap-2">
 						<span className="w-2 h-2 rounded-full bg-[#599063]" />
 						<p className="text-xs text-[#2d4633] font-medium">
-							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>. All rights reserved.
+							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>, a brand name owned by Yulkore Group Inc.
 						</p>
 					</div>
 

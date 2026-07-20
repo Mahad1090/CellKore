@@ -28,7 +28,6 @@ export function SignUpForm() {
   const [phoneMenuOpen, setPhoneMenuOpen] = useState(false)
   const [phoneSearch, setPhoneSearch] = useState('')
   const phoneMenuRef = useRef<HTMLDivElement>(null)
-  const [country, setCountry] = useState('US')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -77,7 +76,7 @@ export function SignUpForm() {
 
     setLoading(true)
     const fullPhone = `${phoneCountry.dial} ${phone.trim()}`
-    const { error } = await signUp(email, password, fullName, fullPhone, country)
+    const { error } = await signUp(email, password, fullName, fullPhone, phoneCountry.code)
 
     if (error) {
       setError(error.message)
@@ -178,23 +177,6 @@ export function SignUpForm() {
             placeholder="••••••••"
           />
           <p className="text-xs text-muted-foreground mt-1.5">Must be at least 6 characters</p>
-        </div>
-
-        <div>
-          <label htmlFor="country" className="block text-sm font-semibold text-foreground/80 mb-2">
-            Country
-          </label>
-          <select
-            id="country"
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            required
-            className={`${inputClass} cursor-pointer`}
-          >
-            <option value="US">United States</option>
-            <option value="CA">Canada</option>
-            <option value="Other">Other</option>
-          </select>
         </div>
 
         <div>

@@ -398,10 +398,10 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
 							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Premium OEM Quality
+								<ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Premium Quality
 							</div>
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
-								OEM Replacement Parts
+								Replacement Parts
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
 								Procure screen assemblies, replacement batteries, cameras, flex cables, and micro-soldering components. Fully batch-tested and ready for shipping.
