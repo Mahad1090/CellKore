@@ -151,9 +151,10 @@ export function Footer() {
 						</h4>
 						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
 							<li><Link href="/" className="hover:text-[#599063] transition-colors">Home Portal</Link></li>
-							<li><Link href="/products" className="hover:text-[#599063] transition-colors">All Certified Devices</Link></li>
+							<li><Link href="/products?category=iphones" className="hover:text-[#599063] transition-colors">All Certified Devices</Link></li>
 							<li><Link href="/marketplace" className="hover:text-[#599063] transition-colors">Regional Marketplaces</Link></li>
 							<li><Link href="/wholesale" className="hover:text-[#599063] transition-colors">Wholesale & Bulk Lots</Link></li>
+							<li><Link href="/spare-parts" className="hover:text-[#599063] transition-colors">Spare Parts Catalog</Link></li>
 							<li><Link href="/sell" className="hover:text-[#599063] transition-colors">Sell Your Device</Link></li>
 							<li><Link href="/repair" className="hover:text-[#599063] transition-colors">Repair Portal</Link></li>
 						</ul>
