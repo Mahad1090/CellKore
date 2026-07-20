@@ -33,7 +33,7 @@ export default function Home() {
 			<Navigation />
 
 			{/* 1. Main Hero Banner */}
-			<section className="relative text-white w-full min-h-[440px] sm:min-h-[500px] md:min-h-[540px] overflow-hidden flex items-center justify-center">
+			<section className="relative text-white w-full min-h-[560px] sm:min-h-[640px] md:min-h-[720px] overflow-hidden flex items-center justify-center">
 				<video
 					autoPlay
 					loop
@@ -215,7 +215,7 @@ export default function Home() {
 						</Link>
 					</div>
 
-					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[380px] md:min-h-[460px] flex items-center justify-center border border-border shadow-2xl group">
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
 						<video
 							autoPlay
 							loop
@@ -267,7 +267,7 @@ export default function Home() {
 						</Link>
 					</div>
 
-					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[380px] md:min-h-[460px] flex items-center justify-center border border-border shadow-2xl group">
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
 						<video
 							autoPlay
 							loop
@@ -276,7 +276,7 @@ export default function Home() {
 							preload="auto"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
 						>
-							<source src="/sell_ur_phone_banner.mp4" type="video/mp4" />
+							<source src="/sell_ur_phone_banner.mp4?v=3" type="video/mp4" />
 						</video>
 						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
 
@@ -322,7 +322,7 @@ export default function Home() {
 						</Link>
 					</div>
 
-					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[380px] md:min-h-[460px] flex items-center justify-center border border-border shadow-2xl group">
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
 						<video
 							autoPlay
 							loop
@@ -377,7 +377,7 @@ export default function Home() {
 						</Link>
 					</div>
 
-					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[380px] md:min-h-[460px] flex items-center justify-center border border-border shadow-2xl group">
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
 						<video
 							autoPlay
 							loop
