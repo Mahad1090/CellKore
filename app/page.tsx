@@ -343,7 +343,7 @@ export default function Home() {
 							preload="auto"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
 						>
-							<source src="/laptop_banner.mp4" type="video/mp4" />
+							<source src="/repair_banner.mp4" type="video/mp4" />
 						</video>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 

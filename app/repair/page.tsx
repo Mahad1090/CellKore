@@ -227,7 +227,7 @@ export default function RepairPage() {
 					muted
 					playsInline
 					preload="auto"
-					src="/laptop_banner.mp4"
+					src="/repair_banner.mp4"
 					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
 				/>
 				<div className="absolute inset-0 bg-black/60 z-10" />
