@@ -19,7 +19,7 @@ export default function AccountPage() {
 	useEffect(() => {
 		if (authLoading) return
 		if (!user) {
-			router.push('/auth/signin')
+			router.push('/')
 			return
 		}
 		supabase
