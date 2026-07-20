@@ -404,7 +404,7 @@ export function Navigation() {
 
 								{/* Products */}
 								<Link
-									href="/products"
+									href="/products?category=iphones"
 									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
 									onClick={() => setMobileMenuOpen(false)}
 								>
