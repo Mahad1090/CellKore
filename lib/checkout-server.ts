@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient, generateOrderReference } from '@/lib/supabase-server'
-import { getTaxRate } from '@/lib/tax'
+import { taxRateForCountry } from '@/lib/tax'
 
 export interface CheckoutItemInput {
 	productId: string
@@ -177,8 +177,18 @@ export interface ShippingAddressInput {
 	country: string
 }
 
-export function computeTax(subtotalAfterDiscount: number, address: ShippingAddressInput): number {
-	const rate = getTaxRate(address.country, address.stateProvince ?? '')
+export async function computeTax(
+	service: SupabaseClient,
+	subtotalAfterDiscount: number,
+	address: ShippingAddressInput
+): Promise<number> {
+	const { data } = await service
+		.from('tax_rates')
+		.select('country_code, tax_rate, is_active')
+		.eq('country_code', (address.country ?? '').toUpperCase())
+		.eq('is_active', true)
+		.maybeSingle()
+	const rate = taxRateForCountry(data ? [data] : [], address.country ?? '')
 	return Math.round(subtotalAfterDiscount * rate * 100) / 100
 }
 

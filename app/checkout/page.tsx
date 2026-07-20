@@ -7,14 +7,15 @@ import { AlertTriangle, Gift, Loader2, Lock, Tag } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { FormShimmer } from '@/components/shimmer'
+import { CountrySelect } from '@/components/ui/country-select'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/contexts/auth-context'
 import { useMarketplace } from '@/contexts/marketplace-context'
 import { supabase } from '@/lib/supabase'
 import { loadCartItems, clearLocalCart, type LocalCartItem } from '@/lib/cart'
-import { fetchProductById } from '@/lib/data'
-import { getTaxRate, isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
-import type { Product } from '@/lib/types'
+import { fetchProductById, fetchTaxRates } from '@/lib/data'
+import { taxRateForCountry, isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
+import type { Product, TaxRate } from '@/lib/types'
 
 const DRAFT_KEY = 'cellkore_checkout_draft'
 const FINAL_SALE_NOTICE = 'Returns and Exchanges are not supported. All checkout items are final.'
@@ -29,7 +30,7 @@ interface CheckoutForm {
 	city: string
 	stateProvince: string
 	postalCode: string
-	country: 'US' | 'CA'
+	country: string
 	isGift: boolean
 	giftRecipientName: string
 	giftRecipientPhone: string
@@ -78,6 +79,7 @@ export default function CheckoutPage() {
 	const [placing, setPlacing] = useState(false)
 	const [promo, setPromo] = useState<{ code: string; discountAmount: number } | null>(null)
 	const [checkingPromo, setCheckingPromo] = useState(false)
+	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
 	const prefillStage = useRef(0)
 	const paypalRendered = useRef(false)
 	const paypalRef = useRef<HTMLDivElement>(null)
@@ -119,7 +121,7 @@ export default function CheckoutPage() {
 							city: f.city || data.city,
 							stateProvince: f.stateProvince || data.state_province || '',
 							postalCode: f.postalCode || data.postal_code || '',
-							country: (data.country === 'CA' ? 'CA' : 'US') as 'US' | 'CA',
+							country: data.country || 'US',
 						}))
 					} else {
 						setForm((f) => ({ ...f, email: f.email || user.email || '' }))
@@ -146,6 +148,11 @@ export default function CheckoutPage() {
 		}, 400)
 		return () => clearTimeout(timer)
 	}, [form])
+
+	// ---- Load active tax rates ----
+	useEffect(() => {
+		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
+	}, [])
 
 	// ---- Load cart ----
 	useEffect(() => {
@@ -179,7 +186,7 @@ export default function CheckoutPage() {
 		[items]
 	)
 	const discount = promo?.discountAmount ?? 0
-	const taxRate = getTaxRate(form.country, form.stateProvince)
+	const taxRate = taxRateForCountry(taxRates, form.country)
 	const tax = Math.max(0, (subtotal - discount) * taxRate)
 	const giftFees = form.isGift ? (form.giftCard ? GIFT_CARD_FEE : 0) + (form.giftWrapping ? GIFT_WRAP_FEE : 0) : 0
 	const total = Math.max(0, subtotal - discount) + tax + giftFees
@@ -189,9 +196,14 @@ export default function CheckoutPage() {
 		if (!form.phone.trim() || !isValidPhone(form.phone)) return 'A valid phone number (10–15 digits) is required.'
 		if (!form.line1.trim()) return 'Street address is required.'
 		if (!form.city.trim()) return 'City is required.'
-		if (!form.stateProvince.trim()) return form.country === 'CA' ? 'Province is required.' : 'State is required.'
+		if (!form.stateProvince.trim())
+			return form.country === 'CA' ? 'Province is required.' : form.country === 'US' ? 'State is required.' : 'State/Province/Region is required.'
 		if (!isValidPostalCode(form.country, form.postalCode))
-			return form.country === 'CA' ? 'Enter a valid Canadian postal code (e.g. A1A 1A1).' : 'Enter a valid US ZIP code (e.g. 90210).'
+			return form.country === 'CA'
+				? 'Enter a valid Canadian postal code (e.g. A1A 1A1).'
+				: form.country === 'US'
+				? 'Enter a valid US ZIP code (e.g. 90210).'
+				: 'Enter a valid postal code.'
 		return null
 	}
 
@@ -347,7 +359,7 @@ export default function CheckoutPage() {
 	const inputClass =
 		'w-full px-4 py-3 border border-border rounded-xl bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all'
 
-	const regions = form.country === 'CA' ? CA_PROVINCE_TAX : US_STATE_TAX
+	const regions = form.country === 'CA' ? CA_PROVINCE_TAX : form.country === 'US' ? US_STATE_TAX : []
 
 	return (
 		<main className="min-h-screen bg-background">
@@ -389,29 +401,40 @@ export default function CheckoutPage() {
 							<div className="bg-card border border-border rounded-3xl p-7">
 								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Shipping Address</h2>
 								<div className="grid sm:grid-cols-2 gap-4">
-									<select
+									<CountrySelect
 										value={form.country}
-										onChange={(e) => set('country', e.target.value as 'US' | 'CA')}
-										className={`${inputClass} cursor-pointer`}
-									>
-										<option value="US">United States</option>
-										<option value="CA">Canada</option>
-									</select>
-									<select
-										value={form.stateProvince}
-										onChange={(e) => set('stateProvince', e.target.value)}
-										className={`${inputClass} cursor-pointer`}
-									>
-										<option value="">{form.country === 'CA' ? 'Select province' : 'Select state'}</option>
-										{regions.map((r) => (
-											<option key={r.code} value={r.code}>{r.name}</option>
-										))}
-									</select>
+										onChange={(code) => {
+											set('country', code)
+											set('stateProvince', '')
+										}}
+										className={inputClass}
+									/>
+									{regions.length > 0 ? (
+										<select
+											value={form.stateProvince}
+											onChange={(e) => set('stateProvince', e.target.value)}
+											className={`${inputClass} cursor-pointer`}
+										>
+											<option value="">{form.country === 'CA' ? 'Select province' : 'Select state'}</option>
+											{regions.map((r) => (
+												<option key={r.code} value={r.code}>{r.name}</option>
+											))}
+										</select>
+									) : (
+										<input
+											placeholder="State / Province / Region"
+											value={form.stateProvince}
+											onChange={(e) => set('stateProvince', e.target.value)}
+											className={inputClass}
+										/>
+									)}
 									<input placeholder="Street address" value={form.line1} onChange={(e) => set('line1', e.target.value)} className={`${inputClass} sm:col-span-2`} />
 									<input placeholder="Apartment, suite (optional)" value={form.line2} onChange={(e) => set('line2', e.target.value)} className={`${inputClass} sm:col-span-2`} />
 									<input placeholder="City" value={form.city} onChange={(e) => set('city', e.target.value)} className={inputClass} />
 									<input
-										placeholder={form.country === 'CA' ? 'Postal code (A1A 1A1)' : 'ZIP code (90210)'}
+										placeholder={
+											form.country === 'CA' ? 'Postal code (A1A 1A1)' : form.country === 'US' ? 'ZIP code (90210)' : 'Postal code'
+										}
 										value={form.postalCode}
 										onChange={(e) => set('postalCode', e.target.value)}
 										className={inputClass}
@@ -519,7 +542,7 @@ export default function CheckoutPage() {
 										</div>
 									)}
 									<div className="flex justify-between text-foreground/75">
-										<span>Tax {form.stateProvince ? `(${form.stateProvince})` : ''}</span>
+										<span>Tax {form.country ? `(${form.country})` : ''}</span>
 										<span className="font-medium text-card-foreground">${tax.toFixed(2)}</span>
 									</div>
 									{giftFees > 0 && (

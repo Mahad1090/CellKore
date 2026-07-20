@@ -72,13 +72,17 @@ export const CA_PROVINCE_TAX: TaxRegion[] = [
 	{ code: 'YT', name: 'Yukon', rate: 0.05 },
 ]
 
-export function getTaxRate(country: string, stateProvince: string): number {
-	const normalized = (stateProvince || '').trim().toUpperCase()
-	const list = country === 'CA' ? CA_PROVINCE_TAX : country === 'US' ? US_STATE_TAX : []
-	const region = list.find(
-		(r) => r.code === normalized || r.name.toUpperCase() === normalized
-	)
-	return region?.rate ?? (country === 'CA' ? 0.05 : 0)
+export interface TaxRateLookup {
+	country_code: string
+	tax_rate: number
+	is_active: boolean
+}
+
+/** Looks up the admin-configured flat tax rate for a country (0 if unset/inactive). */
+export function taxRateForCountry(rates: TaxRateLookup[], countryCode: string): number {
+	const normalized = (countryCode || '').trim().toUpperCase()
+	const match = rates.find((r) => r.is_active && r.country_code.toUpperCase() === normalized)
+	return match?.tax_rate ?? 0
 }
 
 export function isValidPostalCode(country: string, value: string): boolean {

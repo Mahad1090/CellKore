@@ -15,9 +15,9 @@ import {
 	persistCartForUser,
 	type LocalCartItem,
 } from '@/lib/cart'
-import { fetchProductById } from '@/lib/data'
-import { getTaxRate } from '@/lib/tax'
-import type { Product } from '@/lib/types'
+import { fetchProductById, fetchTaxRates } from '@/lib/data'
+import { taxRateForCountry } from '@/lib/tax'
+import type { Product, TaxRate } from '@/lib/types'
 import { primaryImage } from '@/lib/types'
 
 interface HydratedItem extends LocalCartItem {
@@ -28,6 +28,11 @@ export default function CartPage() {
 	const { user, loading: authLoading } = useAuth()
 	const { marketplace } = useMarketplace()
 	const [items, setItems] = useState<HydratedItem[] | null>(null)
+	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+
+	useEffect(() => {
+		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
+	}, [])
 
 	useEffect(() => {
 		if (authLoading) return
@@ -79,7 +84,7 @@ export default function CartPage() {
 		[items]
 	)
 	// Indicative tax estimate for the cart view; the exact amount is computed at checkout
-	const estimatedTaxRate = getTaxRate(marketplace === 'CA' ? 'CA' : 'US', '')
+	const estimatedTaxRate = taxRateForCountry(taxRates, marketplace === 'CA' ? 'CA' : 'US')
 	const estimatedTax = subtotal * estimatedTaxRate
 
 	return (

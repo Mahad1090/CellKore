@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: promo.message ?? 'Code invalid or expired' }, { status: 400 })
 		}
 		const discounted = subtotal - promo.discountAmount
-		const tax = computeTax(discounted, shippingAddress)
+		const tax = await computeTax(service, discounted, shippingAddress)
 		const extras = giftFees(gift)
 		const total = Math.round((discounted + tax + extras) * 100) / 100
 

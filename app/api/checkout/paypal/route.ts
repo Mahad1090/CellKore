@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 		const subtotal = items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
 		const promo = await applyPromotion(service, body.promoCode, subtotal, shippingAddress?.country, body.userEmail)
 		const discounted = subtotal - promo.discountAmount
-		const tax = computeTax(discounted, shippingAddress)
+		const tax = await computeTax(service, discounted, shippingAddress)
 		const total = Math.round((discounted + tax + giftFees(gift)) * 100) / 100
 
 		const orderReference = generateOrderReference()
