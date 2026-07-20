@@ -1,20 +1,22 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Upload, Loader2, Star, ChevronLeft, ChevronRight, Check } from 'lucide-react'
+import { Plus, Trash2, Upload, Loader2, Star, ChevronLeft, ChevronRight, Check, ImageOff } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
-import type { Category, ProductType, MarketplaceType, ProductCondition, CarrierLockStatus } from '@/lib/types'
+import type { Category, ProductType, ProductCondition, CarrierLockStatus } from '@/lib/types'
 
 interface ItemRow {
 	model_name: string
 	storage: string
 	ram: string
 	color: string
+	swatch_hex: string
 	quantity: number
 	condition: ProductCondition
 	carrier_lock: CarrierLockStatus
+	image_url: string
 }
 
 interface ImageRow {
@@ -28,13 +30,14 @@ const EMPTY_ITEM: ItemRow = {
 	storage: '',
 	ram: '',
 	color: '',
+	swatch_hex: '#cccccc',
 	quantity: 0,
 	condition: 'new',
 	carrier_lock: 'unlocked',
+	image_url: '',
 }
 
 const STEP_LABELS = [
-	'Marketplace',
 	'Product Type',
 	'Lot Title',
 	'Pricing',
@@ -73,7 +76,6 @@ export function WholesaleLotWizard({
 	const [step, setStep] = useState(1)
 	const [productTypes, setProductTypes] = useState<ProductType[]>([])
 
-	const [marketplace, setMarketplace] = useState<MarketplaceType>('US')
 	const [categoryId, setCategoryId] = useState('')
 	const [productTypeId, setProductTypeId] = useState('')
 	const [name, setName] = useState('')
@@ -85,6 +87,7 @@ export function WholesaleLotWizard({
 	const [items, setItems] = useState<ItemRow[]>([{ ...EMPTY_ITEM }])
 	const [images, setImages] = useState<ImageRow[]>([])
 	const [uploading, setUploading] = useState(false)
+	const [uploadingRow, setUploadingRow] = useState<number | null>(null)
 	const [saving, setSaving] = useState(false)
 
 	const skuSeed = useMemo(() => Math.random().toString(36).slice(2, 6).toUpperCase(), [open])
@@ -100,7 +103,6 @@ export function WholesaleLotWizard({
 	useEffect(() => {
 		if (!open) {
 			setStep(1)
-			setMarketplace('US')
 			setCategoryId('')
 			setProductTypeId('')
 			setName('')
@@ -120,13 +122,21 @@ export function WholesaleLotWizard({
 		if (type?.category_id) setCategoryId(type.category_id)
 	}
 
-	const itemsTotal = items.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0)
 	const targetQty = Number(quantityPerLot) || 0
+	const itemsTotal = items.reduce((sum, row) => sum + (Number(row.quantity) || 0), 0)
 	const lotsCount = Math.max(1, Math.floor(Number(numberOfLots) || 0))
-	const currency = marketplace === 'CA' ? 'CAD' : 'USD'
+	const currency = 'USD'
 
 	const setItem = (index: number, patch: Partial<ItemRow>) => {
 		setItems((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)))
+	}
+
+	// Caps a row's quantity so the sum across all rows can never exceed the lot's total quantity.
+	const setItemQuantity = (index: number, rawValue: number) => {
+		const otherRowsTotal = items.reduce((sum, row, i) => (i === index ? sum : sum + (Number(row.quantity) || 0)), 0)
+		const remaining = Math.max(0, targetQty - otherRowsTotal)
+		const clamped = Math.max(0, Math.min(Math.floor(rawValue) || 0, targetQty > 0 ? remaining : rawValue))
+		setItem(index, { quantity: clamped })
 	}
 
 	// Purchase Price / Profit % / Base Price (selling price) are a three-way calculator:
@@ -162,21 +172,21 @@ export function WholesaleLotWizard({
 
 	const canProceed = (): boolean => {
 		switch (step) {
-			case 3:
+			case 2:
 				return name.trim().length > 0
-			case 4:
+			case 3:
 				return basePrice.trim().length > 0 && !Number.isNaN(Number(basePrice)) && Number(basePrice) > 0
-			case 5:
+			case 4:
 				return (
 					Number.isInteger(Number(numberOfLots)) &&
 					Number(numberOfLots) >= 1 &&
 					Number.isInteger(Number(quantityPerLot)) &&
 					Number(quantityPerLot) >= 1
 				)
-			case 6:
+			case 5:
 				return (
 					items.length > 0 &&
-					items.every((row) => row.model_name.trim() && row.quantity > 0) &&
+					items.every((row) => row.model_name.trim() && row.quantity > 0 && row.image_url.trim()) &&
 					itemsTotal === targetQty
 				)
 			default:
@@ -212,6 +222,20 @@ export function WholesaleLotWizard({
 		}
 	}
 
+	const handleRowImageUpload = async (index: number, file: File | undefined) => {
+		if (!file) return
+		setUploadingRow(index)
+		try {
+			const path = productImagePath(name || 'wholesale-lot', 'new', file.name, items[index]?.model_name || undefined)
+			const url = await uploadViaAdminApi(path, file)
+			setItem(index, { image_url: url })
+		} catch (err) {
+			toast({ title: 'Upload failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setUploadingRow(null)
+		}
+	}
+
 	const previewSku = (index: number) =>
 		['CK', `LOT-${compact(name, 10) || 'LOT'}`, dateStamp(), skuSeed, pad(index + 1, 2)].join('-')
 
@@ -222,7 +246,7 @@ export function WholesaleLotWizard({
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					marketplaces: [marketplace],
+					marketplaces: ['US', 'CA'],
 					category_id: categoryId || null,
 					product_type_id: productTypeId || null,
 					name: name.trim(),
@@ -235,9 +259,11 @@ export function WholesaleLotWizard({
 						storage: row.storage.trim() || null,
 						ram: row.ram.trim() || null,
 						color: row.color.trim() || null,
+						swatch_hex: row.color.trim() ? row.swatch_hex || null : null,
 						quantity: Math.max(0, Math.floor(Number(row.quantity) || 0)),
 						condition: row.condition,
 						carrier_lock: row.carrier_lock,
+						image_url: row.image_url.trim() || null,
 					})),
 					images: images.filter((img) => img.image_url.trim()).map((img, index) => ({ ...img, sort_order: index })),
 				}),
@@ -283,36 +309,8 @@ export function WholesaleLotWizard({
 					})}
 				</div>
 
-				{/* Step 1: Marketplace */}
+				{/* Step 1: Product Type */}
 				{step === 1 && (
-					<div>
-						<label className={label}>Marketplace</label>
-						<div className="flex gap-4">
-							{(['US', 'CA'] as MarketplaceType[]).map((market) => (
-								<label
-									key={market}
-									className={`flex items-center gap-2.5 px-4 py-2.5 border rounded-full cursor-pointer transition-colors ${
-										marketplace === market ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'
-									}`}
-								>
-									<input
-										type="radio"
-										name="wizard-marketplace"
-										checked={marketplace === market}
-										onChange={() => setMarketplace(market)}
-										className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
-									/>
-									<span className="text-xs font-semibold text-foreground">
-										{market === 'US' ? 'US Marketplace' : 'Canada Marketplace'}
-									</span>
-								</label>
-							))}
-						</div>
-					</div>
-				)}
-
-				{/* Step 2: Product Type */}
-				{step === 2 && (
 					<div className="grid sm:grid-cols-2 gap-4">
 						<div>
 							<label className={label}>Category</label>
@@ -335,20 +333,17 @@ export function WholesaleLotWizard({
 					</div>
 				)}
 
-				{/* Step 3: Title */}
-				{step === 3 && (
+				{/* Step 2: Title */}
+				{step === 2 && (
 					<div>
 						<label className={label}>Lot Title</label>
 						<input value={name} onChange={(e) => setName(e.target.value)} className={adminInput} placeholder="iPhone 12 Mixed Grade Lot" />
 					</div>
 				)}
 
-				{/* Step 4: Pricing */}
-				{step === 4 && (
+				{/* Step 3: Pricing */}
+				{step === 3 && (
 					<div className="grid sm:grid-cols-2 gap-4">
-						<p className="sm:col-span-2 text-[11px] text-muted-foreground">
-							Pricing below is entered in <strong className="text-foreground">{currency}</strong>, based on the marketplace selected in step 1.
-						</p>
 						<div>
 							<label className={label}>Purchase Price (Cost, <strong className="text-foreground">{currency}</strong>)</label>
 							<input
@@ -385,8 +380,8 @@ export function WholesaleLotWizard({
 					</div>
 				)}
 
-				{/* Step 5: Number of lots + quantity per lot */}
-				{step === 5 && (
+				{/* Step 4: Number of lots + quantity per lot */}
+				{step === 4 && (
 					<div className="grid sm:grid-cols-2 gap-4">
 						<div>
 							<label className={label}>Number of Lots</label>
@@ -421,8 +416,8 @@ export function WholesaleLotWizard({
 					</div>
 				)}
 
-				{/* Step 6: Item composition table */}
-				{step === 6 && (
+				{/* Step 5: Item composition table */}
+				{step === 5 && (
 					<div>
 						<div className="flex items-center justify-between mb-3">
 							<label className={label}>Item Composition</label>
@@ -436,9 +431,10 @@ export function WholesaleLotWizard({
 							</button>
 						</div>
 						<div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
-							<table className="w-full text-sm min-w-[840px]">
+							<table className="w-full text-sm min-w-[920px]">
 								<thead>
 									<tr className="bg-secondary text-left">
+										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Photo</th>
 										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Phone Name</th>
 										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">Capacity</th>
 										<th className="px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-foreground/70">RAM</th>
@@ -453,6 +449,26 @@ export function WholesaleLotWizard({
 									{items.map((row, index) => (
 										<tr key={index} className="border-t border-border">
 											<td className="px-2 py-2">
+												<label className="relative flex items-center justify-center w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border cursor-pointer shrink-0 group">
+													{uploadingRow === index ? (
+														<Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+													) : row.image_url ? (
+														<img src={row.image_url} alt="" className="w-full h-full object-cover" />
+													) : (
+														<ImageOff className="w-4 h-4 text-muted-foreground" />
+													)}
+													<span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+														<Upload className="w-3.5 h-3.5 text-white" />
+													</span>
+													<input
+														type="file"
+														accept="image/*"
+														className="hidden"
+														onChange={(e) => { handleRowImageUpload(index, e.target.files?.[0]); e.target.value = '' }}
+													/>
+												</label>
+											</td>
+											<td className="px-2 py-2">
 												<input value={row.model_name} onChange={(e) => setItem(index, { model_name: e.target.value })} className={adminInput} placeholder="iPhone 12" />
 											</td>
 											<td className="px-2 py-2">
@@ -462,14 +478,24 @@ export function WholesaleLotWizard({
 												<input value={row.ram} onChange={(e) => setItem(index, { ram: e.target.value })} className={adminInput} placeholder="4GB" />
 											</td>
 											<td className="px-2 py-2">
-												<input value={row.color} onChange={(e) => setItem(index, { color: e.target.value })} className={adminInput} placeholder="Black" />
+												<div className="flex items-center gap-1.5">
+													<input
+														type="color"
+														value={row.swatch_hex || '#cccccc'}
+														onChange={(e) => setItem(index, { swatch_hex: e.target.value })}
+														className="w-7 h-7 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
+														title="Swatch color"
+													/>
+													<input value={row.color} onChange={(e) => setItem(index, { color: e.target.value })} className={adminInput} placeholder="Black" />
+												</div>
 											</td>
 											<td className="px-2 py-2">
 												<input
 													type="number"
 													min={0}
+													max={targetQty || undefined}
 													value={row.quantity}
-													onChange={(e) => setItem(index, { quantity: Number(e.target.value) })}
+													onChange={(e) => setItemQuantity(index, Number(e.target.value))}
 													className={`${adminInput} w-20`}
 												/>
 											</td>
@@ -505,11 +531,14 @@ export function WholesaleLotWizard({
 						<p className={`text-xs font-semibold mt-3 ${itemsTotal === targetQty ? 'text-primary' : 'text-destructive'}`}>
 							{itemsTotal} / {targetQty || 0} units assigned
 						</p>
+						<p className="text-[10px] text-muted-foreground mt-1.5">
+							A photo is required for every row before continuing.
+						</p>
 					</div>
 				)}
 
-				{/* Step 7: Photos */}
-				{step === 7 && (
+				{/* Step 6: Photos */}
+				{step === 6 && (
 					<div>
 						<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
 							<label className={label}>Photos</label>
@@ -555,11 +584,10 @@ export function WholesaleLotWizard({
 					</div>
 				)}
 
-				{/* Step 8: Review & SKU */}
-				{step === 8 && (
+				{/* Step 7: Review & SKU */}
+				{step === 7 && (
 					<div className="space-y-5">
 						<div className="border border-border rounded-2xl p-5 space-y-2 bg-secondary/10 text-xs text-foreground/80">
-							<p><span className="font-semibold text-foreground">Marketplace:</span> {marketplace}</p>
 							<p><span className="font-semibold text-foreground">Title:</span> {name}</p>
 							<p>
 								<span className="font-semibold text-foreground">Pricing:</span>{' '}

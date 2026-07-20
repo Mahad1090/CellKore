@@ -96,6 +96,7 @@ export interface ProductVariant {
 	model_name?: string | null
 	condition?: ProductCondition | null
 	carrier_lock?: CarrierLockStatus | null
+	image_url?: string | null
 	stock_quantity: number
 	price_adjustment: number
 	created_at?: string

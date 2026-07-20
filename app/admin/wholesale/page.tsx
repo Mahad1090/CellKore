@@ -6,7 +6,7 @@ import { PageTitle, EmptyState, adminButton, adminButtonGhost, adminInput, Panel
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
-import type { WholesalePriceTier, Category } from '@/lib/types'
+import type { WholesalePriceTier, Category, ProductType } from '@/lib/types'
 import {
 	WholesaleFormModal,
 	wholesaleToForm,
@@ -20,6 +20,7 @@ export default function AdminWholesalePage() {
 	
 	const [lots, setLots] = useState<any[] | null>(null)
 	const [categories, setCategories] = useState<Category[]>([])
+	const [productTypes, setProductTypes] = useState<ProductType[]>([])
 	const [search, setSearch] = useState('')
 	const [editing, setEditing] = useState<WholesaleFormValue | null>(null)
 	const [wizardOpen, setWizardOpen] = useState(false)
@@ -54,6 +55,11 @@ export default function AdminWholesalePage() {
 			.then((res) => res.json())
 			.then((json) => setCategories(json.categories ?? []))
 			.catch(() => setCategories([]))
+
+		fetch('/api/admin/product-types')
+			.then((res) => res.json())
+			.then((json) => setProductTypes(json.productTypes ?? []))
+			.catch(() => setProductTypes([]))
 	}, [loadLots])
 
 	const loadTiers = useCallback(() => {
@@ -385,6 +391,7 @@ export default function AdminWholesalePage() {
 					open
 					initial={editing}
 					categories={categories}
+					productTypes={productTypes}
 					onClose={() => setEditing(null)}
 					onSaved={loadLots}
 				/>
