@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
 	Mail, Phone, MessageCircle, Loader2, ArrowRight, ShieldCheck,
-	Truck, Award, RefreshCw, Lock, Sparkles
+	Truck, Award, RefreshCw, Lock, Sparkles, CreditCard
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { fetchCountryContacts, fetchSocialLinks, subscribeToNewsletter } from '@/lib/data'
@@ -53,42 +53,75 @@ export function Footer() {
 			icon: ShieldCheck,
 			title: 'Authenticated Stock',
 			desc: '100% Inspected & Certified Devices',
+			colors: {
+				bg: 'bg-blue-700',
+				border: 'border-blue-800',
+				text: 'text-white',
+				hoverBg: 'group-hover:bg-blue-800',
+				hoverBorder: 'hover:border-blue-600/50',
+				hoverTitle: 'group-hover:text-blue-700'
+			}
 		},
 		{
 			icon: Truck,
 			title: 'Express Shipping',
 			desc: 'Insured Priority Dispatch Across US & CA',
+			colors: {
+				bg: 'bg-orange-600',
+				border: 'border-orange-700',
+				text: 'text-white',
+				hoverBg: 'group-hover:bg-orange-700',
+				hoverBorder: 'hover:border-orange-600/50',
+				hoverTitle: 'group-hover:text-orange-600'
+			}
 		},
 		{
 			icon: Award,
 			title: 'Wholesale Contracts',
 			desc: 'Bulk Tier Pricing & Commercial Accounts',
+			colors: {
+				bg: 'bg-teal-600',
+				border: 'border-teal-700',
+				text: 'text-white',
+				hoverBg: 'group-hover:bg-teal-700',
+				hoverBorder: 'hover:border-teal-600/50',
+				hoverTitle: 'group-hover:text-teal-600'
+			}
 		},
 		{
 			icon: RefreshCw,
 			title: 'Valuation & Repair',
 			desc: 'Guaranteed Trade-In & Diagnostics',
+			colors: {
+				bg: 'bg-violet-600',
+				border: 'border-violet-700',
+				text: 'text-white',
+				hoverBg: 'group-hover:bg-violet-700',
+				hoverBorder: 'hover:border-violet-600/50',
+				hoverTitle: 'group-hover:text-violet-600'
+			}
 		},
 	]
 
 	return (
 		<footer className="bg-[#edf4ee] text-[#111c13] pt-14 pb-10 mt-20 border-t border-[#599063]/30 relative shadow-sm">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				
+
 				{/* Top Value Pillars */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pb-12 mb-12 border-b border-[#599063]/25">
 					{valuePillars.map((pillar, idx) => {
 						const Icon = pillar.icon
+						const colors = pillar.colors
 						return (
 							<div
 								key={idx}
-								className="flex items-center gap-3.5 p-4 rounded-2xl bg-white border border-[#599063]/20 shadow-sm hover:shadow-md hover:border-[#599063]/50 transition-all duration-300 group"
+								className={`flex items-center gap-3.5 p-4 rounded-2xl bg-white border border-[#599063]/20 shadow-sm hover:shadow-md ${colors.hoverBorder} transition-all duration-300 group`}
 							>
-								<div className="w-11 h-11 rounded-xl bg-[#599063]/15 border border-[#599063]/30 flex items-center justify-center text-[#275330] group-hover:scale-105 group-hover:bg-[#599063] group-hover:text-white transition-all duration-300 shrink-0">
+								<div className={`w-11 h-11 rounded-xl ${colors.bg} border ${colors.border} flex items-center justify-center ${colors.text} ${colors.hoverBg} transition-all duration-300 shrink-0`}>
 									<Icon className="w-5 h-5" />
 								</div>
 								<div>
-									<h5 className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#0e1710] group-hover:text-[#599063] transition-colors">
+									<h5 className={`text-xs font-extrabold uppercase tracking-[0.12em] text-[#0e1710] ${colors.hoverTitle} transition-colors`}>
 										{pillar.title}
 									</h5>
 									<p className="text-[11px] text-[#2d4633] font-medium mt-0.5 leading-snug">
@@ -102,7 +135,7 @@ export function Footer() {
 
 				{/* Main Footer Grid */}
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12 text-center md:text-left">
-					
+
 					{/* Company Info Column */}
 					<div className="flex flex-col items-center md:items-start space-y-3.5">
 						<Link href="/" className="inline-block group">
@@ -112,9 +145,8 @@ export function Footer() {
 								className="h-16 md:h-20 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 							/>
 						</Link>
-						
+
 						<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#599063]/15 border border-[#599063]/30 text-[10px] uppercase font-bold tracking-[0.14em] text-[#275330]">
-							<Sparkles className="w-3 h-3" />
 							<span>North America Marketplace</span>
 						</div>
 
@@ -232,12 +264,27 @@ export function Footer() {
 
 				</div>
 
+				{/* Payment Methods Row */}
+				<div className="pt-6 pb-6 border-t border-[#599063]/25 flex flex-col sm:flex-row items-center justify-center gap-4.5 md:gap-6 text-center">
+					<div className="flex items-center gap-2 text-xs font-bold text-[#1e3323] tracking-wide">
+						<CreditCard className="w-4 h-4 text-[#275330]" />
+						<span>We Accept</span>
+					</div>
+					<div className="flex flex-wrap items-center justify-center gap-3">
+						<img src="/visa.svg?v=3" alt="Visa" className="h-8 w-auto object-contain" />
+						<img src="/mastercard.svg?v=3" alt="Mastercard" className="h-8 w-auto object-contain" />
+						<img src="/paypal.svg?v=3" alt="PayPal" className="h-14 w-auto object-contain" />
+						<img src="/apple_pay.svg?v=3" alt="Apple Pay" className="h-14 w-auto object-contain" />
+						<img src="/google_pay.svg?v=3" alt="Google Pay" className="h-10 w-auto object-contain" />
+					</div>
+				</div>
+
 				{/* Bottom Bar */}
 				<div className="pt-6 border-t border-[#599063]/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
 					<div className="flex items-center gap-2">
 						<span className="w-2 h-2 rounded-full bg-[#599063]" />
 						<p className="text-xs text-[#2d4633] font-medium">
-							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>, a brand name owned by Yulkore Group Inc.
+							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>, A brand name owned by Yulkore Group Inc.
 						</p>
 					</div>
 
