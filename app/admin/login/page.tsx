@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2, Lock, ShieldCheck } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
@@ -17,11 +17,17 @@ export default function AdminLoginPage() {
 function LoginForm() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
-	const { refresh } = useAdmin()
+	const { refresh, isAuthenticated, loading: authLoading } = useAdmin()
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [loading, setLoading] = useState(false)
+
+	useEffect(() => {
+		if (!authLoading && isAuthenticated) {
+			router.replace(searchParams.get('next') || '/admin/dashboard')
+		}
+	}, [authLoading, isAuthenticated, router, searchParams])
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -45,6 +51,14 @@ function LoginForm() {
 		} finally {
 			setLoading(false)
 		}
+	}
+
+	if (authLoading || isAuthenticated) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-background">
+				<Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+			</div>
+		)
 	}
 
 	return (

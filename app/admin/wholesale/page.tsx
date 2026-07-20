@@ -9,10 +9,10 @@ import { useAdmin } from '@/contexts/admin-context'
 import type { WholesalePriceTier, Category } from '@/lib/types'
 import {
 	WholesaleFormModal,
-	EMPTY_WHOLESALE,
 	wholesaleToForm,
 	type WholesaleFormValue,
 } from '@/components/admin/wholesale-form'
+import { WholesaleLotWizard } from '@/components/admin/wholesale-wizard'
 
 export default function AdminWholesalePage() {
 	const { toast, confirm } = useToast()
@@ -22,6 +22,7 @@ export default function AdminWholesalePage() {
 	const [categories, setCategories] = useState<Category[]>([])
 	const [search, setSearch] = useState('')
 	const [editing, setEditing] = useState<WholesaleFormValue | null>(null)
+	const [wizardOpen, setWizardOpen] = useState(false)
 	
 	const [selectedLot, setSelectedLot] = useState<string>('')
 	const [tiers, setTiers] = useState<WholesalePriceTier[] | null>(null)
@@ -164,7 +165,7 @@ export default function AdminWholesalePage() {
 				subtitle="Manage bulk/lot inventory listings and quantity-based pricing tiers"
 				actions={
 					writable && (
-						<button onClick={() => setEditing(EMPTY_WHOLESALE)} className={adminButton}>
+						<button onClick={() => setWizardOpen(true)} className={adminButton}>
 							<Plus className="w-3.5 h-3.5" />
 							Add Wholesale Lot
 						</button>
@@ -370,7 +371,15 @@ export default function AdminWholesalePage() {
 				)}
 			</div>
 
-			{/* Form modal */}
+			{/* Create wizard */}
+			<WholesaleLotWizard
+				open={wizardOpen}
+				categories={categories}
+				onClose={() => setWizardOpen(false)}
+				onSaved={loadLots}
+			/>
+
+			{/* Edit modal */}
 			{editing && (
 				<WholesaleFormModal
 					open

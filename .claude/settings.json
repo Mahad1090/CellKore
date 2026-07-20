@@ -11,7 +11,8 @@
       "Bash(npm install *)",
       "Bash(node -e ' *)",
       "Bash(git check-ignore *)",
-      "Bash(cp \"/c/Users/HP/AppData/Local/Temp/claude/d--CellKore/e740b164-6d3a-49dc-a59d-031a385acd89/scratchpad/img\"/*.webp /d/CellKore/public/ && ls /d/CellKore/public/*.webp)"
+      "Bash(cp \"/c/Users/HP/AppData/Local/Temp/claude/d--CellKore/e740b164-6d3a-49dc-a59d-031a385acd89/scratchpad/img\"/*.webp /d/CellKore/public/ && ls /d/CellKore/public/*.webp)",
+      "Bash(echo \"EXIT:$?\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\HP\\AppData\\Local\\Temp\\claude\\d--CellKore\\e740b164-6d3a-49dc-a59d-031a385acd89\\scratchpad\\img"

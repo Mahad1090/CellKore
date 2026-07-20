@@ -14,6 +14,7 @@ export type { SpecFieldType }
 
 export type ProductCondition = 'new' | 'used' | 'refurbished'
 export type MarketplaceType = 'US' | 'CA'
+export type CarrierLockStatus = 'locked' | 'unlocked'
 export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded' | 'failed'
 export type InquiryStatus = 'new' | 'responded'
@@ -92,6 +93,9 @@ export interface ProductVariant {
 	swatch_hex?: string | null
 	storage?: string | null
 	ram?: string | null
+	model_name?: string | null
+	condition?: ProductCondition | null
+	carrier_lock?: CarrierLockStatus | null
 	stock_quantity: number
 	price_adjustment: number
 	created_at?: string

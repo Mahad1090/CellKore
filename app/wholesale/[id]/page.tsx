@@ -202,7 +202,7 @@ export default function WholesaleDetailPage() {
 								<table className="w-full text-sm min-w-[640px]">
 									<thead>
 										<tr className="bg-secondary text-left">
-											{['Model', 'Storage Capacity', 'Carrier', 'Grade', 'Quantity', 'Color'].map((h) => (
+											{['Model', 'Storage Capacity', 'Lock Status', 'Grade', 'Quantity', 'Color'].map((h) => (
 												<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/80">
 													{h}
 												</th>
@@ -214,12 +214,12 @@ export default function WholesaleDetailPage() {
 											variants.map((variant, index) => (
 												<tr key={variant.id} className={index % 2 === 1 ? 'bg-muted/40' : ''}>
 													<td className="px-5 py-3.5 font-medium text-foreground">
-														{lot.brand ? `${lot.brand} ` : ''}{specValue('Model') !== '—' ? specValue('Model') : lot.name}
+														{variant.model_name ?? (lot.brand ? `${lot.brand} ${lot.name}` : lot.name)}
 													</td>
-													<td className="px-5 py-3.5 text-foreground/75">{specValue('Storage Capacity')}</td>
-													<td className="px-5 py-3.5 text-foreground/75">{specValue('Carrier')}</td>
-													<td className="px-5 py-3.5 text-foreground/75">
-														{specValue('Grade') !== '—' ? specValue('Grade') : lot.condition}
+													<td className="px-5 py-3.5 text-foreground/75">{variant.storage ?? specValue('Storage Capacity')}</td>
+													<td className="px-5 py-3.5 text-foreground/75 capitalize">{variant.carrier_lock ?? '—'}</td>
+													<td className="px-5 py-3.5 text-foreground/75 capitalize">
+														{variant.condition ?? (specValue('Grade') !== '—' ? specValue('Grade') : lot.condition)}
 													</td>
 													<td className="px-5 py-3.5 font-semibold text-foreground">{variant.stock_quantity}</td>
 													<td className="px-5 py-3.5 text-foreground/75">{variant.color ?? '—'}</td>
@@ -231,7 +231,7 @@ export default function WholesaleDetailPage() {
 													{lot.brand ? `${lot.brand} ` : ''}{lot.name}
 												</td>
 												<td className="px-5 py-3.5 text-foreground/75">{specValue('Storage Capacity')}</td>
-												<td className="px-5 py-3.5 text-foreground/75">{specValue('Carrier')}</td>
+												<td className="px-5 py-3.5 text-foreground/75">—</td>
 												<td className="px-5 py-3.5 text-foreground/75 capitalize">{lot.condition}</td>
 												<td className="px-5 py-3.5 font-semibold text-foreground">—</td>
 												<td className="px-5 py-3.5 text-foreground/75">{lotColors.join(', ') || '—'}</td>

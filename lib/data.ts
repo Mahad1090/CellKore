@@ -17,7 +17,7 @@ const PRODUCT_SELECT = `
 	created_at, updated_at,
 	categories ( id, name, slug, image_url, is_active, sort_order, created_at ),
 	product_images ( id, product_id, image_url, sort_order, is_primary, variant_color ),
-	product_variants ( id, product_id, color, swatch_hex, storage, ram, stock_quantity, price_adjustment ),
+	product_variants ( id, product_id, color, swatch_hex, storage, ram, model_name, condition, carrier_lock, stock_quantity, price_adjustment ),
 	product_specifications ( id, product_id, spec_name, spec_value ),
 	product_marketplaces ( marketplace )
 `

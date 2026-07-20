@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import type { MarketplaceType, ProductCondition, TemplateSpecifications } from '@/lib/types'
+import type { CarrierLockStatus, MarketplaceType, ProductCondition, TemplateSpecifications } from '@/lib/types'
 import type { MobileSpecifications } from '@/lib/mobile-specs'
 
 export interface ProductPayload {
@@ -18,7 +18,18 @@ export interface ProductPayload {
 	is_active?: boolean
 	mobile_specifications?: MobileSpecifications
 	template_specifications?: TemplateSpecifications
-	variants?: { id?: string; color: string | null; swatch_hex: string | null; storage: string | null; ram: string | null; stock_quantity: number; price_adjustment: number }[]
+	variants?: {
+		id?: string
+		color: string | null
+		swatch_hex: string | null
+		storage: string | null
+		ram: string | null
+		model_name?: string | null
+		condition?: ProductCondition | null
+		carrier_lock?: CarrierLockStatus | null
+		stock_quantity: number
+		price_adjustment: number
+	}[]
 	marketplaces?: MarketplaceType[]
 	images?: { image_url: string; sort_order: number; is_primary: boolean; variant_color: string | null }[]
 	wholesale_colors?: string[]
@@ -47,6 +58,9 @@ export async function syncProductRelations(
 							swatch_hex: variant.swatch_hex,
 							storage: variant.storage,
 							ram: variant.ram,
+							model_name: variant.model_name ?? null,
+							condition: variant.condition ?? null,
+							carrier_lock: variant.carrier_lock ?? null,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})
@@ -62,6 +76,9 @@ export async function syncProductRelations(
 							swatch_hex: variant.swatch_hex,
 							storage: variant.storage,
 							ram: variant.ram,
+							model_name: variant.model_name ?? null,
+							condition: variant.condition ?? null,
+							carrier_lock: variant.carrier_lock ?? null,
 							stock_quantity: variant.stock_quantity,
 							price_adjustment: variant.price_adjustment,
 						})

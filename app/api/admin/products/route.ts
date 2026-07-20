@@ -7,7 +7,7 @@ const PRODUCT_SELECT = `
 	*,
 	categories ( id, name, slug ),
 	product_images ( id, image_url, sort_order, is_primary, variant_color ),
-	product_variants ( id, color, swatch_hex, storage, ram, stock_quantity, price_adjustment ),
+	product_variants ( id, color, swatch_hex, storage, ram, model_name, condition, carrier_lock, stock_quantity, price_adjustment ),
 	product_specifications ( id, spec_name, spec_value ),
 	product_marketplaces ( marketplace )
 `
