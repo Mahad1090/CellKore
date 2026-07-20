@@ -182,7 +182,7 @@ export default function SellYourPhonePage() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="relative text-white w-full min-h-[420px] md:min-h-[480px] py-16 md:py-24 overflow-hidden flex items-center justify-center text-center">
+			<section className="relative text-white w-full min-h-[580px] md:min-h-[700px] py-24 md:py-36 overflow-hidden flex items-center justify-center text-center">
 				<video
 					key="sell-ur-phone-new"
 					autoPlay
@@ -209,8 +209,8 @@ export default function SellYourPhonePage() {
 					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
 						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">1</span>
 						<div>
-							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 01</p>
-							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+							<p className="text-[9.5px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-black">Step 01</p>
+							<h2 className="text-lg font-extrabold uppercase tracking-wide text-black">
 								Device Details
 							</h2>
 						</div>
@@ -248,8 +248,8 @@ export default function SellYourPhonePage() {
 					<div className="flex items-center gap-3 mb-3 pb-3 border-b border-border/60">
 						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">2</span>
 						<div>
-							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 02</p>
-							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+							<p className="text-[9.5px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-black">Step 02</p>
+							<h2 className="text-lg font-extrabold uppercase tracking-wide text-black">
 								Device Photos
 							</h2>
 						</div>
@@ -303,8 +303,8 @@ export default function SellYourPhonePage() {
 					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
 						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">3</span>
 						<div>
-							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 03</p>
-							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+							<p className="text-[9.5px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-black">Step 03</p>
+							<h2 className="text-lg font-extrabold uppercase tracking-wide text-black">
 								Contact Information
 							</h2>
 						</div>
