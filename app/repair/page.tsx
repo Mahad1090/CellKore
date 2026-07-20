@@ -272,7 +272,15 @@ export default function RepairPage() {
 			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
 				{/* Step 1: Device Category */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">1 · Select Device Category</h2>
+					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/30 shadow-sm">1</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-bold">Step 01</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Select Device Category
+							</h2>
+						</div>
+					</div>
 					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 						{DEVICE_CATEGORIES.map((cat) => {
 							const Icon = cat.icon
@@ -311,7 +319,15 @@ export default function RepairPage() {
 
 				{/* Step 2: Select Issues */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-4">2 · What Needs Repair?</h2>
+					<div className="flex items-center gap-3 mb-3 pb-3 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/30 shadow-sm">2</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-bold">Step 02</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								What Needs Repair?
+							</h2>
+						</div>
+					</div>
 					<p className="text-xs text-muted-foreground mb-6">Select all that apply to your device issue:</p>
 					<div className="grid sm:grid-cols-2 gap-3">
 						{REPAIR_ISSUES.map((issue) => {
@@ -352,7 +368,15 @@ export default function RepairPage() {
 
 				{/* Step 3: Device Model & Details */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">3 · Device Specification</h2>
+					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/30 shadow-sm">3</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-bold">Step 03</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Device Specification
+							</h2>
+						</div>
+					</div>
 					<div className="grid sm:grid-cols-2 gap-4">
 						<input required placeholder="Brand (e.g. Apple, Samsung, Dell)" value={form.brand} onChange={set('brand')} className={inputClass} />
 						<input required placeholder="Model (e.g. iPhone 15 Pro, S24 Ultra, MacBook M3)" value={form.model} onChange={set('model')} className={inputClass} />
@@ -369,7 +393,15 @@ export default function RepairPage() {
 
 				{/* Step 4: Device Photos */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-2">4 · Upload Device Damage Photos</h2>
+					<div className="flex items-center gap-3 mb-3 pb-3 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/30 shadow-sm">4</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-bold">Step 04</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Upload Damage Photos
+							</h2>
+						</div>
+					</div>
 					<p className="text-xs text-muted-foreground mb-6">
 						Upload photos showing the damage or issue (up to 8 photos, 5MB max each).
 					</p>
@@ -416,7 +448,15 @@ export default function RepairPage() {
 
 				{/* Step 5: Service Method & Contact */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">5 · Service Method & Contact</h2>
+					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-extrabold text-xs flex items-center justify-center border border-amber-500/30 shadow-sm">5</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-amber-600 dark:text-amber-400 font-bold">Step 05</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Service Method & Contact
+							</h2>
+						</div>
+					</div>
 					<div className="grid sm:grid-cols-2 gap-3 mb-6">
 						{SERVICE_METHODS.map((method) => (
 							<button

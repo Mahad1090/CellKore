@@ -20,14 +20,20 @@ export function CmsPageView({ slug, fallbackTitle }: { slug: string; fallbackTit
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="bg-primary text-primary-foreground py-12">
+			<section className="bg-gradient-to-r from-primary via-primary/95 to-accent text-primary-foreground py-14 border-b border-primary/20 shadow-md">
 				<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 					{page === undefined ? (
 						<div className="h-9 w-64 bg-primary-foreground/20 rounded-full animate-pulse" />
 					) : (
-						<h1 className="text-3xl md:text-4xl font-bold tracking-luxury uppercase">
-							{page?.title ?? fallbackTitle}
-						</h1>
+						<div>
+							<div className="flex items-center gap-2 mb-3">
+								<span className="h-0.5 w-6 bg-primary-foreground/70 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-primary-foreground/80 font-bold">CellKore Portal</p>
+							</div>
+							<h1 className="text-3xl md:text-5xl font-extrabold tracking-luxury uppercase text-primary-foreground drop-shadow-sm">
+								{page?.title ?? fallbackTitle}
+							</h1>
+						</div>
 					)}
 				</div>
 			</section>

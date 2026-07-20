@@ -206,7 +206,15 @@ export default function SellYourPhonePage() {
 			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
 				{/* Device */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">1 · Device Details</h2>
+					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">1</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 01</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Device Details
+							</h2>
+						</div>
+					</div>
 					<div className="grid sm:grid-cols-2 gap-4">
 						<input required placeholder="Brand (e.g. Apple)" value={form.brand} onChange={set('brand')} className={inputClass} />
 						<input required placeholder="Model (e.g. iPhone 15 Pro)" value={form.model} onChange={set('model')} className={inputClass} />
@@ -237,7 +245,15 @@ export default function SellYourPhonePage() {
 
 				{/* Photos */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-2">2 · Device Photos</h2>
+					<div className="flex items-center gap-3 mb-3 pb-3 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">2</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 02</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Device Photos
+							</h2>
+						</div>
+					</div>
 					<p className="text-xs text-muted-foreground mb-6">
 						Up to 8 photos, 5MB each. Photos are compressed automatically before upload.
 					</p>
@@ -284,7 +300,15 @@ export default function SellYourPhonePage() {
 
 				{/* Contact */}
 				<div className="bg-card border border-border rounded-3xl p-7">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">3 · Contact Details</h2>
+					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
+						<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">3</span>
+						<div>
+							<p className="text-[9px] uppercase tracking-[0.25em] text-emerald-600 dark:text-emerald-400 font-bold">Step 03</p>
+							<h2 className="text-sm font-extrabold uppercase tracking-[0.18em] text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary bg-clip-text text-transparent">
+								Contact Information
+							</h2>
+						</div>
+					</div>
 					<div className="grid sm:grid-cols-2 gap-4">
 						<input placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
 						<input type="email" placeholder="Email address" value={form.email} onChange={set('email')} className={inputClass} />
