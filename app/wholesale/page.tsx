@@ -34,11 +34,21 @@ export default function WholesalePage() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="bg-accent text-accent-foreground py-14">
-				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">Wholesale</p>
-					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase">Bulk Device Lots</h1>
-					<p className="opacity-90 mt-4 text-base md:text-lg font-light max-w-2xl">
+			<section className="relative text-white w-full min-h-[350px] py-16 sm:py-20 overflow-hidden flex items-center">
+				<video
+					autoPlay
+					loop
+					muted
+					playsInline
+					preload="auto"
+					src="/bulk_banner.mp4"
+					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
+				/>
+				<div className="absolute inset-0 bg-black/60 z-10" />
+				<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+					<p className="text-sm uppercase tracking-[0.25em] text-white/80 mb-3">Wholesale</p>
+					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase text-white drop-shadow-md">Bulk Device Lots</h1>
+					<p className="text-white/90 mt-4 text-base md:text-lg font-light max-w-2xl leading-relaxed drop-shadow-sm">
 						Manifested wholesale lots with transparent bulk pricing tiers. All wholesale transactions are final.
 					</p>
 				</div>

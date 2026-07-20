@@ -54,7 +54,11 @@ function ProductsPageContent() {
 						? 'tablet_banner'
 						: isWatchSelected
 							? 'watch_banner'
-							: null
+							: marketplace === 'CA'
+								? 'canada_marketplace_banner'
+								: marketplace === 'US'
+									? 'us_marketplace_banner'
+									: 'all_marketplace_banner'
 
 	useEffect(() => {
 		setSelectedCategory(searchParams.get('category') || 'all')
@@ -93,13 +97,13 @@ function ProductsPageContent() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<section className="relative bg-primary text-primary-foreground pt-36 pb-24 overflow-hidden min-h-[450px] flex items-end">
+			<section className="relative bg-primary text-primary-foreground pt-40 md:pt-48 pb-28 md:pb-32 overflow-hidden min-h-[500px] md:min-h-[560px] flex items-end">
 				{bannerVideo && (
 					<>
 						<video
 							key={bannerVideo}
 							src={`/${bannerVideo}.mp4`}
-							poster={`/${bannerVideo}_poster.jpg`}
+							poster={(bannerVideo === 'us_marketplace_banner' || bannerVideo === 'canada_marketplace_banner' || bannerVideo === 'all_marketplace_banner') ? undefined : `/${bannerVideo}_poster.jpg`}
 							autoPlay
 							loop
 							muted
