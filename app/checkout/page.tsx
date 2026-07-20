@@ -380,7 +380,7 @@ export default function CheckoutPage() {
 					<div className="text-center py-24 border border-dashed border-border rounded-3xl">
 						<p className="text-muted-foreground text-sm mb-6">There is nothing to check out yet.</p>
 						<Link
-							href="/products"
+							href="/products?category=iphones"
 							className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 						>
 							Browse Products

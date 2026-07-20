@@ -56,7 +56,7 @@ export default function Home() {
 					</p>
 					<div className="flex flex-wrap gap-4 justify-center">
 						<Link
-							href="/products"
+							href="/products?category=iphones"
 							className="px-8 py-3.5 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
 						>
 							Shop All Products
@@ -89,7 +89,7 @@ export default function Home() {
 							Shop by Device Type
 						</h2>
 					</div>
-					<Link href="/products" className="glow-outline-btn glow-outline-primary">
+					<Link href="/products?category=iphones" className="glow-outline-btn glow-outline-primary">
 						<span className="glow-outline-beam" />
 						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
 							View All Categories
@@ -175,7 +175,7 @@ export default function Home() {
 							Featured Devices
 						</h2>
 					</div>
-					<Link href="/products" className="glow-outline-btn glow-outline-primary">
+					<Link href="/products?category=iphones" className="glow-outline-btn glow-outline-primary">
 						<span className="glow-outline-beam" />
 						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
 							Explore All

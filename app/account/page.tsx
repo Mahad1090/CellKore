@@ -85,7 +85,7 @@ export default function AccountPage() {
 						<div className="text-center py-10">
 							<p className="text-sm text-muted-foreground mb-5">No orders yet.</p>
 							<Link
-								href="/products"
+								href="/products?category=iphones"
 								className="inline-block px-6 py-2.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.16em] hover:opacity-90 transition-all"
 							>
 								Start Shopping
