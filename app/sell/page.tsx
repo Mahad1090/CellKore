@@ -190,7 +190,7 @@ export default function SellYourPhonePage() {
 					muted
 					playsInline
 					preload="auto"
-					src="/sell_ur_phone_banner.mp4?v=3"
+					src="/sell_ur_phone_banner.mp4?v=4"
 					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
 				/>
 				<div className="absolute inset-0 bg-black/55 z-10" />

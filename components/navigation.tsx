@@ -470,7 +470,7 @@ export function Navigation() {
 												{categories.map((category) => (
 													<Link
 														key={category.id}
-														href={`/products?category=${category.slug}`}
+														href={category.slug === 'spare-parts' ? '/spare-parts' : `/products?category=${category.slug}`}
 														onClick={() => setMobileMenuOpen(false)}
 														className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/70 hover:text-primary transition-colors"
 													>

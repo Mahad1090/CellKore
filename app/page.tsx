@@ -98,13 +98,13 @@ export default function Home() {
 				</div>
 
 				{categories === null ? (
-					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-						{Array.from({ length: 6 }).map((_, i) => (
-							<div key={i} className="animate-pulse bg-muted rounded-2xl h-40" />
+					<div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 py-2">
+						{Array.from({ length: 8 }).map((_, i) => (
+							<div key={i} className="animate-pulse bg-muted rounded-2xl h-40 w-[140px] sm:w-[170px] shrink-0" />
 						))}
 					</div>
 				) : (
-					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+					<div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 py-2">
 						{categories.map((category) => {
 							const isIphone = category.slug === 'iphones' || category.slug === 'iphone'
 							const isSamsung = category.slug === 'samsungs' || category.slug === 'samsung'
@@ -112,7 +112,9 @@ export default function Home() {
 							const isTablet = category.slug === 'tablets' || category.slug === 'tablet'
 							const isWatch = category.slug === 'watches' || category.slug === 'watch'
 							const isLaptop = category.slug === 'laptops' || category.slug === 'laptop'
-							const hasCustomCover = isIphone || isSamsung || isIpad || isTablet || isWatch || isLaptop
+							const isSpareParts = category.slug === 'spare-parts' || category.slug === 'spare_parts'
+							const isAccessories = category.slug === 'accessories'
+							const hasCustomCover = isIphone || isSamsung || isIpad || isTablet || isWatch || isLaptop || isSpareParts || isAccessories
 
 							let coverImage = null
 							if (isIphone) coverImage = '/iphone_category.webp'
@@ -121,9 +123,13 @@ export default function Home() {
 							else if (isTablet) coverImage = '/tablets_category.webp'
 							else if (isWatch) coverImage = '/watches_category.webp'
 							else if (isLaptop) coverImage = '/laptop_category.webp'
+							else if (isSpareParts) coverImage = '/spare_parts_category.png?v=2'
+							else if (isAccessories) coverImage = '/accessories_category.png?v=1'
+
+							const targetHref = isSpareParts ? '/spare-parts' : `/products?category=${category.slug}`
 
 							return (
-								<Link key={category.id} href={`/products?category=${category.slug}`}>
+								<Link key={category.id} href={targetHref} className="w-[140px] sm:w-[170px] shrink-0 snap-start snap-always">
 									<div className={`bg-card border border-border/80 rounded-2xl text-center shadow-sm hover:shadow-xl hover:border-primary hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center group relative overflow-hidden ${
 										hasCustomCover ? 'p-0 min-h-[160px]' : 'p-6'
 									}`}>
@@ -276,7 +282,7 @@ export default function Home() {
 							preload="auto"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
 						>
-							<source src="/sell_ur_phone_banner.mp4?v=3" type="video/mp4" />
+							<source src="/sell_ur_phone_banner.mp4?v=4" type="video/mp4" />
 						</video>
 						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
 
@@ -351,6 +357,61 @@ export default function Home() {
 									className="px-7 py-3 bg-teal-600 hover:bg-teal-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
 								>
 									Book Repair Service
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+				{/* FEATURE SECTION 3.5: SPARE PARTS & COMPONENTS (Running Video Banner: /spare_parts_banner.mp4) */}
+				<div className="space-y-5">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="h-0.5 w-6 bg-amber-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-amber-600 dark:text-amber-400 font-bold">Spare Parts Catalog</p>
+							</div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-amber-600 bg-clip-text text-transparent">
+								Spare Parts & Components
+							</h2>
+						</div>
+						<Link href="/spare-parts" className="glow-outline-btn glow-outline-amber">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-400">
+								Search Spare Parts
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<video
+							autoPlay
+							loop
+							muted
+							playsInline
+							preload="auto"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						>
+							<source src="/spare_parts_banner.mp4" type="video/mp4" />
+						</video>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
+							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
+								<ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Premium OEM Quality
+							</div>
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
+								OEM Replacement Parts
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								Procure screen assemblies, replacement batteries, cameras, flex cables, and micro-soldering components. Fully batch-tested and ready for shipping.
+							</p>
+							<div className="flex flex-wrap items-center gap-4">
+								<Link
+									href="/spare-parts"
+									className="px-7 py-3 bg-amber-600 hover:bg-amber-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+								>
+									Explore Parts Catalog
 								</Link>
 							</div>
 						</div>

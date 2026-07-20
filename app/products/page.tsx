@@ -9,7 +9,6 @@ import { GridShimmer } from '@/components/shimmer'
 import { useMarketplace } from '@/contexts/marketplace-context'
 import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
 import type { Category, Product } from '@/lib/types'
-
 export default function ProductsPage() {
 	return (
 		<Suspense
@@ -41,6 +40,8 @@ function ProductsPageContent() {
 	const isLaptopSelected = selectedCategory === 'laptops' || selectedCategory === 'laptop'
 	const isTabletSelected = selectedCategory === 'tablets' || selectedCategory === 'tablet'
 	const isWatchSelected = selectedCategory === 'watches' || selectedCategory === 'watch'
+	const isSparePartsSelected = selectedCategory === 'spare-parts' || selectedCategory === 'spare_parts'
+	const isAccessoriesSelected = selectedCategory === 'accessories'
 
 	const bannerVideo = isIphoneSelected
 		? 'iphone_banner'
@@ -54,11 +55,15 @@ function ProductsPageContent() {
 						? 'tablet_banner'
 						: isWatchSelected
 							? 'watch_banner'
-							: marketplace === 'CA'
-								? 'canada_marketplace_banner'
-								: marketplace === 'US'
-									? 'us_marketplace_banner'
-									: 'all_marketplace_banner'
+							: isSparePartsSelected
+								? 'spare_parts_banner'
+								: isAccessoriesSelected
+									? 'accessories_banner'
+									: marketplace === 'CA'
+										? 'canada_marketplace_banner'
+										: marketplace === 'US'
+											? 'us_marketplace_banner'
+											: 'all_marketplace_banner'
 
 	useEffect(() => {
 		setSelectedCategory(searchParams.get('category') || 'all')
@@ -116,14 +121,14 @@ function ProductsPageContent() {
 				)}
 				<div className="relative w-full px-4 sm:px-8 lg:px-12 z-10">
 					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">
-						{(isIphoneSelected || isSamsungSelected || isIpadSelected || isLaptopSelected || isTabletSelected || isWatchSelected) ? (
+						{(isIphoneSelected || isSamsungSelected || isIpadSelected || isLaptopSelected || isTabletSelected || isWatchSelected || isSparePartsSelected || isAccessoriesSelected) ? (
 							<span className="text-amber-400 font-semibold">Shop</span>
 						) : (
 							'Catalog'
 						)}
 					</p>
 					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
-						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : 'Shop Devices'}
+						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Shop Devices'}
 					</h1>
 					{isIphoneSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
@@ -153,6 +158,16 @@ function ProductsPageContent() {
 					{isWatchSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
 							Premium, certified pre-owned and refurbished smartwatches. Fully tested, unlocked, and backed by our complete warranty.
+						</p>
+					)}
+					{isSparePartsSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium OEM & high-quality replacement parts. Screen assemblies, battery replacements, ports, and micro-soldering components.
+						</p>
+					)}
+					{isAccessoriesSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, original-grade power adapters, fast-charging cables, protective cases, screen protectors, and audio accessories.
 						</p>
 					)}
 				</div>
