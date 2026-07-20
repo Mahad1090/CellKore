@@ -205,7 +205,7 @@ export function Navigation() {
 				</div>
 			)}
 
-			<nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-accent/10 shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
+			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4">
 						{/* Left Block */}
@@ -235,11 +235,11 @@ export function Navigation() {
 						<div className="flex flex-col items-center justify-center flex-1 min-w-0 md:flex-none md:w-1/3">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
-									src="/logo.png"
+									src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
-									className="h-12 sm:h-16 md:h-20 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-16 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
-								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1">
+								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1 font-medium">
 									Your Premium Electronics Hub
 								</span>
 							</Link>
@@ -252,7 +252,7 @@ export function Navigation() {
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
-									className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-xs font-bold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer"
+									className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-xs font-bold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer text-foreground"
 								>
 									{currentMarket ? (
 										<MarketFlag value={currentMarket.value} className="w-4.5 h-3.5 mr-0.5 rounded-[2px] shadow-sm shrink-0" />
@@ -315,7 +315,7 @@ export function Navigation() {
 							<div className="relative animate-fade-in" ref={profileMenuRef}>
 								<button
 									onClick={() => setProfileMenuOpen(!profileMenuOpen)}
-									className="flex items-center gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer"
+									className="flex items-center gap-1.5 px-2 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] font-semibold uppercase tracking-[0.14em] cursor-pointer text-foreground"
 								>
 									<User className="w-3.5 h-3.5" />
 									<span className="hidden sm:inline">Profile</span>
@@ -380,7 +380,7 @@ export function Navigation() {
 						<div>
 							<div className="relative flex flex-col items-center justify-center pb-6 border-b border-border/60">
 								<Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
-									<img src="/logo.png" alt="CellKore Logo" className="h-16 w-auto object-contain" />
+									<img src="/cellkore_apple_green.webp" alt="CellKore Logo" className="h-24 w-auto object-contain" />
 								</Link>
 								<button
 									onClick={() => setMobileMenuOpen(false)}

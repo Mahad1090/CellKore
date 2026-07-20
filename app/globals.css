@@ -59,9 +59,9 @@
 
 :root {
     color-scheme: light;
-    --background: #f9fafb;
+    --background: #fdfdfd;
     --foreground: #000000;
-    --card: #ffffff;
+    --card: #fdfdfd;
     --card-foreground: #000000;
     --popover: #ffffff;
     --popover-foreground: #000000;
