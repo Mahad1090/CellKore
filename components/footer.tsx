@@ -81,6 +81,7 @@ export function Footer() {
 							<li><Link href="/marketplace" className="opacity-80 hover:opacity-100 transition-opacity">Marketplace</Link></li>
 							<li><Link href="/wholesale" className="opacity-80 hover:opacity-100 transition-opacity">Wholesale</Link></li>
 							<li><Link href="/sell" className="opacity-80 hover:opacity-100 transition-opacity">Sell Your Phone</Link></li>
+							<li><Link href="/repair" className="opacity-80 hover:opacity-100 transition-opacity">Device Repair</Link></li>
 						</ul>
 					</div>
 

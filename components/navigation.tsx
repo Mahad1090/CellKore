@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {
 	ShoppingCart, Heart, Menu, X, Search, Home, Smartphone, Store, DollarSign,
-	Package, Info, Mail, User, Globe, ChevronDown, BookOpen,
+	Package, Info, Mail, User, Globe, ChevronDown, BookOpen, Wrench,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -430,6 +430,16 @@ export function Navigation() {
 								>
 									<DollarSign className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
 									<span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Phone</span>
+								</Link>
+
+								{/* Device Repair */}
+								<Link
+									href="/repair"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Wrench className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Device Repair</span>
 								</Link>
 
 								{/* Wholesale */}
