@@ -52,13 +52,8 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
 			.then((res) => res.json())
 			.then((data: { countryCode: 'US' | 'CA' | 'INT' }) => {
 				setDetectedCountry(data.countryCode)
-				if (data.countryCode === 'CA') {
-					setMarketplaceState('CA')
-				} else if (data.countryCode === 'INT') {
-					setMarketplaceState('BOTH')
-				} else {
-					setMarketplaceState('US')
-				}
+				// Canada defaults to the CA marketplace; everyone else (US and international) defaults to US.
+				setMarketplaceState(data.countryCode === 'CA' ? 'CA' : 'US')
 			})
 			.catch(() => {
 				// Geolocation failed or timed out — default to the US catalog and inform the user.
