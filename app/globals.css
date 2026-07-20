@@ -307,60 +307,60 @@ body:has(.admin-theme-wrapper) * {
     transform: translateY(-1.5px);
 }
 
-/* Emerald Moving Beam (#599063) */
+/* Emerald Moving Beam */
 .glow-outline-emerald {
-    box-shadow: 0 0 10px rgba(89, 144, 99, 0.35);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.35);
 }
 .glow-outline-emerald .glow-outline-beam {
     background: conic-gradient(
         from 0deg,
         transparent 60%,
-        #3e6b47 75%,
-        #599063 90%,
-        #7cb487 98%,
+        #047857 75%,
+        #10b981 90%,
+        #34d399 98%,
         transparent 100%
     );
 }
 .glow-outline-emerald:hover {
-    box-shadow: 0 0 18px rgba(89, 144, 99, 0.65);
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.65);
     transform: translateY(-1.5px);
 }
 
-/* Teal Moving Beam (#599063) */
+/* Teal Moving Beam */
 .glow-outline-teal {
-    box-shadow: 0 0 10px rgba(89, 144, 99, 0.35);
+    box-shadow: 0 0 10px rgba(13, 148, 136, 0.35);
 }
 .glow-outline-teal .glow-outline-beam {
     background: conic-gradient(
         from 0deg,
         transparent 60%,
-        #3e6b47 75%,
-        #599063 90%,
-        #7cb487 98%,
+        #0f766e 75%,
+        #14b8a6 90%,
+        #2dd4bf 98%,
         transparent 100%
     );
 }
 .glow-outline-teal:hover {
-    box-shadow: 0 0 18px rgba(89, 144, 99, 0.65);
+    box-shadow: 0 0 18px rgba(13, 148, 136, 0.65);
     transform: translateY(-1.5px);
 }
 
-/* Royal Blue Moving Beam (#599063) */
+/* Royal Blue Moving Beam (For Blue Text Buttons) */
 .glow-outline-blue {
-    box-shadow: 0 0 10px rgba(89, 144, 99, 0.35);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.35);
 }
 .glow-outline-blue .glow-outline-beam {
     background: conic-gradient(
         from 0deg,
         transparent 60%,
-        #3e6b47 75%,
-        #599063 90%,
-        #7cb487 98%,
+        #1d4ed8 75%,
+        #3b82f6 90%,
+        #60a5fa 98%,
         transparent 100%
     );
 }
 .glow-outline-blue:hover {
-    box-shadow: 0 0 18px rgba(89, 144, 99, 0.65);
+    box-shadow: 0 0 18px rgba(37, 99, 235, 0.65);
     transform: translateY(-1.5px);
 }
 
