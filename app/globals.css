@@ -188,10 +188,10 @@ body:has(.admin-theme-wrapper) * {
 /* Premium border beam animation */
 @keyframes rotate-beam {
     0% {
-        transform: rotate(0deg);
+        transform: translate(-50%, -50%) rotate(0deg);
     }
     100% {
-        transform: rotate(360deg);
+        transform: translate(-50%, -50%) rotate(360deg);
     }
 }
 
@@ -206,10 +206,11 @@ body:has(.admin-theme-wrapper) * {
 
 .border-beam-glow {
     position: absolute;
-    top: -75%;
-    left: -75%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 250%;
-    height: 250%;
+    aspect-ratio: 1 / 1;
     z-index: 0;
     pointer-events: none;
     background: conic-gradient(
@@ -258,10 +259,10 @@ body:has(.admin-theme-wrapper) * {
 /* Smooth Moving Conic Border Beam Animation (Continuous Motion, No Blinking) */
 @keyframes rotate-outline-beam {
     0% {
-        transform: rotate(0deg);
+        transform: translate(-50%, -50%) rotate(0deg);
     }
     100% {
-        transform: rotate(360deg);
+        transform: translate(-50%, -50%) rotate(360deg);
     }
 }
 
@@ -279,10 +280,11 @@ body:has(.admin-theme-wrapper) * {
 
 .glow-outline-beam {
     position: absolute;
-    top: -250%;
-    left: -250%;
-    width: 600%;
-    height: 600%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200%;
+    aspect-ratio: 1 / 1;
     z-index: 0;
     pointer-events: none;
     animation: rotate-outline-beam 3.2s linear infinite;
