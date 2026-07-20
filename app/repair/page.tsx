@@ -232,7 +232,7 @@ export default function RepairPage() {
 				/>
 				<div className="absolute inset-0 bg-black/60 z-10" />
 				<div className="relative z-20 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-					<p className="text-xs md:text-sm uppercase tracking-[0.25em] text-white/80 mb-3 font-medium">Certified OEM Service</p>
+					<p className="text-xs md:text-sm uppercase tracking-[0.25em] text-white/80 mb-3 font-medium">Repair Portal</p>
 					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase text-white drop-shadow-md">Device Repair & Restoration</h1>
 					<p className="text-white/90 mt-4 text-xs md:text-sm font-light max-w-xl mx-auto leading-relaxed drop-shadow-sm">
 						Professional screen, battery, component, and chip-level repairs for smartphones, tablets, laptops, and smartwatches.
@@ -246,7 +246,7 @@ export default function RepairPage() {
 					<div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
 						<div className="flex flex-col items-center">
 							<ShieldCheck className="w-6 h-6 text-primary mb-2" />
-							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">OEM Certified Parts</h3>
+							<h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Certified Parts</h3>
 							<p className="text-[11px] text-muted-foreground mt-0.5">Grade-A genuine replacement components</p>
 						</div>
 						<div className="flex flex-col items-center">

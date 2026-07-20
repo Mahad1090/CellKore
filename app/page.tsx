@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LayoutGrid, Store, Globe, Package, DollarSign, Wrench, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react'
+import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
@@ -48,14 +48,11 @@ export default function Home() {
 				<div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/60 to-primary/30 z-10" />
 
 				<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
-					<div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white/90 backdrop-blur-md mb-6 text-xs font-semibold uppercase tracking-[0.2em]">
-						<Sparkles className="w-3.5 h-3.5 text-primary" /> Premium Certified Marketplace
-					</div>
 					<h1 className="text-3xl sm:text-5xl md:text-7xl font-bold mb-4 tracking-luxury uppercase drop-shadow-md">
 						Welcome to CellKore
 					</h1>
 					<p className="text-base sm:text-xl md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
-						Your Premium Electronics Hub — buy retail, wholesale bulk, sell devices, and book OEM repairs
+						Your Premium Electronics Hub — buy retail, wholesale bulk, sell devices, and book repairs
 					</p>
 					<div className="flex flex-wrap gap-4 justify-center">
 						<Link
@@ -69,6 +66,12 @@ export default function Home() {
 							className="px-8 py-3.5 border border-white/40 bg-black/40 text-white backdrop-blur-md rounded-full hover:bg-white hover:text-black transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
 						>
 							Wholesale Lots
+						</Link>
+						<Link
+							href="/repair"
+							className="px-8 py-3.5 border border-white/40 bg-black/40 text-white backdrop-blur-md rounded-full hover:bg-white hover:text-black transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
+						>
+							Repair Your Phone
 						</Link>
 					</div>
 				</div>
@@ -200,10 +203,6 @@ export default function Home() {
 				<div className="space-y-5">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
-							<div className="flex items-center gap-2 mb-2">
-								<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
-								<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">B2B & Commercial Contracts</p>
-							</div>
 							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
 								Wholesale & Bulk Lots
 							</h2>
@@ -230,9 +229,6 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary-foreground backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<Package className="w-3.5 h-3.5 text-primary" /> B2B & Commercial Contracts
-							</div>
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
 								Wholesale Bulk Lots
 							</h3>
@@ -246,10 +242,6 @@ export default function Home() {
 								>
 									Browse Wholesale Manifests
 								</Link>
-								<div className="flex items-center gap-4 text-xs text-white/80 font-medium">
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-primary" /> Verified Manifests</span>
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-primary" /> Tiered Bulk Pricing</span>
-								</div>
 							</div>
 						</div>
 					</section>
@@ -299,10 +291,6 @@ export default function Home() {
 								Turn your pre-owned smartphones, tablets, and laptops into cash. Submit your device details in seconds to receive an official top-dollar quote from our team.
 							</p>
 							<div className="flex flex-wrap items-center justify-end gap-4">
-								<div className="flex items-center gap-4 text-xs text-white/80 font-medium mr-2">
-									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Free Shipping Label</span>
-									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Same-Day Evaluation</span>
-								</div>
 								<Link
 									href="/sell"
 									className="px-7 py-3 bg-white text-black hover:bg-white/90 transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
@@ -320,7 +308,7 @@ export default function Home() {
 						<div>
 							<div className="flex items-center gap-2 mb-2">
 								<span className="h-0.5 w-6 bg-teal-500 rounded-full inline-block" />
-								<p className="text-[10px] uppercase tracking-[0.28em] text-teal-600 dark:text-teal-400 font-bold">OEM Certified Service</p>
+								<p className="text-[10px] uppercase tracking-[0.28em] text-teal-600 dark:text-teal-400 font-bold">Repair Portal</p>
 							</div>
 							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-teal-600 bg-clip-text text-transparent">
 								Device Repair & Maintenance
@@ -349,7 +337,7 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
 							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-teal-500/20 border border-teal-400/40 text-teal-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<Wrench className="w-3.5 h-3.5 text-teal-400" /> Certified Technicians & OEM Parts
+								<Wrench className="w-3.5 h-3.5 text-teal-400" /> Certified Technicians
 							</div>
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
 								Device Repair & Service
@@ -364,10 +352,6 @@ export default function Home() {
 								>
 									Book Repair Service
 								</Link>
-								<div className="flex items-center gap-4 text-xs text-white/80 font-medium">
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-teal-400" /> Mail-in & Drop-off</span>
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-teal-400" /> 90-Day Repair Warranty</span>
-								</div>
 							</div>
 						</div>
 					</section>
