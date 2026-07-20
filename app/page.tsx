@@ -287,9 +287,7 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl ml-auto text-right flex flex-col items-end">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Fast Payouts & Trade-Ins
-							</div>
+
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-l from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
 								Sell Your Device
 							</h3>
@@ -342,9 +340,7 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-teal-500/20 border border-teal-400/40 text-teal-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<Wrench className="w-3.5 h-3.5 text-teal-400" /> Certified Technicians
-							</div>
+
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
 								Device Repair & Service
 							</h3>
@@ -397,9 +393,7 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<ShieldCheck className="w-3.5 h-3.5 text-amber-400" /> Premium Quality
-							</div>
+
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
 								Replacement Parts
 							</h3>
@@ -452,9 +446,7 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-l from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl ml-auto text-right flex flex-col items-end">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<Globe className="w-3.5 h-3.5 text-blue-400" /> US & Canada Localized Catalogs
-							</div>
+
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-l from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
 								Regional Marketplaces
 							</h3>
