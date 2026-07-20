@@ -52,7 +52,7 @@ export function Footer() {
 		{
 			icon: ShieldCheck,
 			title: 'Authenticated Stock',
-			desc: '100% OEM Inspected & Certified Devices',
+			desc: '100% Inspected & Certified Devices',
 		},
 		{
 			icon: Truck,
@@ -67,7 +67,7 @@ export function Footer() {
 		{
 			icon: RefreshCw,
 			title: 'Valuation & Repair',
-			desc: 'Guaranteed Trade-In & OEM Diagnostics',
+			desc: 'Guaranteed Trade-In & Diagnostics',
 		},
 	]
 
@@ -119,7 +119,7 @@ export function Footer() {
 						</div>
 
 						<p className="text-xs text-[#253b2a] font-medium leading-relaxed max-w-sm">
-							Your Premium Electronics Hub — buy retail, wholesale bulk, sell pre-owned devices, and book OEM repairs with guaranteed authenticity.
+							Your Premium Electronics Hub — buy retail, wholesale bulk, sell pre-owned devices, and book repairs with guaranteed authenticity.
 						</p>
 
 						{socialLinks.length > 0 && (
@@ -155,7 +155,7 @@ export function Footer() {
 							<li><Link href="/marketplace" className="hover:text-[#599063] transition-colors">Regional Marketplaces</Link></li>
 							<li><Link href="/wholesale" className="hover:text-[#599063] transition-colors">Wholesale & Bulk Lots</Link></li>
 							<li><Link href="/sell" className="hover:text-[#599063] transition-colors">Sell Your Device</Link></li>
-							<li><Link href="/repair" className="hover:text-[#599063] transition-colors">OEM Repair Portal</Link></li>
+							<li><Link href="/repair" className="hover:text-[#599063] transition-colors">Repair Portal</Link></li>
 						</ul>
 					</div>
 
