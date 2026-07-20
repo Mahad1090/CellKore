@@ -86,8 +86,11 @@ export default function Home() {
 							Shop by Device Type
 						</h2>
 					</div>
-					<Link href="/products" className="text-xs font-bold uppercase tracking-[0.18em] text-primary hover:text-primary/80 transition-all px-4.5 py-2 rounded-full border border-primary/25 hover:border-primary/60 bg-primary/5">
-						View All Categories
+					<Link href="/products" className="glow-outline-btn glow-outline-primary">
+						<span className="glow-outline-beam" />
+						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+							View All Categories
+						</span>
 					</Link>
 				</div>
 
@@ -163,11 +166,11 @@ export default function Home() {
 							Featured Devices
 						</h2>
 					</div>
-					<Link
-						href="/products"
-						className="text-xs font-bold uppercase tracking-[0.18em] text-primary hover:text-primary/80 transition-all px-4.5 py-2 rounded-full border border-primary/25 hover:border-primary/60 bg-primary/5"
-					>
-						Explore All
+					<Link href="/products" className="glow-outline-btn glow-outline-primary">
+						<span className="glow-outline-beam" />
+						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+							Explore All
+						</span>
 					</Link>
 				</div>
 				{products === null ? (
@@ -205,8 +208,11 @@ export default function Home() {
 								Wholesale & Bulk Lots
 							</h2>
 						</div>
-						<Link href="/wholesale" className="text-xs font-bold uppercase tracking-[0.18em] text-primary hover:text-primary/80 transition-all px-4.5 py-2 rounded-full border border-primary/25 hover:border-primary/60 bg-primary/5">
-							Explore Wholesale
+						<Link href="/wholesale" className="glow-outline-btn glow-outline-primary">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+								Explore Wholesale
+							</span>
 						</Link>
 					</div>
 
@@ -227,7 +233,7 @@ export default function Home() {
 							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-primary/20 border border-primary/40 text-primary-foreground backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
 								<Package className="w-3.5 h-3.5 text-primary" /> B2B & Commercial Contracts
 							</div>
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-100 to-primary drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
 								Wholesale Bulk Lots
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -261,8 +267,11 @@ export default function Home() {
 								Sell Your Device
 							</h2>
 						</div>
-						<Link href="/sell" className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-all px-4.5 py-2 rounded-full border border-emerald-500/25 hover:border-emerald-500/60 bg-emerald-500/5">
-							Get Valuation Quote
+						<Link href="/sell" className="glow-outline-btn glow-outline-emerald">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+								Get Valuation Quote
+							</span>
 						</Link>
 					</div>
 
@@ -310,15 +319,18 @@ export default function Home() {
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<div className="flex items-center gap-2 mb-2">
-								<span className="h-0.5 w-6 bg-amber-500 rounded-full inline-block" />
-								<p className="text-[10px] uppercase tracking-[0.28em] text-amber-600 dark:text-amber-400 font-bold">OEM Certified Service</p>
+								<span className="h-0.5 w-6 bg-teal-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-teal-600 dark:text-teal-400 font-bold">OEM Certified Service</p>
 							</div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-amber-500 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-teal-600 bg-clip-text text-transparent">
 								Device Repair & Maintenance
 							</h2>
 						</div>
-						<Link href="/repair" className="text-xs font-bold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-400 hover:opacity-80 transition-all px-4.5 py-2 rounded-full border border-amber-500/25 hover:border-amber-500/60 bg-amber-500/5">
-							Book Repair Portal
+						<Link href="/repair" className="glow-outline-btn glow-outline-teal">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-teal-600 dark:text-teal-400">
+								Book Repair Portal
+							</span>
 						</Link>
 					</div>
 
@@ -336,10 +348,10 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
-							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
-								<Wrench className="w-3.5 h-3.5 text-amber-400" /> Certified Technicians & OEM Parts
+							<div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-teal-500/20 border border-teal-400/40 text-teal-300 backdrop-blur-md mb-4 text-[10px] font-bold uppercase tracking-[0.2em]">
+								<Wrench className="w-3.5 h-3.5 text-teal-400" /> Certified Technicians & OEM Parts
 							</div>
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
 								Device Repair & Service
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -348,13 +360,13 @@ export default function Home() {
 							<div className="flex flex-wrap items-center gap-4">
 								<Link
 									href="/repair"
-									className="px-7 py-3 bg-amber-500 hover:bg-amber-400 text-black transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+									className="px-7 py-3 bg-teal-600 hover:bg-teal-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
 								>
 									Book Repair Service
 								</Link>
 								<div className="flex items-center gap-4 text-xs text-white/80 font-medium">
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-amber-400" /> Mail-in & Drop-off</span>
-									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-amber-400" /> 90-Day Repair Warranty</span>
+									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-teal-400" /> Mail-in & Drop-off</span>
+									<span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-teal-400" /> 90-Day Repair Warranty</span>
 								</div>
 							</div>
 						</div>
@@ -373,8 +385,11 @@ export default function Home() {
 								Regional Marketplaces
 							</h2>
 						</div>
-						<Link href="/marketplace" className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400 hover:opacity-80 transition-all px-4.5 py-2 rounded-full border border-blue-500/25 hover:border-blue-500/60 bg-blue-500/5">
-							View Regional Portals
+						<Link href="/marketplace" className="glow-outline-btn glow-outline-blue">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+								View Regional Portals
+							</span>
 						</Link>
 					</div>
 

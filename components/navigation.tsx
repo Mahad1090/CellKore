@@ -207,9 +207,9 @@ export function Navigation() {
 
 			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4">
+					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">
 						{/* Left Block */}
-						<div className="flex items-center w-auto md:w-1/3 justify-start gap-2 md:gap-3">
+						<div className="flex items-center w-auto md:w-1/3 justify-start gap-2 md:gap-3 z-10">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -231,13 +231,13 @@ export function Navigation() {
 							</div>
 						</div>
 
-						{/* Center Block - Logo + tagline */}
-						<div className="flex flex-col items-center justify-center flex-1 min-w-0 md:flex-none md:w-1/3">
+						{/* Center Block - Logo + tagline (Dead-centered on Mobile & Desktop) */}
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 z-10 pointer-events-auto">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
 									src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
-									className="h-16 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-11 sm:h-20 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
 								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1 font-medium">
 									Your Premium Electronics Hub
@@ -246,7 +246,7 @@ export function Navigation() {
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3">
+						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
 							{/* Persistent marketplace selector */}
 							<div className="relative md:mr-2">
 								<button

@@ -242,6 +242,144 @@ body:has(.admin-theme-wrapper) * {
     opacity: 1;
 }
 
+/* Animated Shifting Gradient Outline Glow for Buttons & Pills (Matching Sample) */
+@keyframes glow-border-shift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Smooth Moving Conic Border Beam Animation (Continuous Motion, No Blinking) */
+@keyframes rotate-outline-beam {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.glow-outline-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5px;
+    border-radius: 9999px;
+    overflow: hidden;
+    text-decoration: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glow-outline-beam {
+    position: absolute;
+    top: -250%;
+    left: -250%;
+    width: 600%;
+    height: 600%;
+    z-index: 0;
+    pointer-events: none;
+    animation: rotate-outline-beam 3.2s linear infinite;
+}
+
+/* Primary Green Moving Beam */
+.glow-outline-primary {
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+}
+.glow-outline-primary .glow-outline-beam {
+    background: conic-gradient(
+        from 0deg,
+        transparent 60%,
+        #059669 75%,
+        #10b981 90%,
+        #34d399 98%,
+        transparent 100%
+    );
+}
+.glow-outline-primary:hover {
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1.5px);
+}
+
+/* Emerald Moving Beam */
+.glow-outline-emerald {
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+}
+.glow-outline-emerald .glow-outline-beam {
+    background: conic-gradient(
+        from 0deg,
+        transparent 60%,
+        #059669 75%,
+        #10b981 90%,
+        #34d399 98%,
+        transparent 100%
+    );
+}
+.glow-outline-emerald:hover {
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.5);
+    transform: translateY(-1.5px);
+}
+
+/* Teal Moving Beam */
+.glow-outline-teal {
+    box-shadow: 0 0 8px rgba(20, 184, 166, 0.25);
+}
+.glow-outline-teal .glow-outline-beam {
+    background: conic-gradient(
+        from 0deg,
+        transparent 60%,
+        #0d9488 75%,
+        #14b8a6 90%,
+        #2dd4bf 98%,
+        transparent 100%
+    );
+}
+.glow-outline-teal:hover {
+    box-shadow: 0 0 16px rgba(20, 184, 166, 0.5);
+    transform: translateY(-1.5px);
+}
+
+/* Royal Blue Moving Beam */
+.glow-outline-blue {
+    box-shadow: 0 0 8px rgba(37, 99, 235, 0.25);
+}
+.glow-outline-blue .glow-outline-beam {
+    background: conic-gradient(
+        from 0deg,
+        transparent 60%,
+        #2563eb 75%,
+        #3b82f6 90%,
+        #60a5fa 98%,
+        transparent 100%
+    );
+}
+.glow-outline-blue:hover {
+    box-shadow: 0 0 16px rgba(37, 99, 235, 0.5);
+    transform: translateY(-1.5px);
+}
+
+.glow-outline-inner {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    background-color: var(--background, #ffffff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.glow-pill-btn:hover .glow-pill-inner {
+    background: #ffffff;
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .no-scrollbar::-webkit-scrollbar {
     display: none;

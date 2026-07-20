@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Mail, Phone, MessageCircle, Loader2, ArrowRight } from 'lucide-react'
+import {
+	Mail, Phone, MessageCircle, Loader2, ArrowRight, ShieldCheck,
+	Truck, Award, RefreshCw, Lock, Sparkles
+} from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { fetchCountryContacts, fetchSocialLinks, subscribeToNewsletter } from '@/lib/data'
 import type { CountryContactInfo, SocialLink } from '@/lib/types'
@@ -45,113 +48,205 @@ export function Footer() {
 
 	const primaryContact = contacts.find((c) => c.email || c.landline || c.whatsapp_number)
 
+	const valuePillars = [
+		{
+			icon: ShieldCheck,
+			title: 'Authenticated Stock',
+			desc: '100% OEM Inspected & Certified Devices',
+		},
+		{
+			icon: Truck,
+			title: 'Express Shipping',
+			desc: 'Insured Priority Dispatch Across US & CA',
+		},
+		{
+			icon: Award,
+			title: 'Wholesale Contracts',
+			desc: 'Bulk Tier Pricing & Commercial Accounts',
+		},
+		{
+			icon: RefreshCw,
+			title: 'Valuation & Repair',
+			desc: 'Guaranteed Trade-In & OEM Diagnostics',
+		},
+	]
+
 	return (
-		<footer className="bg-accent text-accent-foreground py-16 mt-16 border-t border-accent/20">
+		<footer className="bg-[#edf4ee] text-[#111c13] pt-14 pb-10 mt-20 border-t border-[#599063]/30 relative shadow-sm">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-10">
-					{/* Company */}
-					<div>
-						<h3 className="text-xl font-bold mb-4 font-heading tracking-luxury uppercase">CellKore</h3>
-						<p className="text-sm opacity-80 font-light leading-relaxed">
-							Your Premium Electronics Hub — buy, wholesale, and sell devices across the US and Canada.
+				
+				{/* Top Value Pillars */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 pb-12 mb-12 border-b border-[#599063]/25">
+					{valuePillars.map((pillar, idx) => {
+						const Icon = pillar.icon
+						return (
+							<div
+								key={idx}
+								className="flex items-center gap-3.5 p-4 rounded-2xl bg-white border border-[#599063]/20 shadow-sm hover:shadow-md hover:border-[#599063]/50 transition-all duration-300 group"
+							>
+								<div className="w-11 h-11 rounded-xl bg-[#599063]/15 border border-[#599063]/30 flex items-center justify-center text-[#275330] group-hover:scale-105 group-hover:bg-[#599063] group-hover:text-white transition-all duration-300 shrink-0">
+									<Icon className="w-5 h-5" />
+								</div>
+								<div>
+									<h5 className="text-xs font-extrabold uppercase tracking-[0.12em] text-[#0e1710] group-hover:text-[#599063] transition-colors">
+										{pillar.title}
+									</h5>
+									<p className="text-[11px] text-[#2d4633] font-medium mt-0.5 leading-snug">
+										{pillar.desc}
+									</p>
+								</div>
+							</div>
+						)
+					})}
+				</div>
+
+				{/* Main Footer Grid */}
+				<div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12 text-center md:text-left">
+					
+					{/* Company Info Column */}
+					<div className="flex flex-col items-center md:items-start space-y-3.5">
+						<Link href="/" className="inline-block group">
+							<img
+								src="/cellkore_apple_green.webp"
+								alt="CellKore Logo"
+								className="h-16 md:h-20 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+							/>
+						</Link>
+						
+						<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#599063]/15 border border-[#599063]/30 text-[10px] uppercase font-bold tracking-[0.14em] text-[#275330]">
+							<Sparkles className="w-3 h-3" />
+							<span>North America Marketplace</span>
+						</div>
+
+						<p className="text-xs text-[#253b2a] font-medium leading-relaxed max-w-sm">
+							Your Premium Electronics Hub — buy retail, wholesale bulk, sell pre-owned devices, and book OEM repairs with guaranteed authenticity.
 						</p>
+
 						{socialLinks.length > 0 && (
-							<div className="flex flex-wrap gap-2 mt-5">
-								{socialLinks.map((link) => (
-									<a
-										key={link.id}
-										href={link.url}
-										target="_blank"
-										rel="noreferrer"
-										className="px-3.5 py-1.5 rounded-full border border-accent-foreground/25 text-[10px] font-semibold uppercase tracking-[0.14em] hover:bg-accent-foreground hover:text-accent transition-all"
-									>
-										{link.platform}
-									</a>
-								))}
+							<div className="pt-2">
+								<p className="text-[10px] uppercase font-extrabold tracking-[0.18em] text-[#1e3323] mb-2">
+									Follow Us
+								</p>
+								<div className="flex flex-wrap justify-center md:justify-start gap-2">
+									{socialLinks.map((link) => (
+										<a
+											key={link.id}
+											href={link.url}
+											target="_blank"
+											rel="noreferrer"
+											className="px-3.5 py-1.5 rounded-full border border-[#599063]/30 bg-white text-[#111c13] text-[10px] font-bold uppercase tracking-[0.12em] hover:bg-[#599063] hover:text-white hover:border-[#599063] transition-all shadow-sm"
+										>
+											{link.platform}
+										</a>
+									))}
+								</div>
 							</div>
 						)}
 					</div>
 
-					{/* Quick links */}
-					<div>
-						<h4 className="font-semibold mb-4 tracking-wider uppercase text-xs opacity-70">Quick Links</h4>
-						<ul className="space-y-2.5 text-sm font-light">
-							<li><Link href="/" className="opacity-80 hover:opacity-100 transition-opacity">Home</Link></li>
-							<li><Link href="/products" className="opacity-80 hover:opacity-100 transition-opacity">Products</Link></li>
-							<li><Link href="/marketplace" className="opacity-80 hover:opacity-100 transition-opacity">Marketplace</Link></li>
-							<li><Link href="/wholesale" className="opacity-80 hover:opacity-100 transition-opacity">Wholesale</Link></li>
-							<li><Link href="/sell" className="opacity-80 hover:opacity-100 transition-opacity">Sell Your Phone</Link></li>
-							<li><Link href="/repair" className="opacity-80 hover:opacity-100 transition-opacity">Device Repair</Link></li>
+					{/* Quick Links Column */}
+					<div className="flex flex-col items-center md:items-start">
+						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
+							Explore Catalog
+						</h4>
+						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
+							<li><Link href="/" className="hover:text-[#599063] transition-colors">Home Portal</Link></li>
+							<li><Link href="/products" className="hover:text-[#599063] transition-colors">All Certified Devices</Link></li>
+							<li><Link href="/marketplace" className="hover:text-[#599063] transition-colors">Regional Marketplaces</Link></li>
+							<li><Link href="/wholesale" className="hover:text-[#599063] transition-colors">Wholesale & Bulk Lots</Link></li>
+							<li><Link href="/sell" className="hover:text-[#599063] transition-colors">Sell Your Device</Link></li>
+							<li><Link href="/repair" className="hover:text-[#599063] transition-colors">OEM Repair Portal</Link></li>
 						</ul>
 					</div>
 
-					{/* Support */}
-					<div>
-						<h4 className="font-semibold mb-4 tracking-wider uppercase text-xs opacity-70">Support</h4>
-						<ul className="space-y-2.5 text-sm font-light">
-							<li><Link href="/contact" className="opacity-80 hover:opacity-100 transition-opacity">Contact Us</Link></li>
-							<li><Link href="/terms" className="opacity-80 hover:opacity-100 transition-opacity">Terms & Conditions</Link></li>
-							<li><Link href="/privacy" className="opacity-80 hover:opacity-100 transition-opacity">Privacy Policy</Link></li>
-							<li><Link href="/about" className="opacity-80 hover:opacity-100 transition-opacity">About Us</Link></li>
+					{/* Customer Support Column */}
+					<div className="flex flex-col items-center md:items-start">
+						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
+							Help & Support
+						</h4>
+						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
+							<li><Link href="/about" className="hover:text-[#599063] transition-colors">About CellKore</Link></li>
+							<li><Link href="/contact" className="hover:text-[#599063] transition-colors">Support Center</Link></li>
+							<li><Link href="/terms" className="hover:text-[#599063] transition-colors">Terms of Service</Link></li>
+							<li><Link href="/privacy" className="hover:text-[#599063] transition-colors">Privacy Policy</Link></li>
 						</ul>
+
 						{primaryContact && (
-							<ul className="space-y-2.5 text-sm font-light mt-5 pt-5 border-t border-accent-foreground/15">
+							<div className="mt-5 pt-4 border-t border-[#599063]/25 w-full flex flex-col items-center md:items-start space-y-2">
+								<p className="text-[10px] uppercase font-extrabold tracking-[0.16em] text-[#1e3323]">Direct Contact</p>
 								{primaryContact.email && (
-									<li className="flex items-center gap-2.5 opacity-80">
-										<Mail className="w-3.5 h-3.5" />
-										{primaryContact.email}
-									</li>
+									<a href={`mailto:${primaryContact.email}`} className="flex items-center justify-center md:justify-start gap-2 text-xs text-[#111c13] font-bold hover:text-[#599063] transition-colors">
+										<Mail className="w-3.5 h-3.5 text-[#275330]" />
+										<span>{primaryContact.email}</span>
+									</a>
 								)}
 								{primaryContact.landline && (
-									<li className="flex items-center gap-2.5 opacity-80">
-										<Phone className="w-3.5 h-3.5" />
-										{primaryContact.landline}
-									</li>
+									<a href={`tel:${primaryContact.landline}`} className="flex items-center justify-center md:justify-start gap-2 text-xs text-[#111c13] font-bold hover:text-[#599063] transition-colors">
+										<Phone className="w-3.5 h-3.5 text-[#275330]" />
+										<span>{primaryContact.landline}</span>
+									</a>
 								)}
 								{primaryContact.whatsapp_number && (
-									<li className="flex items-center gap-2.5 opacity-80">
+									<a href={`https://wa.me/${primaryContact.whatsapp_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="flex items-center justify-center md:justify-start gap-2 text-xs text-[#275330] font-extrabold hover:opacity-80 transition-opacity">
 										<MessageCircle className="w-3.5 h-3.5" />
-										{primaryContact.whatsapp_number}
-									</li>
+										<span>WhatsApp Desk</span>
+									</a>
 								)}
-							</ul>
+							</div>
 						)}
 					</div>
 
-					{/* Newsletter */}
-					<div>
-						<h4 className="font-semibold mb-4 tracking-wider uppercase text-xs opacity-70">Newsletter</h4>
-						<p className="text-sm opacity-80 font-light mb-4 leading-relaxed">
-							Subscribe for new arrivals, wholesale lots, and exclusive offers.
+					{/* Newsletter Column */}
+					<div className="flex flex-col items-center md:items-start">
+						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
+							Newsletter
+						</h4>
+						<p className="text-xs text-[#253b2a] font-medium mb-3.5 leading-relaxed max-w-sm">
+							Subscribe for new inventory arrivals, wholesale price drops, and exclusive deals.
 						</p>
-						<form onSubmit={handleSubscribe} className="flex">
+
+						<form onSubmit={handleSubscribe} className="flex w-full max-w-sm mb-3">
 							<input
 								type="email"
-								placeholder="Your email"
+								placeholder="Enter your email"
 								value={email}
 								onChange={(e) => setEmail(e.target.value)}
-								className="flex-1 min-w-0 px-4 py-2.5 rounded-l-full bg-accent-foreground/10 border border-accent-foreground/20 border-r-0 text-sm placeholder:opacity-50 focus:outline-none focus:border-accent-foreground/50 transition-colors"
+								className="flex-1 min-w-0 px-4 py-2 rounded-l-full bg-white border border-[#599063]/40 border-r-0 text-xs text-[#0e1710] font-bold placeholder:text-gray-500 focus:outline-none focus:border-[#599063] transition-colors shadow-sm"
 							/>
 							<button
 								type="submit"
 								disabled={subscribing}
-								className="px-4 py-2.5 rounded-r-full bg-primary text-primary-foreground border border-primary hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+								className="px-4.5 py-2 rounded-r-full bg-[#599063] text-white font-extrabold text-xs border border-[#599063] hover:bg-[#46754e] transition-all cursor-pointer disabled:opacity-60 shadow-sm shrink-0"
 								aria-label="Subscribe"
 							>
-								{subscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+								{subscribing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5" />}
 							</button>
 						</form>
+
+						<div className="flex items-center gap-1.5 text-[10px] text-[#2d4633] font-bold">
+							<Lock className="w-3 h-3 text-[#275330]" />
+							<span>No spam · Unsubscribe anytime</span>
+						</div>
+					</div>
+
+				</div>
+
+				{/* Bottom Bar */}
+				<div className="pt-6 border-t border-[#599063]/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+					<div className="flex items-center gap-2">
+						<span className="w-2 h-2 rounded-full bg-[#599063]" />
+						<p className="text-xs text-[#2d4633] font-medium">
+							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>. All rights reserved.
+						</p>
+					</div>
+
+					<div className="flex flex-wrap items-center justify-center gap-4 text-[10px] uppercase tracking-[0.16em] text-[#1e3323] font-bold">
+						<span>Certified North America Hub</span>
+						<span>•</span>
+						<span>All Sales Final Policy</span>
 					</div>
 				</div>
 
-				<div className="pt-8 border-t border-accent-foreground/15 flex flex-col sm:flex-row items-center justify-between gap-3">
-					<p className="text-xs opacity-60 font-light">
-						© {new Date().getFullYear()} CellKore. All rights reserved.
-					</p>
-					<p className="text-[10px] uppercase tracking-[0.2em] opacity-60">
-						All sales final · No Return & Exchange Policy
-					</p>
-				</div>
 			</div>
 		</footer>
 	)
