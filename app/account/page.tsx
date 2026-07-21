@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { User, Package, Heart, LogOut, BadgeDollarSign, MessageCircle, Wrench } from 'lucide-react'
@@ -27,6 +27,24 @@ function toCustomerSellStatus(status: SellPhoneRequest['status']): string {
 }
 
 export default function AccountPage() {
+	return (
+		<Suspense
+			fallback={
+				<main className="min-h-screen bg-background">
+					<Navigation />
+					<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+						<TableShimmer />
+					</div>
+					<Footer />
+				</main>
+			}
+		>
+			<AccountPageContent />
+		</Suspense>
+	)
+}
+
+function AccountPageContent() {
 	const { user, loading: authLoading, signOut } = useAuth()
 	const router = useRouter()
 	const searchParams = useSearchParams()

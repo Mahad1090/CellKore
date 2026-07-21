@@ -58,8 +58,10 @@ export default function SellYourPhonePage() {
 			.not('whatsapp_number', 'is', null)
 			.limit(1)
 			.maybeSingle()
-			.then(({ data }) => setSupportWhatsapp(data?.whatsapp_number ?? null))
-			.catch(() => setSupportWhatsapp(null))
+			.then(
+				({ data }) => setSupportWhatsapp(data?.whatsapp_number ?? null),
+				() => setSupportWhatsapp(null)
+			)
 	}, [])
 
 	const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
