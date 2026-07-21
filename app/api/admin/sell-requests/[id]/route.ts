@@ -20,6 +20,18 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	if (body.offered_price !== undefined) {
 		update.offered_price = body.offered_price === null ? null : Number(body.offered_price)
 	}
+	if (body.payout_amount !== undefined) {
+		update.payout_amount = body.payout_amount === null ? null : Number(body.payout_amount)
+	}
+	if (body.payout_reference !== undefined) {
+		update.payout_reference = body.payout_reference ? String(body.payout_reference).trim() : null
+	}
+	if (body.payout_notes !== undefined) {
+		update.payout_notes = body.payout_notes ? String(body.payout_notes).trim() : null
+	}
+	if (body.payout_confirmed_at !== undefined) {
+		update.payout_confirmed_at = body.payout_confirmed_at || null
+	}
 	if (Object.keys(update).length === 0) {
 		return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
 	}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Upload, Check, X, ImageIcon, Loader2 } from 'lucide-react'
+import { Upload, Check, X, ImageIcon, Loader2, MessageCircle } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
@@ -24,6 +24,7 @@ export default function SellYourPhonePage() {
 	const [submitting, setSubmitting] = useState(false)
 	const [submitted, setSubmitted] = useState(false)
 	const [successCopy, setSuccessCopy] = useState<{ title: string; content: string } | null>(null)
+	const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null)
 	const [files, setFiles] = useState<File[]>([])
 	const [form, setForm] = useState({
 		brand: '',
@@ -50,6 +51,15 @@ export default function SellYourPhonePage() {
 				)
 			)
 			.catch(() => setSuccessCopy(null))
+
+		supabase
+			.from('country_contact_info')
+			.select('whatsapp_number')
+			.not('whatsapp_number', 'is', null)
+			.limit(1)
+			.maybeSingle()
+			.then(({ data }) => setSupportWhatsapp(data?.whatsapp_number ?? null))
+			.catch(() => setSupportWhatsapp(null))
 	}, [])
 
 	const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -163,12 +173,28 @@ export default function SellYourPhonePage() {
 						{successCopy?.content ??
 							'Thank you for your submission. A CellKore support agent will contact you within 24 hours with an official quote.'}
 					</p>
-					<Link
-						href="/"
-						className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
-					>
-						Back to Home
-					</Link>
+					<p className="text-xs text-muted-foreground mb-6 uppercase tracking-[0.14em] font-semibold">
+						Initial request status: Under Review
+					</p>
+					<div className="flex flex-wrap items-center justify-center gap-3">
+						<Link
+							href="/account?tab=sell"
+							className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
+						>
+							Track My Request
+						</Link>
+						{supportWhatsapp && (
+							<a
+								href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Hi, I just submitted a Sell Your Phone request and need help.')}`}
+								target="_blank"
+								rel="noreferrer"
+								className="inline-flex items-center gap-2 px-8 py-3.5 border border-border rounded-full text-xs font-bold uppercase tracking-[0.18em] text-foreground/80 hover:border-primary hover:text-primary transition-all"
+							>
+								<MessageCircle className="w-4 h-4" />
+								WhatsApp Support
+							</a>
+						)}
+					</div>
 				</div>
 				<Footer />
 			</main>

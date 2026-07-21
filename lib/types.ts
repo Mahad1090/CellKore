@@ -19,6 +19,16 @@ export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'deliv
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded' | 'failed'
 export type InquiryStatus = 'new' | 'responded'
 export type SellPhoneStatus = 'submitted' | 'reviewed' | 'quoted' | 'contacted' | 'closed'
+export type RepairStatus =
+	| 'pending_approval'
+	| 'approved'
+	| 'phone_requested'
+	| 'phone_received'
+	| 'assessed'
+	| 'price_given'
+	| 'accepted'
+	| 'rejected'
+	| 'completed'
 export type AdminRole = 'super_admin' | 'admin'
 
 export interface Category {
@@ -185,9 +195,23 @@ export interface SellPhoneRequest {
 	contact_email: string | null
 	status: SellPhoneStatus
 	offered_price: number | null
+	payout_amount?: number | null
+	payout_reference?: string | null
+	payout_notes?: string | null
+	payout_confirmed_at?: string | null
 	submitted_at: string
 	updated_at: string
 	sell_phone_images?: { id: string; image_url: string }[]
+}
+
+export interface RepairRequest {
+	id: string
+	user_id: string | null
+	device_info: string
+	current_status: RepairStatus
+	quoted_price: number | null
+	created_at: string
+	updated_at: string
 }
 
 export interface ContactInquiry {

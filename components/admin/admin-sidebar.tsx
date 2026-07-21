@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus,
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt,
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
@@ -19,6 +19,9 @@ const navItems: { label: string; href: string; icon: any; permission?: AdminPerm
 	{ label: 'Wholesale', href: '/admin/wholesale', icon: Boxes, permission: 'products:read' },
 	{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
 	{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
+	{ label: 'Repair Queue', href: '/admin/repair-requests', icon: Wrench },
+	{ label: 'Repair Workflow', href: '/admin/repair-workflow', icon: ListChecks },
+	{ label: 'Repair Payments', href: '/admin/repair-payments', icon: Receipt },
 	{ label: 'Inquiries', href: '/admin/inquiries', icon: Users, permission: 'inquiries:read' },
 	{ label: 'Content', href: '/admin/content', icon: FileText },
 	{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },

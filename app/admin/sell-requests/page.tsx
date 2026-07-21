@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Eye, Search, Loader2 } from 'lucide-react'
 import { PageTitle, StatusBadge, EmptyState, Modal, adminButton, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
@@ -9,6 +10,12 @@ import { useAdmin } from '@/contexts/admin-context'
 import type { SellPhoneRequest, SellPhoneStatus } from '@/lib/types'
 
 const STATUSES: SellPhoneStatus[] = ['submitted', 'reviewed', 'quoted', 'contacted', 'closed']
+const WORKFLOW_TABS = [
+	{ href: '/admin/sell-requests', label: 'Sell Queue' },
+	{ href: '/admin/repair-requests', label: 'Repair Queue' },
+	{ href: '/admin/repair-workflow', label: 'Repair Workflow' },
+	{ href: '/admin/repair-payments', label: 'Repair Payments' },
+]
 
 export default function AdminSellRequestsPage() {
 	const { toast } = useToast()
@@ -17,6 +24,10 @@ export default function AdminSellRequestsPage() {
 	const [search, setSearch] = useState('')
 	const [selected, setSelected] = useState<SellPhoneRequest | null>(null)
 	const [offeredPrice, setOfferedPrice] = useState('')
+	const [payoutAmount, setPayoutAmount] = useState('')
+	const [payoutReference, setPayoutReference] = useState('')
+	const [payoutNotes, setPayoutNotes] = useState('')
+	const [paymentConfirmed, setPaymentConfirmed] = useState(false)
 	const [status, setStatus] = useState<SellPhoneStatus>('submitted')
 	const [saving, setSaving] = useState(false)
 
@@ -32,6 +43,10 @@ export default function AdminSellRequestsPage() {
 	const openDetail = (request: SellPhoneRequest) => {
 		setSelected(request)
 		setOfferedPrice(request.offered_price != null ? String(request.offered_price) : '')
+		setPayoutAmount(request.payout_amount != null ? String(request.payout_amount) : '')
+		setPayoutReference(request.payout_reference ?? '')
+		setPayoutNotes(request.payout_notes ?? '')
+		setPaymentConfirmed(Boolean(request.payout_confirmed_at))
 		setStatus(request.status)
 	}
 
@@ -45,6 +60,10 @@ export default function AdminSellRequestsPage() {
 				body: JSON.stringify({
 					status,
 					offered_price: offeredPrice === '' ? null : Number(offeredPrice),
+					payout_amount: payoutAmount === '' ? null : Number(payoutAmount),
+					payout_reference: payoutReference.trim() || null,
+					payout_notes: payoutNotes.trim() || null,
+					payout_confirmed_at: paymentConfirmed ? new Date().toISOString() : null,
 				}),
 			})
 			const json = await res.json()
@@ -73,6 +92,22 @@ export default function AdminSellRequestsPage() {
 	return (
 		<div>
 			<PageTitle title="Sell Phone Requests" subtitle="Customer device quote queue" />
+
+			<div className="mb-6 flex flex-wrap gap-2">
+				{WORKFLOW_TABS.map((tab) => (
+					<Link
+						key={tab.href}
+						href={tab.href}
+						className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] border transition-all ${
+							tab.href === '/admin/sell-requests'
+								? 'bg-primary text-primary-foreground border-primary'
+								: 'border-border text-foreground/70 hover:border-primary hover:text-foreground'
+						}`}
+					>
+						{tab.label}
+					</Link>
+				))}
+			</div>
 
 			<div className="relative mb-6 max-w-sm">
 				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -154,6 +189,16 @@ export default function AdminSellRequestsPage() {
 								<p className={label}>Contact</p>
 								<p className="text-xs text-foreground/85">{selected.contact_email ?? '—'}</p>
 								<p className="text-xs text-foreground/85 mt-0.5">{selected.contact_phone ?? '—'}</p>
+								{selected.contact_phone && (
+									<a
+										href={`https://wa.me/${selected.contact_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, this is CellKore regarding your sell request ${selected.id}.`)}`}
+										target="_blank"
+										rel="noreferrer"
+										className="inline-block mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"
+									>
+										Open WhatsApp Chat
+									</a>
+								)}
 							</div>
 							{(selected.sell_phone_images ?? []).length > 0 && (
 								<div>
@@ -197,6 +242,52 @@ export default function AdminSellRequestsPage() {
 								<p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
 									submitted → reviewed → quoted → contacted → closed
 								</p>
+							</div>
+							<div className="rounded-2xl border border-border p-4 space-y-4">
+								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-card-foreground">Payment Confirmation</p>
+								<div>
+									<label className={label}>Transfer Amount (USD)</label>
+									<input
+										type="number"
+										step="0.01"
+										value={payoutAmount}
+										onChange={(e) => setPayoutAmount(e.target.value)}
+										className={adminInput}
+										disabled={!writable}
+										placeholder="0.00"
+									/>
+								</div>
+								<div>
+									<label className={label}>Transfer Reference</label>
+									<input
+										value={payoutReference}
+										onChange={(e) => setPayoutReference(e.target.value)}
+										className={adminInput}
+										disabled={!writable}
+										placeholder="Transaction ID / receipt code"
+									/>
+								</div>
+								<div>
+									<label className={label}>Receipt Notes</label>
+									<textarea
+										value={payoutNotes}
+										onChange={(e) => setPayoutNotes(e.target.value)}
+										className={adminInput}
+										disabled={!writable}
+										rows={3}
+										placeholder="Bank / transfer confirmation details"
+									/>
+								</div>
+								<label className="flex items-center gap-2 text-xs text-foreground/80">
+									<input
+										type="checkbox"
+										checked={paymentConfirmed}
+										onChange={(e) => setPaymentConfirmed(e.target.checked)}
+										disabled={!writable}
+										className="accent-[var(--primary)]"
+									/>
+									Payment transfer confirmed
+								</label>
 							</div>
 							{writable && (
 								<button onClick={save} disabled={saving} className={`${adminButton} w-full justify-center`}>

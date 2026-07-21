@@ -435,6 +435,13 @@ create policy "public can submit sell requests"
   to anon
   with check (true);
 
+drop policy if exists "authenticated users can read own sell requests" on sell_phone_requests;
+create policy "authenticated users can read own sell requests"
+  on sell_phone_requests
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
 -- contact_inquiries did not have RLS enabled at all in database.sql.
 -- Turning it on + adding an insert-only policy keeps it available to
 -- the contact form while preventing visitors from reading, editing, or
