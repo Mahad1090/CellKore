@@ -402,19 +402,9 @@ export default function ProductDetailPage() {
 									{uniqueColors.map(({ color, swatch_hex }) => {
 										const depleted = !colorHasStock(color)
 										const active = (selectedColor ?? '') === (color ?? '')
-										return (
-											<button
-												key={color ?? '__standard__'}
-												disabled={depleted}
-												onClick={() => handleSelectColor(color)}
-												className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
-													depleted
-														? 'border-border text-muted-foreground/50 line-through cursor-not-allowed'
-														: active
-														? 'border-primary bg-primary text-primary-foreground cursor-pointer'
-														: 'border-border text-foreground hover:border-primary cursor-pointer'
-												}`}
-											>
+
+										const label = (
+											<>
 												{color && (
 													<span
 														className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0 shadow-sm"
@@ -427,6 +417,35 @@ export default function ProductDetailPage() {
 														{Number(selectedVariant.price_adjustment) > 0 ? '+' : ''}${Number(selectedVariant.price_adjustment).toFixed(0)}
 													</span>
 												)}
+											</>
+										)
+
+										if (active && !depleted) {
+											return (
+												<div key={color ?? '__standard__'} className="glow-outline-btn glow-outline-primary">
+													<span className="glow-outline-beam" />
+													<button
+														onClick={() => handleSelectColor(color)}
+														className="glow-outline-inner inline-flex items-center gap-2 px-5 py-2.5 text-xs font-medium text-foreground cursor-pointer"
+													>
+														{label}
+													</button>
+												</div>
+											)
+										}
+
+										return (
+											<button
+												key={color ?? '__standard__'}
+												disabled={depleted}
+												onClick={() => handleSelectColor(color)}
+												className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full border text-xs font-medium transition-all ${
+													depleted
+														? 'border-border text-muted-foreground/50 line-through cursor-not-allowed'
+														: 'border-border text-foreground hover:border-primary cursor-pointer'
+												}`}
+											>
+												{label}
 											</button>
 										)
 									})}

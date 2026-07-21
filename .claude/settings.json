@@ -12,7 +12,10 @@
       "Bash(node -e ' *)",
       "Bash(git check-ignore *)",
       "Bash(cp \"/c/Users/HP/AppData/Local/Temp/claude/d--CellKore/e740b164-6d3a-49dc-a59d-031a385acd89/scratchpad/img\"/*.webp /d/CellKore/public/ && ls /d/CellKore/public/*.webp)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(timeout 45 bash -c 'until curl -sf http://localhost:3000 >/dev/null; do sleep 1; done')",
+      "Bash(chromium-cli --help)",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\HP\\AppData\\Local\\Temp\\claude\\d--CellKore\\e740b164-6d3a-49dc-a59d-031a385acd89\\scratchpad\\img"
