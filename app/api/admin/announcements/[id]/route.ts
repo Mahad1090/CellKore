@@ -26,6 +26,20 @@ export async function PUT(request: NextRequest, { params }: Params) {
 	return NextResponse.json({ success: true })
 }
 
+export async function PATCH(request: NextRequest, { params }: Params) {
+	const auth = await requireAdmin(request, 'cms:write')
+	if ('error' in auth) return auth.error
+	const { id } = await params
+	const body = await request.json()
+	const service = createServiceClient()
+	const { error } = await service
+		.from('announcements')
+		.update({ sort_order: body.sort_order, updated_at: new Date().toISOString() })
+		.eq('id', id)
+	if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+	return NextResponse.json({ success: true })
+}
+
 export async function DELETE(request: NextRequest, { params }: Params) {
 	const auth = await requireAdmin(request, 'cms:write')
 	if ('error' in auth) return auth.error

@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react'
 import { PageTitle, EmptyState, Modal, adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
@@ -23,6 +23,7 @@ export default function AdminAnnouncementsPage() {
 	const [announcements, setAnnouncements] = useState<Announcement[] | null>(null)
 	const [editing, setEditing] = useState<AnnouncementForm | null>(null)
 	const [saving, setSaving] = useState(false)
+	const dragIndex = useRef<number | null>(null)
 
 	const load = useCallback(() => {
 		fetch('/api/admin/announcements')
@@ -32,6 +33,31 @@ export default function AdminAnnouncementsPage() {
 	}, [])
 
 	useEffect(load, [load])
+
+	// ── Drag reorder ────────────────────────────────────────────────────────
+	const onDragStart = (e: React.DragEvent, index: number) => {
+		dragIndex.current = index
+		e.dataTransfer.effectAllowed = 'move'
+	}
+
+	const onDrop = async (e: React.DragEvent, dropIndex: number) => {
+		e.preventDefault()
+		if (dragIndex.current === null || dragIndex.current === dropIndex || !announcements) return
+		const reordered = [...announcements]
+		const [moved] = reordered.splice(dragIndex.current, 1)
+		reordered.splice(dropIndex, 0, moved)
+		setAnnouncements(reordered)
+		dragIndex.current = null
+		await Promise.all(
+			reordered.map((a, i) =>
+				fetch(`/api/admin/announcements/${a.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ sort_order: i }),
+				})
+			)
+		).catch(() => toast({ title: 'Failed to save order', variant: 'error' }))
+	}
 
 	const save = async () => {
 		if (!editing) return
@@ -83,7 +109,7 @@ export default function AdminAnnouncementsPage() {
 		<div>
 			<PageTitle
 				title="Announcement Bar"
-				subtitle="Messages shown in the scrolling bar at the top of the customer-facing site"
+				subtitle="Messages shown in the scrolling bar at the top of the customer-facing site — drag rows to reorder"
 				actions={
 					writable && (
 						<button onClick={() => setEditing({ ...EMPTY, sort_order: announcements?.length ?? 0 })} className={adminButton}>
@@ -103,15 +129,25 @@ export default function AdminAnnouncementsPage() {
 					<table className="w-full text-sm min-w-[560px]">
 						<thead>
 							<tr className="bg-secondary text-left">
-								{['Order', 'Message', 'Status', ''].map((h) => (
+								<th className="w-8 px-3 py-3.5" />
+								{['Message', 'Status', ''].map((h) => (
 									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
 								))}
 							</tr>
 						</thead>
 						<tbody>
-							{announcements.map((announcement) => (
-								<tr key={announcement.id} className="border-t border-border hover:bg-muted/40 transition-colors">
-									<td className="px-5 py-3.5 text-foreground/60">{announcement.sort_order}</td>
+							{announcements.map((announcement, index) => (
+								<tr
+									key={announcement.id}
+									draggable={writable}
+									onDragStart={(e) => onDragStart(e, index)}
+									onDragOver={(e) => e.preventDefault()}
+									onDrop={(e) => onDrop(e, index)}
+									className="border-t border-border hover:bg-muted/40 transition-colors"
+								>
+									<td className="pl-3 pr-1 py-3.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing">
+										{writable && <GripVertical className="w-4 h-4" />}
+									</td>
 									<td className="px-5 py-3.5 font-medium text-card-foreground">{announcement.text}</td>
 									<td className="px-5 py-3.5">
 										<span
@@ -166,15 +202,6 @@ export default function AdminAnnouncementsPage() {
 								onChange={(e) => setEditing({ ...editing, text: e.target.value })}
 								className={adminInput}
 								placeholder="Complimentary Express Delivery on All Orders"
-							/>
-						</div>
-						<div>
-							<label className={label}>Sort Order</label>
-							<input
-								type="number"
-								value={editing.sort_order}
-								onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })}
-								className={adminInput}
 							/>
 						</div>
 						<label className="flex items-center gap-2.5 cursor-pointer mt-1">
