@@ -157,45 +157,59 @@ function SellTrackPageContent() {
 				</form>
 
 				{request && (
-					<div className="bg-card border border-border rounded-3xl p-7 space-y-5">
-						<div className="flex items-start justify-between gap-4 flex-wrap">
-							<div>
-								<p className="text-[11px] font-mono font-bold text-primary uppercase mb-1">
-									{formatRequestId(request.id)}
-								</p>
-								<p className="text-sm font-semibold text-card-foreground">
-									{request.device_brand} {request.device_model}
-								</p>
-								<p className="text-xs text-muted-foreground mt-0.5">
-									Submitted {new Date(request.submitted_at).toLocaleString()}
-								</p>
+					<div className="space-y-4">
+						{/* Main Device Header Card */}
+						<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-4">
+							<div className="flex items-start justify-between gap-4 flex-wrap">
+								<div>
+									<div className="flex items-center gap-2 mb-1">
+										<p className="text-[11px] font-mono font-extrabold text-primary uppercase">
+											{formatRequestId(request.id)}
+										</p>
+									</div>
+									<h3 className="text-base font-extrabold text-card-foreground">
+										{request.device_brand} {request.device_model}
+									</h3>
+									<p className="text-xs text-muted-foreground mt-0.5 font-medium">
+										Submitted {new Date(request.submitted_at).toLocaleDateString()} at {new Date(request.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+									</p>
+								</div>
+								<SellStatusBadge status={request.status} />
 							</div>
-							<SellStatusBadge status={request.status} />
+
+							{request.offered_price != null && (
+								<div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+									<span className="text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">Offered Price</span>
+									<span className="font-mono font-extrabold text-emerald-600 text-sm">${Number(request.offered_price).toFixed(2)}</span>
+								</div>
+							)}
+
+							{(request.shipping_courier || request.shipping_tracking_number) && request.status !== 'approved' && request.status !== 'offer_accepted' && (
+								<div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs text-foreground/80">
+									<span className="text-muted-foreground font-semibold uppercase tracking-wider text-[10px]">Inbound Courier</span>
+									<span className="font-semibold">{request.shipping_courier ?? '—'} · <span className="font-mono">{request.shipping_tracking_number ?? '—'}</span></span>
+								</div>
+							)}
 						</div>
 
-						{request.offered_price != null && (
-							<div className="text-xs text-foreground/80">
-								Offer: <span className="font-semibold text-card-foreground">${Number(request.offered_price).toFixed(2)}</span>
-							</div>
-						)}
-
+						{/* Active Action / Offer Cards */}
 						{request.status === 'approved' && (
-							<div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
-								<div className="flex items-center gap-2 text-blue-800">
-									<BadgeDollarSign className="w-3.5 h-3.5" />
-									<p className="text-[10px] font-bold uppercase tracking-[0.16em]">
+							<div className="bg-card border border-blue-500/30 rounded-3xl p-6 shadow-sm space-y-3">
+								<div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+									<BadgeDollarSign className="w-4 h-4" />
+									<p className="text-xs font-extrabold uppercase tracking-[0.16em]">
 										We&apos;ve sent you an offer{request.offered_price != null ? ` of $${Number(request.offered_price).toFixed(2)}` : ''}
 									</p>
 								</div>
-								<p className="text-xs text-blue-900/80">
+								<p className="text-xs text-muted-foreground leading-relaxed font-medium">
 									Accept to get shipping instructions for sending us your device, or decline if you&apos;d rather not proceed.
 								</p>
-								<div className="flex flex-wrap gap-2.5">
+								<div className="flex flex-wrap gap-2.5 pt-1">
 									<button
 										type="button"
 										onClick={() => respondToOffer('accept')}
 										disabled={responding}
-										className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+										className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-extrabold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60 shadow-sm"
 									>
 										{responding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
 										Accept Offer
@@ -204,7 +218,7 @@ function SellTrackPageContent() {
 										type="button"
 										onClick={() => respondToOffer('reject')}
 										disabled={responding}
-										className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-300 text-blue-800 text-[10px] font-bold uppercase tracking-[0.14em] hover:bg-blue-100 transition-all cursor-pointer disabled:opacity-60"
+										className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-border text-foreground text-xs font-extrabold uppercase tracking-[0.14em] hover:bg-muted transition-all cursor-pointer disabled:opacity-60"
 									>
 										Decline
 									</button>
@@ -213,22 +227,22 @@ function SellTrackPageContent() {
 						)}
 
 						{request.status === 'offer_accepted' && (
-							<form onSubmit={submitShipment} className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 space-y-3">
-								<div className="flex items-center gap-2 text-teal-800">
-									<Truck className="w-3.5 h-3.5" />
-									<p className="text-[10px] font-bold uppercase tracking-[0.16em]">Offer accepted — please send us your device</p>
+							<form onSubmit={submitShipment} className="bg-card border border-teal-500/30 rounded-3xl p-6 shadow-sm space-y-4">
+								<div className="flex items-center gap-2 text-teal-700 dark:text-teal-300">
+									<Truck className="w-4 h-4" />
+									<p className="text-xs font-extrabold uppercase tracking-[0.16em]">Offer accepted — please send us your device</p>
 								</div>
-								<p className="text-xs text-teal-900/80">
+								<p className="text-xs text-muted-foreground leading-relaxed font-medium">
 									Ship your device to CellKore, then enter your shipping details below. Once we receive and inspect it, we&apos;ll process your payment.
 								</p>
-								<div className="grid sm:grid-cols-2 gap-2.5">
-									<input value={courier} onChange={(e) => setCourier(e.target.value)} placeholder="Courier name (e.g. DHL)" required className="w-full px-3.5 py-2.5 border border-teal-200 rounded-xl bg-white text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all" />
-									<input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Tracking number" required className="w-full px-3.5 py-2.5 border border-teal-200 rounded-xl bg-white text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all" />
+								<div className="grid sm:grid-cols-2 gap-3">
+									<input value={courier} onChange={(e) => setCourier(e.target.value)} placeholder="Courier name (e.g. DHL)" required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all font-medium" />
+									<input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Tracking number" required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all font-mono font-bold" />
 								</div>
 								<button
 									type="submit"
 									disabled={submittingShipment}
-									className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+									className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-extrabold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60 shadow-sm"
 								>
 									{submittingShipment && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
 									Submit Shipment Details
@@ -236,50 +250,54 @@ function SellTrackPageContent() {
 							</form>
 						)}
 
-						{(request.shipping_courier || request.shipping_tracking_number) && request.status !== 'approved' && request.status !== 'offer_accepted' && (
-							<div className="text-xs text-foreground/75">
-								Shipped via <span className="font-semibold">{request.shipping_courier}</span> · Tracking #: <span className="font-semibold">{request.shipping_tracking_number}</span>
-							</div>
-						)}
-
 						{request.status === 'rejected' && request.rejection_reason && (
-							<div className="rounded-2xl border border-red-200 bg-red-50/70 p-4">
-								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-700 mb-1.5">Request Rejected</p>
-								<p className="text-xs text-red-900/90">{request.rejection_reason}</p>
+							<div className="bg-card border border-rose-500/30 rounded-3xl p-6 shadow-sm space-y-2">
+								<p className="text-xs font-extrabold uppercase tracking-[0.16em] text-rose-600 dark:text-rose-400">Request Rejected</p>
+								<p className="text-xs text-foreground/90 leading-relaxed font-medium">{request.rejection_reason}</p>
 							</div>
 						)}
 
 						<ReturnShipmentPayment request={request} contact={contact.trim()} onPaid={refetch} />
 
 						{(request.payout_confirmed_at || request.payout_reference || request.payout_amount != null) && (
-							<div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 mb-2">Payment Confirmation</p>
-								<div className="space-y-1.5 text-xs text-emerald-900/90">
-									{request.payout_amount != null && <p>Amount: ${Number(request.payout_amount).toFixed(2)}</p>}
-									{request.payout_reference && <p>Reference: {request.payout_reference}</p>}
-									{request.payout_confirmed_at && <p>Confirmed: {new Date(request.payout_confirmed_at).toLocaleString()}</p>}
-									{request.payout_notes && <p>Note: {request.payout_notes}</p>}
+							<div className="bg-card border border-emerald-500/30 rounded-3xl p-6 shadow-sm space-y-3">
+								<p className="text-xs font-extrabold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-300">Payment Confirmation</p>
+								<div className="space-y-2 text-xs text-foreground font-medium">
+									{request.payout_amount != null && <p className="flex justify-between border-b border-border/50 pb-1.5"><span className="text-muted-foreground">Transfer Amount:</span> <span className="font-mono font-extrabold text-emerald-600">${Number(request.payout_amount).toFixed(2)}</span></p>}
+									{request.payout_reference && <p className="flex justify-between border-b border-border/50 pb-1.5"><span className="text-muted-foreground">Reference / TXID:</span> <span className="font-mono font-bold">{request.payout_reference}</span></p>}
+									{request.payout_confirmed_at && <p className="flex justify-between border-b border-border/50 pb-1.5"><span className="text-muted-foreground">Confirmed On:</span> <span>{new Date(request.payout_confirmed_at).toLocaleString()}</span></p>}
+									{request.payout_notes && <p className="pt-1 text-muted-foreground italic">Note: {request.payout_notes}</p>}
 								</div>
 							</div>
 						)}
 
+						{/* Progress Timeline Card */}
 						{(request.sell_phone_status_history ?? []).length > 0 && (
-							<div>
-								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-card-foreground mb-3">Progress Timeline</p>
+							<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-4">
+								<div className="flex items-center justify-between border-b border-border/70 pb-3">
+									<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">
+										PROGRESS TIMELINE HISTORY
+									</h4>
+									<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+										{(request.sell_phone_status_history ?? []).length} UPDATES
+									</span>
+								</div>
 								<SellStatusTimeline history={request.sell_phone_status_history!} currentStatus={request.status} />
 							</div>
 						)}
 
 						{supportWhatsapp && (
-							<a
-								href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${formatRequestId(request.id)}.`)}`}
-								target="_blank"
-								rel="noreferrer"
-								className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"
-							>
-								<MessageCircle className="w-3.5 h-3.5" />
-								Chat on WhatsApp
-							</a>
+							<div className="pt-2 flex justify-center">
+								<a
+									href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${formatRequestId(request.id)}.`)}`}
+									target="_blank"
+									rel="noreferrer"
+									className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border bg-card hover:bg-muted text-xs font-extrabold uppercase tracking-[0.14em] text-primary transition-all shadow-xs cursor-pointer"
+								>
+									<MessageCircle className="w-4 h-4 text-emerald-600" />
+									Need Help? Chat on WhatsApp
+								</a>
+							</div>
 						)}
 					</div>
 				)}
