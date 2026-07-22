@@ -56,7 +56,6 @@ const STATUS_STYLES: Record<string, string> = {
 	quoted: 'bg-primary/10 text-primary',
 	contacted: 'bg-secondary text-foreground',
 	closed: 'bg-secondary text-foreground/60',
-	pending: 'bg-amber-500/10 text-amber-700',
 	approved: 'bg-emerald-500/10 text-emerald-700',
 	rejected: 'bg-rose-500/10 text-rose-700',
 }
