@@ -1,25 +1,12 @@
 // One-off dev utility: sends one sample of every CellKore transactional
 // email to a given address so the HTML templates can be eyeballed in a
-// real inbox. Reads SMTP_* from .env.local directly since this runs
-// outside the Next.js server. Usage: npx tsx scripts/send-test-emails.ts <to-email>
-import fs from 'node:fs'
-import path from 'node:path'
+// real inbox. Loads .env.local via Next.js's own loader (@next/env) —
+// the same one the real app uses — rather than a hand-rolled parser, so
+// this can never mis-parse env values (e.g. inline "# comment" suffixes)
+// differently than production does. Usage: npx tsx scripts/send-test-emails.ts <to-email>
+import { loadEnvConfig } from '@next/env'
 
-const envPath = path.resolve(process.cwd(), '.env.local')
-if (fs.existsSync(envPath)) {
-	for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
-		const trimmed = line.trim()
-		if (!trimmed || trimmed.startsWith('#')) continue
-		const idx = trimmed.indexOf('=')
-		if (idx === -1) continue
-		const key = trimmed.slice(0, idx).trim()
-		let value = trimmed.slice(idx + 1).trim()
-		if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-			value = value.slice(1, -1)
-		}
-		if (!process.env[key]) process.env[key] = value
-	}
-}
+loadEnvConfig(process.cwd())
 
 async function main() {
 	const to = process.argv[2]

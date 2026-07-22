@@ -7,8 +7,11 @@ export function siteUrl(): string {
 
 export function logoUrl(): string {
 	// PNG, not the site's .webp — many email clients (notably Outlook) don't
-	// render WebP and silently fall back to the alt text instead.
-	return `${siteUrl()}/cellkore_logo_email.png`
+	// render WebP at all. The ?v= is regenerated on every call (not a fixed
+	// version) so each email gets a URL Gmail/Outlook's image proxy has
+	// never seen before — a static query string was still occasionally
+	// getting served as a cached failure from an earlier fetch attempt.
+	return `${siteUrl()}/cellkore_logo_email.png?v=${Date.now()}`
 }
 
 export function formatCurrency(amount: number, currency: 'USD' | 'CAD' = 'USD'): string {
