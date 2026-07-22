@@ -265,24 +265,7 @@ export default function RepairPage() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-				<div className="bg-card border border-border rounded-2xl p-2 grid grid-cols-2 gap-2">
-					{[
-						{ href: '/repair', label: 'New Request' },
-						{ href: '/repair/status', label: 'Track & Pay' },
-					].map((tab) => (
-						<Link
-							key={tab.href}
-							href={tab.href}
-							className={`text-center px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.14em] transition-all ${
-								tab.href === '/repair' ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-muted'
-							}`}
-						>
-							{tab.label}
-						</Link>
-					))}
-				</div>
-			</div>
+
 
 			{/* Hero Banner Section */}
 			<section className="relative text-white w-full min-h-[420px] md:min-h-[480px] py-16 md:py-24 overflow-hidden flex items-center justify-center text-center">
