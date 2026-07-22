@@ -21,26 +21,31 @@ const navGroups: NavGroup[] = [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 			{ label: 'Trade-ins', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
-			{ label: 'Products', href: '/admin/products', icon: Package, permission: 'products:read' },
-			{ label: 'Wholesale Lots', href: '/admin/wholesale', icon: Boxes, permission: 'products:read' },
-			{ label: 'Categories', href: '/admin/categories', icon: Tag, permission: 'products:read' },
 			{ label: 'Customers', href: '/admin/inquiries', icon: Users, permission: 'inquiries:read' },
 			{ label: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'analytics:read' },
 		],
 	},
 	{
-		title: 'SERVICES & SPECS',
+		title: 'CATALOG',
+		items: [
+			{ label: 'Products', href: '/admin/products', icon: Package, permission: 'products:read' },
+			{ label: 'Product Types', href: '/admin/product-types', icon: Layers, permission: 'products:read' },
+			{ label: 'Spec Templates', href: '/admin/spec-templates', icon: ListChecks, permission: 'products:read' },
+			{ label: 'Mobile Spec Presets', href: '/admin/mobile-spec-presets', icon: Smartphone, permission: 'products:read' },
+			{ label: 'Wholesale Lots', href: '/admin/wholesale', icon: Boxes, permission: 'products:read' },
+			{ label: 'Categories', href: '/admin/categories', icon: Tag, permission: 'products:read' },
+		],
+	},
+	{
+		title: 'REPAIR SERVICES',
 		items: [
 			{ label: 'Repair Queue', href: '/admin/repair-requests', icon: Wrench },
 			{ label: 'Repair Workflow', href: '/admin/repair-workflow', icon: ListChecks },
 			{ label: 'Repair Payments', href: '/admin/repair-payments', icon: Receipt },
-			{ label: 'Product Types', href: '/admin/product-types', icon: Layers, permission: 'products:read' },
-			{ label: 'Spec Templates', href: '/admin/spec-templates', icon: ListChecks, permission: 'products:read' },
-			{ label: 'Mobile Spec Presets', href: '/admin/mobile-spec-presets', icon: Smartphone, permission: 'products:read' },
 		],
 	},
 	{
-		title: 'MANAGEMENT & UTILITIES',
+		title: 'MANAGEMENT',
 		items: [
 			{ label: 'CMS Content', href: '/admin/content', icon: FileText },
 			{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },
@@ -50,6 +55,7 @@ const navGroups: NavGroup[] = [
 		],
 	},
 ]
+
 
 export function AdminSidebar() {
 	const pathname = usePathname()
