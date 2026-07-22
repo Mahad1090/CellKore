@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/supabase'
 
 export const SELL_PHONE_BUCKET = 'sell-phone-images'
+export const REPAIR_IMAGES_BUCKET = 'repair-images'
 export const PRODUCT_IMAGES_BUCKET = 'product-images'
 
 export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024 // block files > 5MB
@@ -79,6 +80,36 @@ export async function uploadSellPhoneImages(requestId: string, files: File[]): P
 		if (uploaded.length > 0) {
 			await supabase.storage
 				.from(SELL_PHONE_BUCKET)
+				.remove(uploaded.map((u) => u.path))
+				.catch(() => undefined)
+		}
+		throw err
+	}
+}
+
+/**
+ * Upload repair-request photos following the same
+ * `requests/[request_id]/[timestamp]-[filename]` convention as
+ * uploadSellPhoneImages, into their own bucket.
+ */
+export async function uploadRepairImages(requestId: string, files: File[]): Promise<UploadedImage[]> {
+	const uploaded: UploadedImage[] = []
+	try {
+		for (const file of files) {
+			const blob = await compressImage(file)
+			const path = `requests/${requestId}/${Date.now()}-${sanitizeFilename(file.name)}`
+			const { error } = await supabase.storage
+				.from(REPAIR_IMAGES_BUCKET)
+				.upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+			if (error) throw error
+			const { data } = supabase.storage.from(REPAIR_IMAGES_BUCKET).getPublicUrl(path)
+			uploaded.push({ path, publicUrl: data.publicUrl })
+		}
+		return uploaded
+	} catch (err) {
+		if (uploaded.length > 0) {
+			await supabase.storage
+				.from(REPAIR_IMAGES_BUCKET)
 				.remove(uploaded.map((u) => u.path))
 				.catch(() => undefined)
 		}

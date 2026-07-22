@@ -32,15 +32,22 @@ export type SellPhoneStatus =
 	| 'cancelled'
 export type SellPhoneStatusChangedBy = 'customer' | 'admin' | 'system'
 export type RepairStatus =
-	| 'pending_approval'
-	| 'approved'
-	| 'phone_requested'
-	| 'phone_received'
-	| 'assessed'
-	| 'price_given'
-	| 'accepted'
-	| 'rejected'
+	| 'submitted'
+	| 'quote_sent'
+	| 'quote_accepted'
+	| 'payment_confirmed'
+	| 'awaiting_device'
+	| 'device_shipped'
+	| 'device_received'
+	| 'in_repair'
+	| 'repaired'
+	| 'shipped_back'
 	| 'completed'
+	| 'rejected'
+	| 'cancelled'
+export type RepairServiceMethod = 'mail_in' | 'drop_off'
+export type RepairLabelStatus = 'pending' | 'generated' | 'failed'
+export type RepairCurrency = 'USD' | 'CAD'
 export type AdminRole = 'super_admin' | 'admin'
 
 export interface Category {
@@ -254,13 +261,86 @@ export interface SellPhoneReturnShipment {
 	updated_at: string
 }
 
+export interface RepairQuoteItem {
+	label: string
+	amount: number
+}
+
+export interface RepairShippingOption {
+	label: string
+	cost: number
+}
+
+export interface RepairStatusHistoryEntry {
+	id: string
+	request_id: string
+	status: RepairStatus
+	note: string | null
+	changed_by: SellPhoneStatusChangedBy
+	created_at: string
+}
+
+export interface RepairImage {
+	id: string
+	request_id: string
+	image_url: string
+}
+
 export interface RepairRequest {
 	id: string
 	user_id: string | null
-	device_info: string
-	current_status: RepairStatus
-	quoted_price: number | null
+	device_info: string | null
+	status: RepairStatus
+	device_category: string | null
+	device_category_other: string | null
+	issues: string[] | null
+	issue_other: string | null
+	device_brand: string | null
+	device_model: string | null
+	serial_number: string | null
+	description: string | null
+	service_method: RepairServiceMethod | null
+	contact_name: string | null
+	contact_email: string | null
+	contact_phone: string | null
+	contact_country_code: string | null
+	address_line1: string | null
+	address_line2: string | null
+	city: string | null
+	state_province: string | null
+	postal_code: string | null
+	country: string | null
+	terms_accepted: boolean
+	quote_items: RepairQuoteItem[] | null
+	quote_total: number | null
+	quote_currency: RepairCurrency
+	quote_notes: string | null
+	quote_sent_at: string | null
+	shipping_options: RepairShippingOption[] | null
+	selected_shipping_option: RepairShippingOption | null
+	shipping_cost: number | null
+	payment_provider: string | null
+	payment_reference: string | null
+	paid_at: string | null
+	grand_total: number | null
+	inbound_carrier: string | null
+	inbound_tracking_number: string | null
+	inbound_shipped_at: string | null
+	outbound_carrier: string | null
+	outbound_tracking_number: string | null
+	outbound_label_url: string | null
+	outbound_label_status: RepairLabelStatus
+	shipped_back_at: string | null
+	rejection_reason: string | null
 	created_at: string
+	updated_at: string
+	repair_images?: RepairImage[]
+	repair_status_history?: RepairStatusHistoryEntry[]
+}
+
+export interface RepairSettings {
+	id: string
+	mail_in_address: string | null
 	updated_at: string
 }
 

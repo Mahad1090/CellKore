@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Wrench, Upload, Check, X, ImageIcon, Loader2, Smartphone, Laptop, Tablet, Watch } from 'lucide-react'
+import { Wrench, Upload, Check, X, ImageIcon, Loader2, Smartphone, Laptop, Tablet, Watch, Copy, MapPin, Search } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
+import { PhoneInput } from '@/components/ui/phone-input'
+import { CountrySelect } from '@/components/ui/country-select'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
-import { fetchCmsPage } from '@/lib/data'
-import { uploadSellPhoneImages, MAX_UPLOAD_BYTES } from '@/lib/storage'
+import { fetchCmsPage, fetchRepairSettings, normalizeAddressNewlines } from '@/lib/data'
+import { uploadRepairImages, MAX_UPLOAD_BYTES } from '@/lib/storage'
 import { isValidPhone } from '@/lib/tax'
+import { PHONE_COUNTRIES } from '@/lib/phone-countries'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
 const DEVICE_CATEGORIES = [
 	{ id: 'iphone', label: 'iPhone', icon: Smartphone },
@@ -34,7 +38,7 @@ const REPAIR_ISSUES = [
 ] as const
 
 const SERVICE_METHODS = [
-	{ id: 'mail_in', label: 'Mail-in Repair Service (Prepaid Label)', desc: 'Ship your device safely with insured tracking.' },
+	{ id: 'mail_in', label: 'Ship to CellKore Office', desc: 'You arrange and pay for your own shipping to our repair center.' },
 	{ id: 'drop_off', label: 'In-Person Store Drop-off', desc: 'Bring your device directly to our certified service hub.' },
 ] as const
 
@@ -43,13 +47,19 @@ export default function RepairPage() {
 	const { user } = useAuth()
 	const [submitting, setSubmitting] = useState(false)
 	const [submitted, setSubmitted] = useState(false)
+	const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null)
 	const [successCopy, setSuccessCopy] = useState<{ title: string; content: string } | null>(null)
+	const [mailInAddress, setMailInAddress] = useState<string | null>(null)
+	const [addressCopied, setAddressCopied] = useState(false)
 	const [files, setFiles] = useState<File[]>([])
 	const [selectedCategory, setSelectedCategory] = useState<string>('iphone')
 	const [customCategory, setCustomCategory] = useState('')
 	const [selectedIssues, setSelectedIssues] = useState<string[]>(['Screen & Glass Replacement'])
 	const [customIssue, setCustomIssue] = useState('')
 	const [serviceMethod, setServiceMethod] = useState<'mail_in' | 'drop_off'>('mail_in')
+	const [phoneCountry, setPhoneCountry] = useState(PHONE_COUNTRIES[0])
+	const [shippingCountry, setShippingCountry] = useState('')
+	const [agreedToTerms, setAgreedToTerms] = useState(false)
 	const [form, setForm] = useState({
 		brand: '',
 		model: '',
@@ -58,6 +68,11 @@ export default function RepairPage() {
 		name: '',
 		email: '',
 		phone: '',
+		addressLine1: '',
+		addressLine2: '',
+		city: '',
+		stateProvince: '',
+		postalCode: '',
 	})
 
 	useEffect(() => {
@@ -68,6 +83,9 @@ export default function RepairPage() {
 				)
 			)
 			.catch(() => setSuccessCopy(null))
+		fetchRepairSettings()
+			.then((settings) => setMailInAddress(settings?.mail_in_address ? normalizeAddressNewlines(settings.mail_in_address) : null))
+			.catch(() => setMailInAddress(null))
 	}, [])
 
 	const set = (field: keyof typeof form) => (
@@ -100,6 +118,14 @@ export default function RepairPage() {
 		setFiles(next)
 	}
 
+	const copyAddress = () => {
+		if (!mailInAddress) return
+		navigator.clipboard.writeText(mailInAddress)
+		setAddressCopied(true)
+		toast({ title: 'Address copied', variant: 'success' })
+		setTimeout(() => setAddressCopied(false), 2000)
+	}
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!form.brand.trim() || !form.model.trim()) {
@@ -110,6 +136,10 @@ export default function RepairPage() {
 			toast({ title: 'Select an issue', description: 'Please choose at least one repair issue.', variant: 'error' })
 			return
 		}
+		if (!form.name.trim()) {
+			toast({ title: 'Name required', description: 'Please provide your full name.', variant: 'error' })
+			return
+		}
 		if (!form.email.trim() && !form.phone.trim()) {
 			toast({ title: 'Contact required', description: 'Provide an email or phone number for quote & status updates.', variant: 'error' })
 			return
@@ -118,60 +148,67 @@ export default function RepairPage() {
 			toast({ title: 'Invalid phone', description: 'Please enter a valid phone number (10–15 digits).', variant: 'error' })
 			return
 		}
+		if (!form.addressLine1.trim() || !form.city.trim() || !shippingCountry) {
+			toast({ title: 'Address required', description: 'Street address, city, and country are required so we know where to send your quote and shipment back.', variant: 'error' })
+			return
+		}
+		if (!agreedToTerms) {
+			toast({ title: 'Terms acceptance required', description: 'Please accept the Repair Service Terms & Conditions to continue.', variant: 'error' })
+			return
+		}
 
 		setSubmitting(true)
 		try {
 			const formattedIssues = selectedIssues.map((i) =>
 				i === 'Other / Custom Issue' && customIssue.trim() ? `Other: ${customIssue.trim()}` : i
 			)
-			const catText = selectedCategory === 'other' && customCategory.trim()
-				? `OTHER (${customCategory.trim()})`
-				: selectedCategory.toUpperCase()
-			const deviceInfo = [
-				`Category: ${catText}`,
-				`Brand: ${form.brand.trim()}`,
-				`Model: ${form.model.trim()}`,
-				form.serialNumber && `Serial/IMEI: ${form.serialNumber.trim()}`,
-				`Issues: ${formattedIssues.join(', ')}`,
-				`Service Method: ${serviceMethod === 'mail_in' ? 'Mail-in' : 'Store Drop-off'}`,
-				form.description && `Notes: ${form.description.trim()}`,
-				form.name && `Contact Name: ${form.name.trim()}`,
-				form.phone && `Contact Phone: ${form.phone.trim()}`,
-				form.email && `Contact Email: ${form.email.trim()}`,
-			]
-				.filter(Boolean)
-				.join('\n')
 
 			const requestId = crypto.randomUUID()
-			let uploadedUrls: string[] = []
-
-			if (files.length > 0) {
-				const uploaded = await uploadSellPhoneImages(requestId, files)
-				uploadedUrls = uploaded.map((u) => u.publicUrl)
-			}
+			const uploaded = files.length > 0 ? await uploadRepairImages(requestId, files) : []
 
 			const { error: insertError } = await supabase.from('repair_requests').insert({
 				id: requestId,
 				user_id: user?.id ?? null,
-				device_info: deviceInfo,
-				current_status: 'pending_approval',
+				device_category: selectedCategory,
+				device_category_other: selectedCategory === 'other' ? customCategory.trim() || null : null,
+				issues: formattedIssues,
+				issue_other: selectedIssues.includes('Other / Custom Issue') ? customIssue.trim() || null : null,
+				device_brand: form.brand.trim(),
+				device_model: form.model.trim(),
+				serial_number: form.serialNumber.trim() || null,
+				description: form.description.trim() || null,
+				service_method: serviceMethod,
+				contact_name: form.name.trim(),
+				contact_email: form.email.trim() || null,
+				contact_phone: form.phone.trim() ? `${phoneCountry.dial} ${form.phone.trim()}` : null,
+				contact_country_code: phoneCountry.dial,
+				address_line1: form.addressLine1.trim(),
+				address_line2: form.addressLine2.trim() || null,
+				city: form.city.trim(),
+				state_province: form.stateProvince.trim() || null,
+				postal_code: form.postalCode.trim() || null,
+				country: shippingCountry,
+				terms_accepted: true,
+				status: 'submitted',
 			})
 
 			if (insertError) {
-				// Fallback to inserting formatted record into sell_phone_requests if repair_requests table has strict schema constraints
-				await supabase.from('sell_phone_requests').insert({
-					id: requestId,
-					user_id: user?.id ?? null,
-					device_brand: `REPAIR: ${form.brand.trim()}`,
-					device_model: form.model.trim(),
-					condition: 'used',
-					description: deviceInfo,
-					contact_phone: form.phone.trim() || null,
-					contact_email: form.email.trim() || null,
-					status: 'submitted',
-				})
+				if (uploaded.length > 0) {
+					await supabase.storage
+						.from('repair-images')
+						.remove(uploaded.map((u) => u.path))
+						.catch(() => undefined)
+				}
+				throw insertError
 			}
 
+			if (uploaded.length > 0) {
+				await supabase.from('repair_images').insert(
+					uploaded.map((u) => ({ request_id: requestId, image_url: u.publicUrl }))
+				)
+			}
+
+			setSubmittedRequestId(requestId)
 			setSubmitted(true)
 			window.scrollTo({ top: 0, behavior: 'smooth' })
 		} catch (err) {
@@ -196,15 +233,24 @@ export default function RepairPage() {
 					<h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-luxury uppercase mb-6">
 						{successCopy?.title ?? 'Repair Request Submitted'}
 					</h1>
-					<p className="text-sm md:text-base text-foreground/75 leading-relaxed whitespace-pre-line mb-10">
+					<p className="text-sm md:text-base text-foreground/75 leading-relaxed whitespace-pre-line mb-6">
 						{successCopy?.content ??
-							'Thank you for trusting CellKore! Our certified technicians are assessing your device details and will send your official repair estimate within 24 hours.'}
+							'Thank you for trusting CellKore! Our certified technicians are reviewing your device details and will send your official repair charges within 24 hours.'}
 					</p>
+					{!user && submittedRequestId && (
+						<div className="mb-10 mx-auto max-w-md rounded-2xl border border-border bg-secondary/40 p-5">
+							<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Your Request ID</p>
+							<p className="text-xs font-mono font-bold text-card-foreground break-all">{formatRequestId(submittedRequestId)}</p>
+							<p className="text-[11px] text-muted-foreground mt-2">
+								Save this ID — since you submitted without an account, you&apos;ll need it (with your email or phone) to check your status later.
+							</p>
+						</div>
+					)}
 					<Link
-						href="/"
+						href={submittedRequestId ? `/repair/status?id=${encodeURIComponent(formatRequestId(submittedRequestId))}` : '/repair/status'}
 						className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 					>
-						Back to Home
+						Track My Request
 					</Link>
 				</div>
 				<Footer />
@@ -219,13 +265,11 @@ export default function RepairPage() {
 		<main className="min-h-screen bg-background">
 			<Navigation />
 
-			<div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-				<div className="bg-card border border-border rounded-2xl p-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+				<div className="bg-card border border-border rounded-2xl p-2 grid grid-cols-2 gap-2">
 					{[
 						{ href: '/repair', label: 'New Request' },
-						{ href: '/repair/status', label: 'Track Status' },
-						{ href: '/repair/workflow', label: 'Workflow' },
-						{ href: '/repair/payments', label: 'Payments' },
+						{ href: '/repair/status', label: 'Track & Pay' },
 					].map((tab) => (
 						<Link
 							key={tab.href}
@@ -261,8 +305,18 @@ export default function RepairPage() {
 				</div>
 			</section>
 
+			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-4 text-center">
+				<Link
+					href="/repair/status"
+					className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors"
+				>
+					<Search className="w-4 h-4 text-primary" />
+					Already submitted a request? Track it here
+				</Link>
+			</div>
+
 			{/* Repair Booking Form */}
-			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-10">
 				{/* Step 1: Device Category */}
 				<div className="bg-card border border-border rounded-3xl p-7">
 					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
@@ -466,11 +520,71 @@ export default function RepairPage() {
 							</button>
 						))}
 					</div>
-					<div className="grid sm:grid-cols-2 gap-4">
-						<input placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
+
+					{serviceMethod === 'mail_in' && (
+						<div className="mb-6 p-4 rounded-2xl border border-primary/30 bg-primary/5 flex items-start gap-3">
+							<MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+							<div className="flex-1">
+								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground mb-1.5">Ship your device to:</p>
+								<p className="text-xs text-foreground/85 whitespace-pre-line leading-relaxed font-mono">
+									{mailInAddress || 'Loading address...'}
+								</p>
+								<p className="text-[11px] text-muted-foreground mt-2">
+									You are responsible for arranging and paying for shipping to this address. Please include your Request ID (shown after submission) in the package.
+								</p>
+							</div>
+							{mailInAddress && (
+								<button
+									type="button"
+									onClick={copyAddress}
+									className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer shrink-0"
+									aria-label="Copy address"
+								>
+									{addressCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+								</button>
+							)}
+						</div>
+					)}
+
+					<div className="grid sm:grid-cols-2 gap-4 mb-4">
+						<input required placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
 						<input type="email" placeholder="Email address" value={form.email} onChange={set('email')} className={inputClass} />
-						<input type="tel" placeholder="Phone number" value={form.phone} onChange={set('phone')} className={`${inputClass} sm:col-span-2`} />
+						<PhoneInput
+							country={phoneCountry}
+							onCountryChange={setPhoneCountry}
+							value={form.phone}
+							onChange={(value) => setForm((f) => ({ ...f, phone: value }))}
+							className="sm:col-span-2"
+						/>
 					</div>
+
+					<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-3">
+						Your Address (for the repair quote & return shipment)
+					</p>
+					<div className="grid sm:grid-cols-2 gap-4">
+						<input required placeholder="Street address" value={form.addressLine1} onChange={set('addressLine1')} className={`${inputClass} sm:col-span-2`} />
+						<input placeholder="Apt / suite (optional)" value={form.addressLine2} onChange={set('addressLine2')} className={`${inputClass} sm:col-span-2`} />
+						<input required placeholder="City" value={form.city} onChange={set('city')} className={inputClass} />
+						<input placeholder="State / Province" value={form.stateProvince} onChange={set('stateProvince')} className={inputClass} />
+						<input placeholder="Postal code" value={form.postalCode} onChange={set('postalCode')} className={inputClass} />
+						<CountrySelect value={shippingCountry} onChange={setShippingCountry} className={inputClass} />
+					</div>
+
+					<label className="flex items-start gap-3 mt-6 bg-background border border-border rounded-2xl p-5 cursor-pointer">
+						<input
+							type="checkbox"
+							checked={agreedToTerms}
+							onChange={(e) => setAgreedToTerms(e.target.checked)}
+							className="mt-0.5 w-4 h-4 accent-[var(--primary)] cursor-pointer shrink-0"
+						/>
+						<span className="text-xs text-foreground/80 leading-relaxed">
+							I confirm the device details above are accurate and I agree to CellKore&apos;s{' '}
+							<Link href="/terms" target="_blank" className="text-primary font-semibold hover:underline">
+								Repair Service Terms & Conditions
+							</Link>
+							, including that repair charges are subject to in-person inspection and final pricing may adjust based on the device&apos;s actual condition.
+						</span>
+					</label>
 				</div>
 
 				<button

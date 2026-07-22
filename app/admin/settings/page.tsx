@@ -7,12 +7,14 @@ import { TableShimmer } from '@/components/shimmer'
 import { CountrySelect } from '@/components/ui/country-select'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
+import { normalizeAddressNewlines } from '@/lib/data'
 import { SHIPPING_COUNTRIES } from '@/lib/shipping-countries'
 import type { SocialLink, TaxRate } from '@/lib/types'
 
 const TABS = [
 	{ id: 'tax', label: 'Tax Rates' },
 	{ id: 'social', label: 'Social Links' },
+	{ id: 'repair', label: 'Repair Service' },
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
@@ -28,6 +30,36 @@ export default function AdminSettingsPage() {
 	const [newRateCountry, setNewRateCountry] = useState('')
 	const [newRatePercent, setNewRatePercent] = useState('')
 	const [savingRate, setSavingRate] = useState(false)
+
+	const [mailInAddress, setMailInAddress] = useState('')
+	const [savingRepair, setSavingRepair] = useState(false)
+
+	const loadRepairSettings = useCallback(() => {
+		fetch('/api/admin/repair-settings')
+			.then((res) => res.json())
+			.then((json) => setMailInAddress(normalizeAddressNewlines(json.settings?.mail_in_address ?? '')))
+			.catch(() => undefined)
+	}, [])
+
+	useEffect(loadRepairSettings, [loadRepairSettings])
+
+	const saveRepairSettings = async () => {
+		setSavingRepair(true)
+		try {
+			const res = await fetch('/api/admin/repair-settings', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ mail_in_address: mailInAddress }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Repair settings saved', variant: 'success' })
+		} catch (err) {
+			toast({ title: 'Save failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSavingRepair(false)
+		}
+	}
 
 	const load = useCallback(() => {
 		fetch('/api/admin/social-links')
@@ -159,7 +191,7 @@ export default function AdminSettingsPage() {
 
 	return (
 		<div>
-			<PageTitle title="Settings" subtitle="Tax rates and storefront footer links" />
+			<PageTitle title="Settings" subtitle="Tax rates, storefront footer links, and repair service configuration" />
 
 			<div className="flex items-center gap-2 mb-8 border-b border-border">
 				{TABS.map((t) => (
@@ -355,6 +387,28 @@ export default function AdminSettingsPage() {
 					</div>
 				)}
 			</div>
+			)}
+
+			{tab === 'repair' && (
+				<Panel title="Mail-In Repair Address" className="max-w-3xl">
+					<p className="text-xs text-muted-foreground mb-4 leading-relaxed">
+						Shown to customers who choose the mail-in repair service, so they know where to ship their device.
+					</p>
+					<textarea
+						value={mailInAddress}
+						onChange={(e) => setMailInAddress(e.target.value)}
+						disabled={!writable}
+						rows={5}
+						placeholder="CellKore Repair Center&#10;123 Example Street&#10;City, State ZIP&#10;Country"
+						className={`${adminInput} resize-none`}
+					/>
+					{writable && (
+						<button onClick={saveRepairSettings} disabled={savingRepair} className={`${adminButton} mt-4`}>
+							{savingRepair && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+							Save Address
+						</button>
+					)}
+				</Panel>
 			)}
 		</div>
 	)

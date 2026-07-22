@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { finalizePaidOrder } from '@/lib/checkout-server'
 import { createServiceClient } from '@/lib/supabase-server'
 import { markReturnShipmentPaid } from '@/lib/sell-request-return'
+import { markRepairPaid } from '@/lib/repair-payment'
 
 export async function POST(request: NextRequest) {
 	const stripeSecret = process.env.STRIPE_SECRET_KEY
@@ -32,6 +33,15 @@ export async function POST(request: NextRequest) {
 		if (meta.type === 'sell_return_shipping' && meta.request_id) {
 			try {
 				await markReturnShipmentPaid(createServiceClient(), meta.request_id, 'stripe', session.id)
+			} catch {
+				// Swallow — acknowledge with 200 so Stripe does not retry indefinitely.
+			}
+			return NextResponse.json({ received: true })
+		}
+
+		if (meta.type === 'repair_payment' && meta.request_id) {
+			try {
+				await markRepairPaid(createServiceClient(), meta.request_id, 'stripe', session.id)
 			} catch {
 				// Swallow — acknowledge with 200 so Stripe does not retry indefinitely.
 			}

@@ -5,6 +5,7 @@ import type {
 	CmsPage,
 	CountryContactInfo,
 	Product,
+	RepairSettings,
 	SocialLink,
 	TaxRate,
 	WholesalePriceTier,
@@ -141,6 +142,17 @@ export async function fetchCountryContacts(): Promise<CountryContactInfo[]> {
 		.order('country', { ascending: true })
 	if (error) throw error
 	return data ?? []
+}
+
+/** Converts literal "\n" escape sequences (e.g. from a placeholder seeded via SQL) into real newlines. */
+export function normalizeAddressNewlines(value: string): string {
+	return value.replace(/\\n/g, '\n')
+}
+
+export async function fetchRepairSettings(): Promise<RepairSettings | null> {
+	const { data, error } = await supabase.from('repair_settings').select('*').limit(1).maybeSingle()
+	if (error) throw error
+	return data
 }
 
 export async function fetchSocialLinks(): Promise<SocialLink[]> {
