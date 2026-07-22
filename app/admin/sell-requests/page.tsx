@@ -2,14 +2,82 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Eye, Search, Loader2 } from 'lucide-react'
-import { PageTitle, StatusBadge, EmptyState, Modal, adminButton, adminInput } from '@/components/admin/ui'
+import { Eye, Search, Loader2, ChevronDown } from 'lucide-react'
+import { PageTitle, EmptyState, Modal, adminButton, adminInput } from '@/components/admin/ui'
+import { SellStatusBadge, SellStatusTimeline } from '@/components/sell-status-timeline'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
 import type { SellPhoneRequest, SellPhoneStatus } from '@/lib/types'
 
-const STATUSES: SellPhoneStatus[] = ['submitted', 'reviewed', 'quoted', 'contacted', 'closed']
+const STATUSES: SellPhoneStatus[] = [
+	'submitted',
+	'approved',
+	'offer_accepted',
+	'shipment_submitted',
+	'awaiting_package',
+	'under_inspection',
+	'quoted',
+	'payment_confirmed',
+	'rejected',
+	'cancelled',
+]
+
+const STATUS_INFO: Record<SellPhoneStatus, string> = {
+	submitted: 'New submission — review the details, then approve with an offer or reject it.',
+	approved: 'Offer sent — waiting for the customer to accept or decline it.',
+	offer_accepted: 'Customer accepted the offer — waiting for them to ship the device.',
+	shipment_submitted: 'Customer says it\'s on the way. Mark it received once it arrives.',
+	awaiting_package: 'Tracking confirmed — waiting for the physical package to arrive.',
+	under_inspection: 'Device received. Inspect it, then approve payment or reject it.',
+	quoted: 'Legacy status from the old flow — not used going forward.',
+	payment_confirmed: 'Complete — payment has been sent to the customer.',
+	rejected: 'Rejected.',
+	cancelled: 'Cancelled.',
+}
+
+type ActionTone = 'primary' | 'danger' | 'neutral'
+
+function nextActionsFor(current: SellPhoneStatus): { label: string; target: SellPhoneStatus; tone: ActionTone }[] {
+	switch (current) {
+		case 'submitted':
+			return [
+				{ label: 'Approve & Send Offer', target: 'approved', tone: 'primary' },
+				{ label: 'Reject Request', target: 'rejected', tone: 'danger' },
+			]
+		case 'approved':
+			return [
+				{ label: 'Mark Offer Accepted', target: 'offer_accepted', tone: 'primary' },
+				{ label: 'Cancel Request', target: 'cancelled', tone: 'neutral' },
+			]
+		case 'offer_accepted':
+			return [
+				{ label: 'Mark Shipment Submitted', target: 'shipment_submitted', tone: 'primary' },
+				{ label: 'Cancel Request', target: 'cancelled', tone: 'neutral' },
+			]
+		case 'shipment_submitted':
+			return [
+				{ label: 'Mark Awaiting Package', target: 'awaiting_package', tone: 'primary' },
+				{ label: 'Skip to Under Inspection', target: 'under_inspection', tone: 'neutral' },
+			]
+		case 'awaiting_package':
+			return [{ label: 'Mark Under Inspection', target: 'under_inspection', tone: 'primary' }]
+		case 'under_inspection':
+			return [
+				{ label: 'Approve & Confirm Payment', target: 'payment_confirmed', tone: 'primary' },
+				{ label: 'Reject Device', target: 'rejected', tone: 'danger' },
+			]
+		default:
+			return []
+	}
+}
+
+const ACTION_BUTTON_CLASS: Record<ActionTone, string> = {
+	primary: 'bg-primary text-primary-foreground hover:opacity-90',
+	danger: 'border border-red-300 text-red-700 hover:bg-red-50',
+	neutral: 'border border-border text-foreground/75 hover:border-primary hover:text-foreground',
+}
+
 const WORKFLOW_TABS = [
 	{ href: '/admin/sell-requests', label: 'Sell Queue' },
 	{ href: '/admin/repair-requests', label: 'Repair Queue' },
@@ -29,6 +97,13 @@ export default function AdminSellRequestsPage() {
 	const [payoutNotes, setPayoutNotes] = useState('')
 	const [paymentConfirmed, setPaymentConfirmed] = useState(false)
 	const [status, setStatus] = useState<SellPhoneStatus>('submitted')
+	const [rejectionReason, setRejectionReason] = useState('')
+	const [note, setNote] = useState('')
+	const [returnShippingFee, setReturnShippingFee] = useState('')
+	const [labelCarrier, setLabelCarrier] = useState('')
+	const [labelTracking, setLabelTracking] = useState('')
+	const [labelUrl, setLabelUrl] = useState('')
+	const [savingLabel, setSavingLabel] = useState(false)
 	const [saving, setSaving] = useState(false)
 
 	const load = useCallback(() => {
@@ -48,10 +123,23 @@ export default function AdminSellRequestsPage() {
 		setPayoutNotes(request.payout_notes ?? '')
 		setPaymentConfirmed(Boolean(request.payout_confirmed_at))
 		setStatus(request.status)
+		setRejectionReason(request.rejection_reason ?? '')
+		setNote('')
+		setReturnShippingFee(request.sell_phone_return_shipments?.fee_amount != null ? String(request.sell_phone_return_shipments.fee_amount) : '')
+		setLabelCarrier(request.sell_phone_return_shipments?.carrier ?? '')
+		setLabelTracking(request.sell_phone_return_shipments?.tracking_number ?? '')
+		setLabelUrl(request.sell_phone_return_shipments?.label_url ?? '')
 	}
+
+	const showReturnFeeField =
+		status === 'rejected' && (selected?.status === 'under_inspection' || Boolean(selected?.sell_phone_return_shipments))
 
 	const save = async () => {
 		if (!selected) return
+		if (status === 'rejected' && !rejectionReason.trim()) {
+			toast({ title: 'Rejection reason required', description: 'Tell the customer why the request was rejected.', variant: 'error' })
+			return
+		}
 		setSaving(true)
 		try {
 			const res = await fetch(`/api/admin/sell-requests/${selected.id}`, {
@@ -59,11 +147,14 @@ export default function AdminSellRequestsPage() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					status,
+					rejection_reason: status === 'rejected' ? rejectionReason.trim() : null,
+					note: note.trim() || undefined,
 					offered_price: offeredPrice === '' ? null : Number(offeredPrice),
 					payout_amount: payoutAmount === '' ? null : Number(payoutAmount),
 					payout_reference: payoutReference.trim() || null,
 					payout_notes: payoutNotes.trim() || null,
 					payout_confirmed_at: paymentConfirmed ? new Date().toISOString() : null,
+					return_shipping_fee: showReturnFeeField && returnShippingFee !== '' ? Number(returnShippingFee) : undefined,
 				}),
 			})
 			const json = await res.json()
@@ -75,6 +166,31 @@ export default function AdminSellRequestsPage() {
 			toast({ title: 'Update failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		} finally {
 			setSaving(false)
+		}
+	}
+
+	const saveLabel = async () => {
+		if (!selected) return
+		if (!labelCarrier.trim() || !labelTracking.trim() || !labelUrl.trim()) {
+			toast({ title: 'Missing details', description: 'Carrier, tracking number, and label URL are all required.', variant: 'error' })
+			return
+		}
+		setSavingLabel(true)
+		try {
+			const res = await fetch(`/api/admin/sell-requests/${selected.id}/return-shipment`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ carrier: labelCarrier.trim(), tracking_number: labelTracking.trim(), label_url: labelUrl.trim() }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Return label saved', variant: 'success' })
+			setSelected(null)
+			load()
+		} catch (err) {
+			toast({ title: 'Could not save label', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSavingLabel(false)
 		}
 	}
 
@@ -149,7 +265,7 @@ export default function AdminSellRequestsPage() {
 									<td className="px-5 py-3.5 font-semibold text-card-foreground">
 										{request.offered_price != null ? `$${Number(request.offered_price).toFixed(2)}` : '—'}
 									</td>
-									<td className="px-5 py-3.5"><StatusBadge value={request.status} /></td>
+									<td className="px-5 py-3.5"><SellStatusBadge status={request.status} /></td>
 									<td className="px-5 py-3.5">
 										<button
 											onClick={() => openDetail(request)}
@@ -200,6 +316,61 @@ export default function AdminSellRequestsPage() {
 									</a>
 								)}
 							</div>
+							{(selected.shipping_courier || selected.shipping_tracking_number) && (
+								<div>
+									<p className={label}>Shipment Details (Inbound)</p>
+									<p className="text-xs text-foreground/85">Courier: {selected.shipping_courier ?? '—'}</p>
+									<p className="text-xs text-foreground/85 mt-0.5">Tracking #: {selected.shipping_tracking_number ?? '—'}</p>
+								</div>
+							)}
+							{selected.sell_phone_return_shipments && (
+								<div>
+									<p className={label}>Return Shipment (Device Sent Back)</p>
+									<div className="text-xs text-foreground/85 bg-secondary rounded-2xl p-4 space-y-1.5">
+										<p>Fee: ${Number(selected.sell_phone_return_shipments.fee_amount).toFixed(2)}</p>
+										<p>
+											Payment:{' '}
+											{selected.sell_phone_return_shipments.paid_at
+												? `Paid via ${selected.sell_phone_return_shipments.payment_provider} on ${new Date(selected.sell_phone_return_shipments.paid_at).toLocaleDateString()}`
+												: 'Awaiting customer payment'}
+										</p>
+										{selected.sell_phone_return_shipments.address_line1 && (
+											<p>
+												Ship to: {selected.sell_phone_return_shipments.address_line1}, {selected.sell_phone_return_shipments.city},{' '}
+												{selected.sell_phone_return_shipments.country}
+											</p>
+										)}
+										<p>
+											Label:{' '}
+											{selected.sell_phone_return_shipments.label_status === 'generated'
+												? `${selected.sell_phone_return_shipments.carrier} · ${selected.sell_phone_return_shipments.tracking_number}`
+												: 'Not yet generated'}
+										</p>
+										{selected.sell_phone_return_shipments.label_url && (
+											<a href={selected.sell_phone_return_shipments.label_url} target="_blank" rel="noreferrer" className="text-primary font-semibold hover:underline">
+												View Label
+											</a>
+										)}
+									</div>
+									{writable && selected.sell_phone_return_shipments.paid_at && selected.sell_phone_return_shipments.label_status !== 'generated' && (
+										<div className="mt-3 rounded-2xl border border-border p-4 space-y-3">
+											<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-card-foreground">
+												Attach Label Manually
+											</p>
+											<p className="text-[10.5px] text-muted-foreground -mt-1.5">
+												No carrier API is connected yet — buy the label yourself and paste the details here.
+											</p>
+											<input value={labelCarrier} onChange={(e) => setLabelCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
+											<input value={labelTracking} onChange={(e) => setLabelTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
+											<input value={labelUrl} onChange={(e) => setLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
+											<button onClick={saveLabel} disabled={savingLabel} className={`${adminButton} w-full justify-center`}>
+												{savingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+												Save Label
+											</button>
+										</div>
+									)}
+								</div>
+							)}
 							{(selected.sell_phone_images ?? []).length > 0 && (
 								<div>
 									<p className={label}>Submitted Photos</p>
@@ -209,6 +380,14 @@ export default function AdminSellRequestsPage() {
 												<img src={image.image_url} alt="Device" className="w-full h-full object-cover" />
 											</a>
 										))}
+									</div>
+								</div>
+							)}
+							{(selected.sell_phone_status_history ?? []).length > 0 && (
+								<div>
+									<p className={label}>Case History</p>
+									<div className="bg-secondary/50 rounded-2xl p-4">
+										<SellStatusTimeline history={selected.sell_phone_status_history!} currentStatus={selected.status} />
 									</div>
 								</div>
 							)}
@@ -229,66 +408,148 @@ export default function AdminSellRequestsPage() {
 							</div>
 							<div>
 								<label className={label}>Status</label>
-								<select
-									value={status}
-									onChange={(e) => setStatus(e.target.value as SellPhoneStatus)}
-									className={`${adminInput} cursor-pointer capitalize`}
-									disabled={!writable}
-								>
-									{STATUSES.map((s) => (
-										<option key={s} value={s}>{s}</option>
-									))}
-								</select>
-								<p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-wider">
-									submitted → reviewed → quoted → contacted → closed
-								</p>
+								<div className="flex items-center gap-2 mb-3">
+									<SellStatusBadge status={selected.status} />
+									{status !== selected.status && (
+										<span className="text-[10px] text-muted-foreground">
+											→ changing to <span className="font-semibold capitalize">{status.replace(/_/g, ' ')}</span>
+										</span>
+									)}
+								</div>
+								<p className="text-xs text-foreground/75 mb-3">{STATUS_INFO[selected.status]}</p>
+
+								{writable && nextActionsFor(selected.status).length > 0 && (
+									<div className="flex flex-wrap gap-2 mb-3">
+										{nextActionsFor(selected.status).map((action) => (
+											<button
+												key={action.target}
+												type="button"
+												onClick={() => setStatus(action.target)}
+												className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${ACTION_BUTTON_CLASS[action.tone]} ${
+													status === action.target ? 'ring-2 ring-offset-2 ring-offset-card ring-primary/50' : ''
+												}`}
+											>
+												{action.label}
+											</button>
+										))}
+									</div>
+								)}
+
+								<details className="group">
+									<summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground list-none flex items-center gap-1.5">
+										<ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
+										Advanced: Set Status Manually
+									</summary>
+									<select
+										value={status}
+										onChange={(e) => setStatus(e.target.value as SellPhoneStatus)}
+										className={`${adminInput} cursor-pointer mt-2`}
+										disabled={!writable}
+									>
+										{STATUSES.map((s) => (
+											<option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+										))}
+									</select>
+									<p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+										For corrections or edge cases the buttons above don&apos;t cover. Offer accepted/rejected is normally set by the customer themselves.
+									</p>
+								</details>
 							</div>
-							<div className="rounded-2xl border border-border p-4 space-y-4">
-								<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-card-foreground">Payment Confirmation</p>
-								<div>
-									<label className={label}>Transfer Amount (USD)</label>
-									<input
-										type="number"
-										step="0.01"
-										value={payoutAmount}
-										onChange={(e) => setPayoutAmount(e.target.value)}
-										className={adminInput}
-										disabled={!writable}
-										placeholder="0.00"
-									/>
+							{status === 'rejected' ? (
+								<div className="space-y-4">
+									<div>
+										<label className={label}>Rejection Reason (shown to customer)</label>
+										<textarea
+											value={rejectionReason}
+											onChange={(e) => setRejectionReason(e.target.value)}
+											className={adminInput}
+											disabled={!writable}
+											rows={3}
+											placeholder="e.g. Device arrived with undisclosed water damage"
+										/>
+									</div>
+									{showReturnFeeField && (
+										<div>
+											<label className={label}>Return Shipping Fee (USD)</label>
+											<input
+												type="number"
+												step="0.01"
+												value={returnShippingFee}
+												onChange={(e) => setReturnShippingFee(e.target.value)}
+												className={adminInput}
+												disabled={!writable}
+												placeholder="0.00"
+											/>
+											<p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+												Device was already received — the customer will be asked to pay this to get it shipped back.
+											</p>
+										</div>
+									)}
 								</div>
+							) : (
 								<div>
-									<label className={label}>Transfer Reference</label>
-									<input
-										value={payoutReference}
-										onChange={(e) => setPayoutReference(e.target.value)}
-										className={adminInput}
-										disabled={!writable}
-										placeholder="Transaction ID / receipt code"
-									/>
-								</div>
-								<div>
-									<label className={label}>Receipt Notes</label>
+									<label className={label}>Update Note (optional, shown on timeline)</label>
 									<textarea
-										value={payoutNotes}
-										onChange={(e) => setPayoutNotes(e.target.value)}
+										value={note}
+										onChange={(e) => setNote(e.target.value)}
 										className={adminInput}
 										disabled={!writable}
-										rows={3}
-										placeholder="Bank / transfer confirmation details"
+										rows={2}
+										placeholder="Add context for this status change"
 									/>
 								</div>
-								<label className="flex items-center gap-2 text-xs text-foreground/80">
-									<input
-										type="checkbox"
-										checked={paymentConfirmed}
-										onChange={(e) => setPaymentConfirmed(e.target.checked)}
-										disabled={!writable}
-										className="accent-[var(--primary)]"
-									/>
-									Payment transfer confirmed
-								</label>
-							</div>
+							)}
+							{status === 'payment_confirmed' && (
+								<div className="rounded-2xl border border-border p-4 space-y-4">
+									<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-card-foreground">Payment Confirmation</p>
+									<p className="text-[10.5px] text-muted-foreground -mt-2">
+										Fill this in once the device has been inspected, approved, and the transfer has been sent to the customer.
+									</p>
+									<div>
+										<label className={label}>Transfer Amount (USD)</label>
+										<input
+											type="number"
+											step="0.01"
+											value={payoutAmount}
+											onChange={(e) => setPayoutAmount(e.target.value)}
+											className={adminInput}
+											disabled={!writable}
+											placeholder="0.00"
+										/>
+									</div>
+									<div>
+										<label className={label}>Transfer Reference</label>
+										<input
+											value={payoutReference}
+											onChange={(e) => setPayoutReference(e.target.value)}
+											className={adminInput}
+											disabled={!writable}
+											placeholder="Transaction ID / receipt code"
+										/>
+									</div>
+									<div>
+										<label className={label}>Receipt Notes</label>
+										<textarea
+											value={payoutNotes}
+											onChange={(e) => setPayoutNotes(e.target.value)}
+											className={adminInput}
+											disabled={!writable}
+											rows={3}
+											placeholder="Bank / transfer confirmation details"
+										/>
+									</div>
+									<label className="flex items-center gap-2 text-xs text-foreground/80">
+										<input
+											type="checkbox"
+											checked={paymentConfirmed}
+											onChange={(e) => setPaymentConfirmed(e.target.checked)}
+											disabled={!writable}
+											className="accent-[var(--primary)]"
+										/>
+										Payment transfer confirmed
+									</label>
+								</div>
+							)}
 							{writable && (
 								<button onClick={save} disabled={saving} className={`${adminButton} w-full justify-center`}>
 									{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}

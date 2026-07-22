@@ -2,7 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
 
-const VALID_STATUSES = ['submitted', 'reviewed', 'quoted', 'contacted', 'closed']
+const VALID_STATUSES = [
+	'submitted',
+	'approved',
+	'offer_accepted',
+	'shipment_submitted',
+	'awaiting_package',
+	'under_inspection',
+	'quoted',
+	'payment_confirmed',
+	'rejected',
+	'cancelled',
+]
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	const auth = await requireAdmin(request, 'sell-requests:write')
@@ -11,11 +22,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	const body = await request.json()
 
 	const update: Record<string, unknown> = {}
+	let statusChanged = false
 	if (body.status !== undefined) {
 		if (!VALID_STATUSES.includes(body.status)) {
 			return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
 		}
+		if (body.status === 'rejected' && !String(body.rejection_reason ?? '').trim()) {
+			return NextResponse.json({ error: 'A rejection reason is required' }, { status: 400 })
+		}
 		update.status = body.status
+		statusChanged = true
+	}
+	if (body.rejection_reason !== undefined) {
+		update.rejection_reason = body.rejection_reason ? String(body.rejection_reason).trim() : null
 	}
 	if (body.offered_price !== undefined) {
 		update.offered_price = body.offered_price === null ? null : Number(body.offered_price)
@@ -32,12 +51,48 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	if (body.payout_confirmed_at !== undefined) {
 		update.payout_confirmed_at = body.payout_confirmed_at || null
 	}
-	if (Object.keys(update).length === 0) {
+	const returnShippingFee = body.return_shipping_fee !== undefined && body.return_shipping_fee !== null && body.return_shipping_fee !== ''
+		? Number(body.return_shipping_fee)
+		: null
+	if (returnShippingFee !== null && (Number.isNaN(returnShippingFee) || returnShippingFee <= 0)) {
+		return NextResponse.json({ error: 'Return shipping fee must be a positive number' }, { status: 400 })
+	}
+
+	if (Object.keys(update).length === 0 && returnShippingFee === null) {
 		return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
 	}
 
 	const service = createServiceClient()
-	const { error } = await service.from('sell_phone_requests').update(update).eq('id', id)
-	if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+	if (Object.keys(update).length > 0) {
+		update.updated_at = new Date().toISOString()
+		const { error } = await service.from('sell_phone_requests').update(update).eq('id', id)
+		if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+	}
+
+	// A return shipping fee only makes sense once we're rejecting a device
+	// we already physically received (inspection stage or later).
+	if (returnShippingFee !== null) {
+		const { error: shipmentError } = await service
+			.from('sell_phone_return_shipments')
+			.upsert({ request_id: id, fee_amount: returnShippingFee }, { onConflict: 'request_id' })
+		if (shipmentError) return NextResponse.json({ error: shipmentError.message }, { status: 500 })
+	}
+
+	if (statusChanged) {
+		const note =
+			body.status === 'rejected'
+				? String(body.rejection_reason ?? '').trim()
+				: body.note
+					? String(body.note).trim()
+					: null
+		await service.from('sell_phone_status_history').insert({
+			request_id: id,
+			status: body.status,
+			note,
+			changed_by: 'admin',
+		})
+	}
+
 	return NextResponse.json({ success: true })
 }

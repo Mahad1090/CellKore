@@ -3,10 +3,13 @@
 import { Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { User, Package, Heart, LogOut, BadgeDollarSign, MessageCircle, Wrench } from 'lucide-react'
+import { User, Package, Heart, LogOut, BadgeDollarSign, MessageCircle, Wrench, Loader2, Truck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { TableShimmer } from '@/components/shimmer'
+import { SellStatusBadge, SellStatusTimeline } from '@/components/sell-status-timeline'
+import { ReturnShipmentPayment } from '@/components/return-shipment-payment'
+import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import type { OrderRecord, SellPhoneRequest } from '@/lib/types'
@@ -18,13 +21,6 @@ const TAB_ITEMS: { key: AccountTab; label: string; href: string }[] = [
 	{ key: 'sell', label: 'Sell Requests', href: '/account?tab=sell' },
 	{ key: 'repair', label: 'Repair Requests', href: '/account?tab=repair' },
 ]
-
-function toCustomerSellStatus(status: SellPhoneRequest['status']): string {
-	if (status === 'submitted' || status === 'reviewed') return 'Under Review'
-	if (status === 'quoted') return 'Quote Shared'
-	if (status === 'contacted') return 'Contacted'
-	return 'Closed'
-}
 
 export default function AccountPage() {
 	return (
@@ -45,7 +41,7 @@ export default function AccountPage() {
 }
 
 function AccountPageContent() {
-	const { user, loading: authLoading, signOut } = useAuth()
+	const { user, session, loading: authLoading, signOut } = useAuth()
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [orders, setOrders] = useState<OrderRecord[] | null>(null)
@@ -71,10 +67,13 @@ function AccountPageContent() {
 	const loadSellRequests = useCallback(async (userId: string) => {
 		const { data } = await supabase
 			.from('sell_phone_requests')
-			.select('id, user_id, device_brand, device_model, condition, description, contact_phone, contact_email, status, offered_price, payout_amount, payout_reference, payout_notes, payout_confirmed_at, submitted_at, updated_at')
+			.select(
+				'id, user_id, device_brand, device_model, condition, description, contact_phone, contact_email, status, offered_price, payout_amount, payout_reference, payout_notes, payout_confirmed_at, shipping_courier, shipping_tracking_number, rejection_reason, submitted_at, updated_at, sell_phone_status_history ( id, request_id, status, note, changed_by, created_at ), sell_phone_return_shipments ( * )'
+			)
 			.eq('user_id', userId)
 			.order('submitted_at', { ascending: false })
-		setSellRequests((data as SellPhoneRequest[]) ?? [])
+			.order('created_at', { referencedTable: 'sell_phone_status_history', ascending: true })
+		setSellRequests((data as unknown as SellPhoneRequest[]) ?? [])
 	}, [])
 
 	useEffect(() => {
@@ -243,53 +242,13 @@ function AccountPageContent() {
 						) : (
 							<div className="space-y-4">
 								{sellRequests.map((request) => (
-									<div key={request.id} className="p-5 rounded-2xl border border-border bg-muted/30 space-y-3">
-										<div className="flex items-start justify-between gap-4 flex-wrap">
-											<div>
-												<p className="text-sm font-semibold text-card-foreground">
-													{request.device_brand} {request.device_model}
-												</p>
-												<p className="text-xs text-muted-foreground mt-0.5">
-													Submitted {new Date(request.submitted_at).toLocaleString()}
-												</p>
-											</div>
-											<span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-[0.12em]">
-												{toCustomerSellStatus(request.status)}
-											</span>
-										</div>
-
-										{request.offered_price != null && (
-											<div className="text-xs text-foreground/80">
-												Quote Offered: <span className="font-semibold text-card-foreground">${Number(request.offered_price).toFixed(2)}</span>
-											</div>
-										)}
-
-										{(request.payout_confirmed_at || request.payout_reference || request.payout_amount != null) && (
-											<div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-												<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 mb-2">
-													Payment Confirmation
-												</p>
-												<div className="space-y-1.5 text-xs text-emerald-900/90">
-													{request.payout_amount != null && <p>Amount: ${Number(request.payout_amount).toFixed(2)}</p>}
-													{request.payout_reference && <p>Reference: {request.payout_reference}</p>}
-													{request.payout_confirmed_at && <p>Confirmed: {new Date(request.payout_confirmed_at).toLocaleString()}</p>}
-													{request.payout_notes && <p>Note: {request.payout_notes}</p>}
-												</div>
-											</div>
-										)}
-
-										{supportWhatsapp && (
-											<a
-												href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${request.id}.`)}`}
-												target="_blank"
-												rel="noreferrer"
-												className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"
-											>
-												<MessageCircle className="w-3.5 h-3.5" />
-												Chat on WhatsApp
-											</a>
-										)}
-									</div>
+									<SellRequestCard
+										key={request.id}
+										request={request}
+										accessToken={session?.access_token}
+										supportWhatsapp={supportWhatsapp}
+										onShipmentSubmitted={() => user && loadSellRequests(user.id)}
+									/>
 								))}
 							</div>
 						)}
@@ -325,5 +284,209 @@ function AccountPageContent() {
 
 			<Footer />
 		</main>
+	)
+}
+
+function SellRequestCard({
+	request,
+	accessToken,
+	supportWhatsapp,
+	onShipmentSubmitted,
+}: {
+	request: SellPhoneRequest
+	accessToken: string | undefined
+	supportWhatsapp: string | null
+	onShipmentSubmitted: () => void
+}) {
+	const { toast } = useToast()
+	const [courier, setCourier] = useState('')
+	const [trackingNumber, setTrackingNumber] = useState('')
+	const [submitting, setSubmitting] = useState(false)
+	const [responding, setResponding] = useState(false)
+	const history = request.sell_phone_status_history ?? []
+
+	const respondToOffer = async (decision: 'accept' | 'reject') => {
+		if (!accessToken) return
+		setResponding(true)
+		try {
+			const res = await fetch(`/api/sell-requests/${request.id}/respond`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ decision }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: decision === 'accept' ? 'Offer accepted' : 'Offer declined', variant: 'success' })
+			onShipmentSubmitted()
+		} catch (err) {
+			toast({ title: 'Could not submit your response', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setResponding(false)
+		}
+	}
+
+	const submitShipment = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!accessToken || !courier.trim() || !trackingNumber.trim()) return
+		setSubmitting(true)
+		try {
+			const res = await fetch(`/api/sell-requests/${request.id}/shipment`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+				body: JSON.stringify({ courier: courier.trim(), tracking_number: trackingNumber.trim() }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Shipment details submitted', variant: 'success' })
+			onShipmentSubmitted()
+		} catch (err) {
+			toast({ title: 'Could not submit shipment details', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSubmitting(false)
+		}
+	}
+
+	return (
+		<div className="p-5 rounded-2xl border border-border bg-muted/30 space-y-4">
+			<div className="flex items-start justify-between gap-4 flex-wrap">
+				<div>
+					<p className="text-sm font-semibold text-card-foreground">
+						{request.device_brand} {request.device_model}
+					</p>
+					<p className="text-xs text-muted-foreground mt-0.5">
+						Submitted {new Date(request.submitted_at).toLocaleString()}
+					</p>
+				</div>
+				<SellStatusBadge status={request.status} />
+			</div>
+
+			{request.offered_price != null && (
+				<div className="text-xs text-foreground/80">
+					Offer: <span className="font-semibold text-card-foreground">${Number(request.offered_price).toFixed(2)}</span>
+				</div>
+			)}
+
+			{request.status === 'approved' && (
+				<div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-4 space-y-3">
+					<div className="flex items-center gap-2 text-blue-800">
+						<BadgeDollarSign className="w-3.5 h-3.5" />
+						<p className="text-[10px] font-bold uppercase tracking-[0.16em]">
+							We&apos;ve sent you an offer{request.offered_price != null ? ` of $${Number(request.offered_price).toFixed(2)}` : ''}
+						</p>
+					</div>
+					<p className="text-xs text-blue-900/80">
+						Accept to get shipping instructions for sending us your device, or decline if you&apos;d rather not proceed.
+					</p>
+					<div className="flex flex-wrap gap-2.5">
+						<button
+							type="button"
+							onClick={() => respondToOffer('accept')}
+							disabled={responding || !accessToken}
+							className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+						>
+							{responding && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+							Accept Offer
+						</button>
+						<button
+							type="button"
+							onClick={() => respondToOffer('reject')}
+							disabled={responding || !accessToken}
+							className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-blue-300 text-blue-800 text-[10px] font-bold uppercase tracking-[0.14em] hover:bg-blue-100 transition-all cursor-pointer disabled:opacity-60"
+						>
+							Decline
+						</button>
+					</div>
+				</div>
+			)}
+
+			{request.status === 'offer_accepted' && (
+				<form onSubmit={submitShipment} className="rounded-2xl border border-teal-200 bg-teal-50/60 p-4 space-y-3">
+					<div className="flex items-center gap-2 text-teal-800">
+						<Truck className="w-3.5 h-3.5" />
+						<p className="text-[10px] font-bold uppercase tracking-[0.16em]">Offer accepted — please send us your device</p>
+					</div>
+					<p className="text-xs text-teal-900/80">
+						Ship your device to CellKore, then enter your shipping details below so we can track the delivery. Once we receive and inspect it, we&apos;ll process your payment.
+					</p>
+					<div className="grid sm:grid-cols-2 gap-2.5">
+						<input
+							value={courier}
+							onChange={(e) => setCourier(e.target.value)}
+							placeholder="Courier name (e.g. DHL)"
+							required
+							className="w-full px-3.5 py-2.5 border border-teal-200 rounded-xl bg-white text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all"
+						/>
+						<input
+							value={trackingNumber}
+							onChange={(e) => setTrackingNumber(e.target.value)}
+							placeholder="Tracking number"
+							required
+							className="w-full px-3.5 py-2.5 border border-teal-200 rounded-xl bg-white text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all"
+						/>
+					</div>
+					<button
+						type="submit"
+						disabled={submitting || !accessToken}
+						className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+					>
+						{submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+						Submit Shipment Details
+					</button>
+				</form>
+			)}
+
+			{(request.shipping_courier || request.shipping_tracking_number) && request.status !== 'approved' && request.status !== 'offer_accepted' && (
+				<div className="text-xs text-foreground/75">
+					Shipped via <span className="font-semibold">{request.shipping_courier}</span> · Tracking #: <span className="font-semibold">{request.shipping_tracking_number}</span>
+				</div>
+			)}
+
+			{request.status === 'rejected' && request.rejection_reason && (
+				<div className="rounded-2xl border border-red-200 bg-red-50/70 p-4">
+					<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-red-700 mb-1.5">Request Rejected</p>
+					<p className="text-xs text-red-900/90">{request.rejection_reason}</p>
+				</div>
+			)}
+
+			<ReturnShipmentPayment request={request} accessToken={accessToken} onPaid={onShipmentSubmitted} />
+
+			{(request.payout_confirmed_at || request.payout_reference || request.payout_amount != null) && (
+				<div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
+					<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-700 mb-2">
+						Payment Confirmation
+					</p>
+					<div className="space-y-1.5 text-xs text-emerald-900/90">
+						{request.payout_amount != null && <p>Amount: ${Number(request.payout_amount).toFixed(2)}</p>}
+						{request.payout_reference && <p>Reference: {request.payout_reference}</p>}
+						{request.payout_confirmed_at && <p>Confirmed: {new Date(request.payout_confirmed_at).toLocaleString()}</p>}
+						{request.payout_notes && <p>Note: {request.payout_notes}</p>}
+					</div>
+				</div>
+			)}
+
+			{history.length > 0 && (
+				<details className="group">
+					<summary className="cursor-pointer text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80 list-none flex items-center gap-1.5">
+						<span className="inline-block transition-transform group-open:rotate-90">›</span>
+						View Full Progress Timeline
+					</summary>
+					<div className="mt-4 pl-1">
+						<SellStatusTimeline history={history} currentStatus={request.status} />
+					</div>
+				</details>
+			)}
+
+			{supportWhatsapp && (
+				<a
+					href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${request.id}.`)}`}
+					target="_blank"
+					rel="noreferrer"
+					className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"
+				>
+					<MessageCircle className="w-3.5 h-3.5" />
+					Chat on WhatsApp
+				</a>
+			)}
+		</div>
 	)
 }

@@ -13,12 +13,24 @@ export interface MobileSpecPreset {
 export type { SpecFieldType }
 
 export type ProductCondition = 'new' | 'used' | 'refurbished'
+export type DeviceCondition = 'excellent' | 'good' | 'fair' | 'poor'
 export type MarketplaceType = 'US' | 'CA'
 export type CarrierLockStatus = 'locked' | 'unlocked'
 export type OrderStatus = 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded' | 'failed'
 export type InquiryStatus = 'new' | 'responded'
-export type SellPhoneStatus = 'submitted' | 'reviewed' | 'quoted' | 'contacted' | 'closed'
+export type SellPhoneStatus =
+	| 'submitted'
+	| 'approved'
+	| 'offer_accepted'
+	| 'shipment_submitted'
+	| 'awaiting_package'
+	| 'under_inspection'
+	| 'quoted'
+	| 'payment_confirmed'
+	| 'rejected'
+	| 'cancelled'
+export type SellPhoneStatusChangedBy = 'customer' | 'admin' | 'system'
 export type RepairStatus =
 	| 'pending_approval'
 	| 'approved'
@@ -189,7 +201,7 @@ export interface SellPhoneRequest {
 	user_id: string | null
 	device_brand: string
 	device_model: string
-	condition: ProductCondition
+	condition: DeviceCondition
 	description: string | null
 	contact_phone: string | null
 	contact_email: string | null
@@ -199,9 +211,47 @@ export interface SellPhoneRequest {
 	payout_reference?: string | null
 	payout_notes?: string | null
 	payout_confirmed_at?: string | null
+	shipping_courier?: string | null
+	shipping_tracking_number?: string | null
+	rejection_reason?: string | null
 	submitted_at: string
 	updated_at: string
 	sell_phone_images?: { id: string; image_url: string }[]
+	sell_phone_status_history?: SellPhoneStatusHistoryEntry[]
+	sell_phone_return_shipments?: SellPhoneReturnShipment | null
+}
+
+export interface SellPhoneStatusHistoryEntry {
+	id: string
+	request_id: string
+	status: SellPhoneStatus
+	note: string | null
+	changed_by: SellPhoneStatusChangedBy
+	created_at: string
+}
+
+export type ReturnLabelStatus = 'pending' | 'generated' | 'failed'
+
+export interface SellPhoneReturnShipment {
+	id: string
+	request_id: string
+	fee_amount: number
+	address_line1: string | null
+	address_line2: string | null
+	city: string | null
+	state_province: string | null
+	postal_code: string | null
+	country: string | null
+	phone: string | null
+	payment_provider: string | null
+	payment_reference: string | null
+	paid_at: string | null
+	label_status: ReturnLabelStatus
+	label_url: string | null
+	tracking_number: string | null
+	carrier: string | null
+	created_at: string
+	updated_at: string
 }
 
 export interface RepairRequest {

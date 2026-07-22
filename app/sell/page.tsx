@@ -6,16 +6,19 @@ import { Upload, Check, X, ImageIcon, Loader2, MessageCircle } from 'lucide-reac
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
+import { PhoneInput } from '@/components/ui/phone-input'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import { fetchCmsPage } from '@/lib/data'
 import { uploadSellPhoneImages, MAX_UPLOAD_BYTES } from '@/lib/storage'
 import { isValidPhone } from '@/lib/tax'
+import { PHONE_COUNTRIES } from '@/lib/phone-countries'
 
 const CONDITIONS = [
-	{ value: 'new', label: 'New / Like New' },
-	{ value: 'used', label: 'Used' },
-	{ value: 'refurbished', label: 'Refurbished' },
+	{ value: 'excellent', label: 'Excellent (Like New)' },
+	{ value: 'good', label: 'Good (Minor Wear)' },
+	{ value: 'fair', label: 'Fair (Visible Wear)' },
+	{ value: 'poor', label: 'Poor (Heavy Wear / Damage)' },
 ] as const
 
 export default function SellYourPhonePage() {
@@ -23,16 +26,19 @@ export default function SellYourPhonePage() {
 	const { user } = useAuth()
 	const [submitting, setSubmitting] = useState(false)
 	const [submitted, setSubmitted] = useState(false)
+	const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null)
 	const [successCopy, setSuccessCopy] = useState<{ title: string; content: string } | null>(null)
 	const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null)
 	const [files, setFiles] = useState<File[]>([])
+	const [phoneCountry, setPhoneCountry] = useState(PHONE_COUNTRIES[0])
+	const [agreedToPolicy, setAgreedToPolicy] = useState(false)
 	const [form, setForm] = useState({
 		brand: '',
 		model: '',
 		storage: '',
 		ram: '',
 		color: '',
-		condition: 'used' as 'new' | 'used' | 'refurbished',
+		condition: 'good' as 'excellent' | 'good' | 'fair' | 'poor',
 		damages: '',
 		comments: '',
 		name: '',
@@ -99,6 +105,10 @@ export default function SellYourPhonePage() {
 			toast({ title: 'Invalid phone', description: 'Please enter a valid phone number (10–15 digits).', variant: 'error' })
 			return
 		}
+		if (!agreedToPolicy) {
+			toast({ title: 'Policy acceptance required', description: 'Please accept the Sell Your Device policy to continue.', variant: 'error' })
+			return
+		}
 
 		setSubmitting(true)
 		try {
@@ -126,7 +136,7 @@ export default function SellYourPhonePage() {
 				device_model: form.model.trim(),
 				condition: form.condition,
 				description,
-				contact_phone: form.phone.trim() || null,
+				contact_phone: form.phone.trim() ? `${phoneCountry.dial} ${form.phone.trim()}` : null,
 				contact_email: form.email.trim() || null,
 				status: 'submitted',
 			})
@@ -147,6 +157,7 @@ export default function SellYourPhonePage() {
 				)
 			}
 
+			setSubmittedRequestId(requestId)
 			setSubmitted(true)
 			window.scrollTo({ top: 0, behavior: 'smooth' })
 		} catch (err) {
@@ -171,16 +182,28 @@ export default function SellYourPhonePage() {
 					<h1 className="text-3xl md:text-4xl font-bold text-foreground tracking-luxury uppercase mb-6">
 						{successCopy?.title ?? 'Quote Request Received'}
 					</h1>
-					<p className="text-sm md:text-base text-foreground/75 leading-relaxed whitespace-pre-line mb-10">
+					<p className="text-sm md:text-base text-foreground/75 leading-relaxed whitespace-pre-line mb-6">
 						{successCopy?.content ??
 							'Thank you for your submission. A CellKore support agent will contact you within 24 hours with an official quote.'}
 					</p>
-					<p className="text-xs text-muted-foreground mb-6 uppercase tracking-[0.14em] font-semibold">
+					<p className="text-xs text-muted-foreground mb-2 uppercase tracking-[0.14em] font-semibold">
 						Initial request status: Under Review
 					</p>
+					<p className="text-xs text-muted-foreground mb-6 max-w-lg mx-auto leading-relaxed">
+						Next: we&apos;ll review your submission and send you an offer. You can accept or decline it — if you accept, we&apos;ll ask you to send us your device, and process your payment once it&apos;s inspected.
+					</p>
+					{!user && submittedRequestId && (
+						<div className="mb-10 mx-auto max-w-md rounded-2xl border border-border bg-secondary/40 p-5">
+							<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Your Request ID</p>
+							<p className="text-xs font-mono text-card-foreground break-all">{submittedRequestId}</p>
+							<p className="text-[11px] text-muted-foreground mt-2">
+								Save this ID — since you submitted without an account, you&apos;ll need it (with your email or phone) to check your status later.
+							</p>
+						</div>
+					)}
 					<div className="flex flex-wrap items-center justify-center gap-3">
 						<Link
-							href="/account?tab=sell"
+							href={user ? '/account?tab=sell' : `/sell/track${submittedRequestId ? `?id=${submittedRequestId}` : ''}`}
 							className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 						>
 							Track My Request
@@ -228,8 +251,36 @@ export default function SellYourPhonePage() {
 					<p className="text-white/90 mt-4 text-xs md:text-sm font-light max-w-xl mx-auto leading-relaxed drop-shadow-sm">
 						Tell us about your device — our expert team will review your submission and return an official valuation quote.
 					</p>
+					<Link
+						href="/sell/track"
+						className="inline-block mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/85 hover:text-white underline underline-offset-4 transition-colors"
+					>
+						Already submitted a request? Track it here
+					</Link>
 				</div>
 			</section>
+
+			{supportWhatsapp && (
+				<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-30">
+					<a
+						href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent("Hi, I'd like to sell my phone. Here are my device details and photos:")}`}
+						target="_blank"
+						rel="noreferrer"
+						className="flex items-center justify-between gap-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl px-6 py-5 shadow-lg transition-all"
+					>
+						<div className="flex items-center gap-3.5">
+							<div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
+								<MessageCircle className="w-5 h-5" />
+							</div>
+							<div>
+								<p className="text-xs font-bold uppercase tracking-[0.16em]">Prefer to chat instead?</p>
+								<p className="text-[11px] text-white/85 mt-0.5">Sell via WhatsApp — send your device details and pictures directly to our team.</p>
+							</div>
+						</div>
+						<span className="text-xs font-bold uppercase tracking-[0.14em] whitespace-nowrap">Chat Now →</span>
+					</a>
+				</div>
+			)}
 
 			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
 				{/* Device */}
@@ -340,13 +391,35 @@ export default function SellYourPhonePage() {
 					<div className="grid sm:grid-cols-2 gap-4">
 						<input placeholder="Full name" value={form.name} onChange={set('name')} className={inputClass} />
 						<input type="email" placeholder="Email address" value={form.email} onChange={set('email')} className={inputClass} />
-						<input type="tel" placeholder="Phone number" value={form.phone} onChange={set('phone')} className={`${inputClass} sm:col-span-2`} />
+						<PhoneInput
+							country={phoneCountry}
+							onCountryChange={setPhoneCountry}
+							value={form.phone}
+							onChange={(value) => setForm((f) => ({ ...f, phone: value }))}
+							className="sm:col-span-2"
+						/>
 					</div>
 				</div>
 
+				<label className="flex items-start gap-3 bg-card border border-border rounded-3xl p-6 cursor-pointer">
+					<input
+						type="checkbox"
+						checked={agreedToPolicy}
+						onChange={(e) => setAgreedToPolicy(e.target.checked)}
+						className="mt-0.5 w-4 h-4 accent-[var(--primary)] cursor-pointer shrink-0"
+					/>
+					<span className="text-xs text-foreground/80 leading-relaxed">
+						I confirm the device details above are accurate and I agree to CellKore&apos;s{' '}
+						<Link href="/terms" target="_blank" className="text-primary font-semibold hover:underline">
+							Sell Your Device policy and Terms of Service
+						</Link>
+						, including that quotes are subject to in-person inspection and final pricing may adjust based on the device&apos;s actual condition.
+					</span>
+				</label>
+
 				<button
 					type="submit"
-					disabled={submitting}
+					disabled={submitting || !agreedToPolicy}
 					className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 				>
 					{submitting && <Loader2 className="w-4 h-4 animate-spin" />}

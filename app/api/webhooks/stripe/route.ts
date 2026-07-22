@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { finalizePaidOrder } from '@/lib/checkout-server'
+import { createServiceClient } from '@/lib/supabase-server'
+import { markReturnShipmentPaid } from '@/lib/sell-request-return'
 
 export async function POST(request: NextRequest) {
 	const stripeSecret = process.env.STRIPE_SECRET_KEY
@@ -26,6 +28,16 @@ export async function POST(request: NextRequest) {
 	if (event.type === 'checkout.session.completed') {
 		const session = event.data.object as Stripe.Checkout.Session
 		const meta = session.metadata ?? {}
+
+		if (meta.type === 'sell_return_shipping' && meta.request_id) {
+			try {
+				await markReturnShipmentPaid(createServiceClient(), meta.request_id, 'stripe', session.id)
+			} catch {
+				// Swallow — acknowledge with 200 so Stripe does not retry indefinitely.
+			}
+			return NextResponse.json({ received: true })
+		}
+
 		try {
 			const items = JSON.parse(meta.items || '[]') as {
 				p: string
