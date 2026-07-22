@@ -100,7 +100,7 @@ export function Modal({
 			<div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose} />
 			<div
 				className={`relative bg-card border border-border rounded-3xl shadow-2xl w-full ${
-					extraWide ? 'max-w-[1080px]' : wide ? 'max-w-4xl' : 'max-w-xl'
+					extraWide ? 'max-w-[1080px]' : wide ? 'max-w-5xl' : 'max-w-xl'
 				} max-h-[90vh] overflow-y-auto no-scrollbar animate-in zoom-in-95 fade-in duration-200`}
 			>
 				<div className="sticky top-0 bg-card/95 backdrop-blur px-7 py-5 border-b border-border flex items-center justify-between">

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Trash2, Loader2, Pencil, Search, Layers } from 'lucide-react'
-import { PageTitle, EmptyState, adminButton, adminButtonGhost, adminInput, Panel, StatusBadge } from '@/components/admin/ui'
+import { PageTitle, EmptyState, adminButton, adminButtonGhost, adminInput, Panel, StatusBadge, Modal } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
@@ -29,6 +29,7 @@ export default function AdminWholesalePage() {
 	const [tiers, setTiers] = useState<WholesalePriceTier[] | null>(null)
 	const [tierForm, setTierForm] = useState({ min_quantity: '', max_quantity: '', price_per_unit: '' })
 	const [savingTier, setSavingTier] = useState(false)
+	const [tiersModalOpen, setTiersModalOpen] = useState(false)
 
 	const loadLots = useCallback(() => {
 		fetch('/api/admin/products?wholesale=true')
@@ -250,13 +251,12 @@ export default function AdminWholesalePage() {
 													<button
 														onClick={() => {
 															setSelectedLot(lot.id)
-															const element = document.getElementById('pricing-tiers-section')
-															if (element) element.scrollIntoView({ behavior: 'smooth' })
+															setTiersModalOpen(true)
 														}}
 														className={`${adminButtonGhost} !px-3 !py-1.5 !text-[9px]`}
 														title="Manage Pricing Tiers"
 													>
-														<Layers className="w-3 h-3" />
+														<Layers className="w-3 h-3 text-[#599161]" />
 														Tiers
 													</button>
 													{writable && (
@@ -288,94 +288,124 @@ export default function AdminWholesalePage() {
 				)}
 			</div>
 
-			{/* Pricing Tiers Section */}
-			<div id="pricing-tiers-section" className="border-t border-border pt-12">
-				<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-foreground mb-6">Quantity-based Pricing Tiers</h2>
-				
-				{lots === null ? (
-					<TableShimmer />
-				) : lots.length === 0 ? (
-					<EmptyState message="No wholesale lots listed. Add a wholesale lot above to configure pricing tiers." />
-				) : (
-					<div className="space-y-8 max-w-3xl">
-						<div>
-							<label className={label}>Wholesale Lot Selection</label>
-							<select value={selectedLot} onChange={(e) => setSelectedLot(e.target.value)} className={`${adminInput} cursor-pointer`}>
-								{lots.map((lot) => (
-									<option key={lot.id} value={lot.id}>{lot.name}</option>
-								))}
-							</select>
-						</div>
-
-						{writable && selectedLot && (
-							<Panel title="Add Pricing Bracket">
-								<div className="grid sm:grid-cols-4 gap-3 items-end">
-									<div>
-										<label className={label}>Min Quantity</label>
-										<input type="number" min={1} value={tierForm.min_quantity} onChange={(e) => setTierForm({ ...tierForm, min_quantity: e.target.value })} className={adminInput} placeholder="10" />
+			{/* Tiers Management Modal */}
+			{tiersModalOpen && selectedLot && (
+				<Modal 
+					open={tiersModalOpen} 
+					onClose={() => setTiersModalOpen(false)} 
+					title={`Pricing Tiers: ${(lots ?? []).find((l) => l.id === selectedLot)?.name ?? 'Lot'}`} 
+					wide
+				>
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-h-[300px]">
+						{/* Left: Add Tier Form */}
+						{writable && (
+							<div className="p-5 rounded-2xl bg-white border border-[#E9ECEA] space-y-4 shadow-3xs flex flex-col justify-between">
+								<div>
+									<h3 className="text-xs font-bold uppercase tracking-wider text-[#111111] pb-2 border-b border-[#E9ECEA] mb-4">
+										Add Pricing Bracket
+									</h3>
+									<div className="space-y-4">
+										<div>
+											<label className={label}>Min Quantity</label>
+											<input 
+												type="number" 
+												min={1} 
+												value={tierForm.min_quantity} 
+												onChange={(e) => setTierForm({ ...tierForm, min_quantity: e.target.value })} 
+												className={adminInput} 
+												placeholder="10" 
+											/>
+										</div>
+										<div>
+											<label className={label}>Max Quantity (optional)</label>
+											<input 
+												type="number" 
+												value={tierForm.max_quantity} 
+												onChange={(e) => setTierForm({ ...tierForm, max_quantity: e.target.value })} 
+												className={adminInput} 
+												placeholder="49" 
+											/>
+										</div>
+										<div>
+											<label className={label}>Price Per Unit (USD)</label>
+											<input 
+												type="number" 
+												step="0.01" 
+												value={tierForm.price_per_unit} 
+												onChange={(e) => setTierForm({ ...tierForm, price_per_unit: e.target.value })} 
+												className={adminInput} 
+												placeholder="299.00" 
+											/>
+										</div>
 									</div>
-									<div>
-										<label className={label}>Max Quantity (optional)</label>
-										<input type="number" value={tierForm.max_quantity} onChange={(e) => setTierForm({ ...tierForm, max_quantity: e.target.value })} className={adminInput} placeholder="49" />
-									</div>
-									<div>
-										<label className={label}>Price Per Unit</label>
-										<input type="number" step="0.01" value={tierForm.price_per_unit} onChange={(e) => setTierForm({ ...tierForm, price_per_unit: e.target.value })} className={adminInput} placeholder="299.00" />
-									</div>
-									<button onClick={addTier} disabled={savingTier || !tierForm.min_quantity || !tierForm.price_per_unit} className={`${adminButton} justify-center`}>
-										{savingTier ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+								</div>
+								<div className="pt-4 border-t border-[#E9ECEA]/60">
+									<button 
+										onClick={addTier} 
+										disabled={savingTier || !tierForm.min_quantity || !tierForm.price_per_unit} 
+										className={`${adminButton} w-full justify-center`}
+									>
+										{savingTier ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 text-white" />}
 										Add Bracket
 									</button>
+									<p className="text-[10px] text-muted-foreground mt-2 text-center">
+										Overlapping quantity bounds are rejected automatically.
+									</p>
 								</div>
-								<p className="text-[11px] text-muted-foreground mt-3">
-									Overlapping quantity bounds are rejected automatically.
-								</p>
-							</Panel>
-						)}
-
-						{tiers === null ? (
-							<TableShimmer rows={3} />
-						) : tiers.length === 0 ? (
-							<EmptyState message="No pricing tiers for this lot yet." />
-						) : (
-							<div className="border border-border rounded-3xl overflow-hidden bg-card">
-								<table className="w-full text-sm">
-									<thead>
-										<tr className="bg-secondary text-left">
-											<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">Quantity Range</th>
-											<th className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">Price Per Unit</th>
-											<th className="w-16" />
-										</tr>
-									</thead>
-									<tbody>
-										{tiers.map((tier) => (
-											<tr key={tier.id} className="border-t border-border">
-												<td className="px-5 py-3.5 text-foreground/85 font-medium">
-													{tier.min_quantity}{tier.max_quantity == null ? '+' : ` – ${tier.max_quantity}`} units
-												</td>
-												<td className="px-5 py-3.5 font-semibold text-card-foreground">
-													${Number(tier.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-												</td>
-												<td className="px-5 py-3.5">
-													{writable && (
-														<button
-															onClick={() => removeTier(tier)}
-															className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-															aria-label="Remove tier"
-														>
-															<Trash2 className="w-4 h-4" />
-														</button>
-													)}
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
 							</div>
 						)}
+
+						{/* Right: Existing Pricing Tiers List */}
+						<div className="space-y-4">
+							<h3 className="text-xs font-bold uppercase tracking-wider text-[#111111] pb-2 border-b border-[#E9ECEA]">
+								Active Brackets
+							</h3>
+							{tiers === null ? (
+								<TableShimmer rows={3} />
+							) : tiers.length === 0 ? (
+								<div className="py-12 text-center border border-dashed border-border rounded-2xl flex flex-col items-center justify-center">
+									<p className="text-xs text-muted-foreground">No custom tiers configured yet.</p>
+								</div>
+							) : (
+								<div className="border border-border rounded-2xl overflow-hidden bg-card">
+									<table className="w-full text-sm">
+										<thead>
+											<tr className="bg-secondary text-left">
+												<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Quantity Range</th>
+												<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Per Unit</th>
+												<th className="w-16" />
+											</tr>
+										</thead>
+										<tbody>
+											{tiers.map((tier) => (
+												<tr key={tier.id} className="border-t border-border">
+													<td className="px-4 py-2.5 text-foreground/85 font-semibold text-xs">
+														{tier.min_quantity}{tier.max_quantity == null ? '+' : ` – ${tier.max_quantity}`} units
+													</td>
+													<td className="px-4 py-2.5 font-bold text-card-foreground text-xs">
+														${Number(tier.price_per_unit).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+													</td>
+													<td className="px-4 py-2.5 text-center">
+														{writable && (
+															<button
+																onClick={() => removeTier(tier)}
+																className="p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+																aria-label="Remove tier"
+															>
+																<Trash2 className="w-3.5 h-3.5" />
+															</button>
+														)}
+													</td>
+												</tr>
+											))}
+										</tbody>
+									</table>
+								</div>
+							)}
+						</div>
 					</div>
-				)}
-			</div>
+				</Modal>
+			)}
 
 			{/* Create wizard */}
 			<WholesaleLotWizard

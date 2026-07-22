@@ -419,12 +419,12 @@ export function ProductFormModal({
 		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
 			<div className="space-y-6">
 				{/* Tab Navigation */}
-				<div className="flex border-b border-[#E9ECEA] pb-2 mb-6 gap-6 text-xs font-bold uppercase tracking-wider text-muted-foreground overflow-x-auto">
+				<div className="flex bg-[#F7F7F5] border border-[#E9ECEA]/80 p-1.5 rounded-2xl gap-1 mb-6 text-xs font-semibold text-muted-foreground w-max max-w-full overflow-x-auto no-scrollbar">
 					<button
 						type="button"
 						onClick={() => setActiveTab('general')}
-						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
-							activeTab === 'general' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+							activeTab === 'general' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
 						General Info
@@ -432,8 +432,8 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('pricing')}
-						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
-							activeTab === 'pricing' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+							activeTab === 'pricing' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
 						Pricing & Inventory
@@ -441,8 +441,8 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('specs')}
-						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
-							activeTab === 'specs' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+							activeTab === 'specs' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
 						Specifications
@@ -450,8 +450,8 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('media')}
-						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
-							activeTab === 'media' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+							activeTab === 'media' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
 						Media & Images
