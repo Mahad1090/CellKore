@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase-server'
-import { matchesContact } from '@/lib/sell-request-contact'
+import { matchesContact, normalizeRequestId } from '@/lib/sell-request-contact'
 
 // Public, unauthenticated lookup for guest submissions (no account). Requires
 // the exact request ID plus the email/phone used at submission time, so a
 // stranger can't browse other people's requests.
 export async function POST(request: NextRequest) {
 	const body = await request.json()
-	const id = String(body.id ?? '').trim()
+	const rawInputId = String(body.id ?? '').trim()
+	const id = normalizeRequestId(rawInputId)
 	const contact = String(body.contact ?? '').trim()
 	if (!id || !contact) {
 		return NextResponse.json({ error: 'Request ID and contact info are required' }, { status: 400 })

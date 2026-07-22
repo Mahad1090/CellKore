@@ -22,7 +22,7 @@ const CHANGED_BY_LABEL: Record<string, string> = {
 export function SellStatusBadge({ status }: { status: SellPhoneStatus }) {
 	const meta = SELL_STATUS_META[status]
 	return (
-		<span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.12em] ${meta.badgeClass}`}>
+		<span className={`inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-[0.12em] ${meta.badgeClass}`}>
 			{meta.label}
 		</span>
 	)

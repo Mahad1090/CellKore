@@ -10,6 +10,7 @@ import { ReturnShipmentPayment } from '@/components/return-shipment-payment'
 import { useToast } from '@/components/ui/toast'
 import { supabase } from '@/lib/supabase'
 import type { SellPhoneRequest } from '@/lib/types'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
 export default function SellTrackPage() {
 	return (
@@ -139,7 +140,7 @@ function SellTrackPageContent() {
 				<form onSubmit={lookup} className="bg-card border border-border rounded-3xl p-7 space-y-4">
 					<div>
 						<label className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block">Request ID</label>
-						<input required value={id} onChange={(e) => setId(e.target.value)} placeholder="Paste the ID from your confirmation" className={inputClass} />
+						<input required value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g. CK-AD2ADFAB-..." className={inputClass} />
 					</div>
 					<div>
 						<label className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block">Email or Phone Used</label>
@@ -159,6 +160,9 @@ function SellTrackPageContent() {
 					<div className="bg-card border border-border rounded-3xl p-7 space-y-5">
 						<div className="flex items-start justify-between gap-4 flex-wrap">
 							<div>
+								<p className="text-[11px] font-mono font-bold text-primary uppercase mb-1">
+									{formatRequestId(request.id)}
+								</p>
 								<p className="text-sm font-semibold text-card-foreground">
 									{request.device_brand} {request.device_model}
 								</p>
@@ -268,7 +272,7 @@ function SellTrackPageContent() {
 
 						{supportWhatsapp && (
 							<a
-								href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${request.id}.`)}`}
+								href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${formatRequestId(request.id)}.`)}`}
 								target="_blank"
 								rel="noreferrer"
 								className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"

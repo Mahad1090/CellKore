@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Upload, Check, X, ImageIcon, Loader2, MessageCircle } from 'lucide-react'
+import { Upload, Check, X, ImageIcon, Loader2, MessageCircle, Search } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
@@ -13,6 +13,7 @@ import { fetchCmsPage } from '@/lib/data'
 import { uploadSellPhoneImages, MAX_UPLOAD_BYTES } from '@/lib/storage'
 import { isValidPhone } from '@/lib/tax'
 import { PHONE_COUNTRIES } from '@/lib/phone-countries'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
 const CONDITIONS = [
 	{ value: 'excellent', label: 'Excellent (Like New)' },
@@ -195,7 +196,7 @@ export default function SellYourPhonePage() {
 					{!user && submittedRequestId && (
 						<div className="mb-10 mx-auto max-w-md rounded-2xl border border-border bg-secondary/40 p-5">
 							<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Your Request ID</p>
-							<p className="text-xs font-mono text-card-foreground break-all">{submittedRequestId}</p>
+							<p className="text-xs font-mono font-bold text-card-foreground break-all">{formatRequestId(submittedRequestId)}</p>
 							<p className="text-[11px] text-muted-foreground mt-2">
 								Save this ID — since you submitted without an account, you&apos;ll need it (with your email or phone) to check your status later.
 							</p>
@@ -203,7 +204,7 @@ export default function SellYourPhonePage() {
 					)}
 					<div className="flex flex-wrap items-center justify-center gap-3">
 						<Link
-							href={user ? '/account?tab=sell' : `/sell/track${submittedRequestId ? `?id=${submittedRequestId}` : ''}`}
+							href={user ? '/account?tab=sell' : `/sell/track${submittedRequestId ? `?id=${encodeURIComponent(formatRequestId(submittedRequestId))}` : ''}`}
 							className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
 						>
 							Track My Request
@@ -251,12 +252,6 @@ export default function SellYourPhonePage() {
 					<p className="text-white/90 mt-4 text-xs md:text-sm font-light max-w-xl mx-auto leading-relaxed drop-shadow-sm">
 						Tell us about your device — our expert team will review your submission and return an official valuation quote.
 					</p>
-					<Link
-						href="/sell/track"
-						className="inline-block mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/85 hover:text-white underline underline-offset-4 transition-colors"
-					>
-						Already submitted a request? Track it here
-					</Link>
 				</div>
 			</section>
 
@@ -282,7 +277,17 @@ export default function SellYourPhonePage() {
 				</div>
 			)}
 
-			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+			<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-4 text-center">
+				<Link
+					href="/sell/track"
+					className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors"
+				>
+					<Search className="w-4 h-4 text-primary" />
+					Already submitted a request? Track it here
+				</Link>
+			</div>
+
+			<form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-10">
 				{/* Device */}
 				<div className="bg-card border border-border rounded-3xl p-7">
 					<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">

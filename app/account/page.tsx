@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
 import type { OrderRecord, SellPhoneRequest } from '@/lib/types'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
 type AccountTab = 'orders' | 'sell' | 'repair'
 
@@ -350,6 +351,9 @@ function SellRequestCard({
 		<div className="p-5 rounded-2xl border border-border bg-muted/30 space-y-4">
 			<div className="flex items-start justify-between gap-4 flex-wrap">
 				<div>
+					<p className="text-[11px] font-mono font-bold text-primary uppercase mb-1">
+						{formatRequestId(request.id)}
+					</p>
 					<p className="text-sm font-semibold text-card-foreground">
 						{request.device_brand} {request.device_model}
 					</p>
@@ -478,7 +482,7 @@ function SellRequestCard({
 
 			{supportWhatsapp && (
 				<a
-					href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${request.id}.`)}`}
+					href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my sell request ${formatRequestId(request.id)}.`)}`}
 					target="_blank"
 					rel="noreferrer"
 					className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"

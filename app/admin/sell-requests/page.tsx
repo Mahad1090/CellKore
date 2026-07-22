@@ -2,13 +2,35 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Eye, Search, Loader2, ChevronDown } from 'lucide-react'
+import {
+	Eye,
+	Search,
+	Loader2,
+	ChevronDown,
+	Smartphone,
+	User,
+	Mail,
+	Phone,
+	MessageCircle,
+	Truck,
+	Copy,
+	Check,
+	DollarSign,
+	Calendar,
+	History,
+	ImageIcon,
+	ExternalLink,
+	ShieldCheck,
+	FileText,
+	AlertTriangle,
+} from 'lucide-react'
 import { PageTitle, EmptyState, Modal, adminButton, adminInput } from '@/components/admin/ui'
 import { SellStatusBadge, SellStatusTimeline } from '@/components/sell-status-timeline'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
 import type { SellPhoneRequest, SellPhoneStatus } from '@/lib/types'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
 const STATUSES: SellPhoneStatus[] = [
 	'submitted',
@@ -73,9 +95,9 @@ function nextActionsFor(current: SellPhoneStatus): { label: string; target: Sell
 }
 
 const ACTION_BUTTON_CLASS: Record<ActionTone, string> = {
-	primary: 'bg-primary text-primary-foreground hover:opacity-90',
-	danger: 'border border-red-300 text-red-700 hover:bg-red-50',
-	neutral: 'border border-border text-foreground/75 hover:border-primary hover:text-foreground',
+	primary: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold',
+	danger: 'bg-rose-600 hover:bg-rose-700 text-white font-bold',
+	neutral: 'bg-slate-700 hover:bg-slate-800 text-white font-bold',
 }
 
 const WORKFLOW_TABS = [
@@ -88,6 +110,8 @@ const WORKFLOW_TABS = [
 export default function AdminSellRequestsPage() {
 	const { toast } = useToast()
 	const { can } = useAdmin()
+	type ModalTab = 'overview' | 'actions' | 'shipment' | 'payment' | 'timeline'
+	const [modalTab, setModalTab] = useState<ModalTab>('overview')
 	const [requests, setRequests] = useState<SellPhoneRequest[] | null>(null)
 	const [search, setSearch] = useState('')
 	const [selected, setSelected] = useState<SellPhoneRequest | null>(null)
@@ -105,6 +129,15 @@ export default function AdminSellRequestsPage() {
 	const [labelUrl, setLabelUrl] = useState('')
 	const [savingLabel, setSavingLabel] = useState(false)
 	const [saving, setSaving] = useState(false)
+	const [copiedId, setCopiedId] = useState(false)
+
+	const handleCopyId = (id: string) => {
+		const formatted = formatRequestId(id)
+		navigator.clipboard.writeText(formatted)
+		setCopiedId(true)
+		toast({ title: 'Request ID copied', description: formatted, variant: 'success' })
+		setTimeout(() => setCopiedId(false), 2000)
+	}
 
 	const load = useCallback(() => {
 		fetch('/api/admin/sell-requests')
@@ -117,6 +150,7 @@ export default function AdminSellRequestsPage() {
 
 	const openDetail = (request: SellPhoneRequest) => {
 		setSelected(request)
+		setModalTab('overview')
 		setOfferedPrice(request.offered_price != null ? String(request.offered_price) : '')
 		setPayoutAmount(request.payout_amount != null ? String(request.payout_amount) : '')
 		setPayoutReference(request.payout_reference ?? '')
@@ -283,280 +317,624 @@ export default function AdminSellRequestsPage() {
 			)}
 
 			{selected && (
-				<Modal open onClose={() => setSelected(null)} title="Sell Request Details" wide>
-					<div className="grid md:grid-cols-2 gap-8">
-						<div className="space-y-5">
-							<div>
-								<p className={label}>Device</p>
-								<p className="text-sm font-semibold text-card-foreground">
-									{selected.device_brand} {selected.device_model}
-								</p>
-								<p className="text-xs text-muted-foreground capitalize mt-1">Condition: {selected.condition}</p>
-							</div>
-							{selected.description && (
-								<div>
-									<p className={label}>Details & Damage Notes</p>
-									<p className="text-xs text-foreground/75 whitespace-pre-line leading-relaxed bg-secondary rounded-2xl p-4">
-										{selected.description}
-									</p>
+				<Modal open onClose={() => setSelected(null)} title={`Sell Request Management`} extraWide>
+					<div className="space-y-5 font-sans">
+						{/* Top Header Summary Bar */}
+						<div className="flex flex-wrap items-center justify-between gap-4 p-4.5 rounded-2xl bg-card border border-border/80 shadow-sm">
+							<div className="flex items-center gap-3.5">
+								<div className="w-11 h-11 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold shadow-sm">
+									<Smartphone className="w-5 h-5" />
 								</div>
-							)}
-							<div>
-								<p className={label}>Contact</p>
-								<p className="text-xs text-foreground/85">{selected.contact_email ?? '—'}</p>
-								<p className="text-xs text-foreground/85 mt-0.5">{selected.contact_phone ?? '—'}</p>
-								{selected.contact_phone && (
-									<a
-										href={`https://wa.me/${selected.contact_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, this is CellKore regarding your sell request ${selected.id}.`)}`}
-										target="_blank"
-										rel="noreferrer"
-										className="inline-block mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-primary hover:opacity-80"
-									>
-										Open WhatsApp Chat
-									</a>
-								)}
-							</div>
-							{(selected.shipping_courier || selected.shipping_tracking_number) && (
 								<div>
-									<p className={label}>Shipment Details (Inbound)</p>
-									<p className="text-xs text-foreground/85">Courier: {selected.shipping_courier ?? '—'}</p>
-									<p className="text-xs text-foreground/85 mt-0.5">Tracking #: {selected.shipping_tracking_number ?? '—'}</p>
-								</div>
-							)}
-							{selected.sell_phone_return_shipments && (
-								<div>
-									<p className={label}>Return Shipment (Device Sent Back)</p>
-									<div className="text-xs text-foreground/85 bg-secondary rounded-2xl p-4 space-y-1.5">
-										<p>Fee: ${Number(selected.sell_phone_return_shipments.fee_amount).toFixed(2)}</p>
-										<p>
-											Payment:{' '}
-											{selected.sell_phone_return_shipments.paid_at
-												? `Paid via ${selected.sell_phone_return_shipments.payment_provider} on ${new Date(selected.sell_phone_return_shipments.paid_at).toLocaleDateString()}`
-												: 'Awaiting customer payment'}
-										</p>
-										{selected.sell_phone_return_shipments.address_line1 && (
-											<p>
-												Ship to: {selected.sell_phone_return_shipments.address_line1}, {selected.sell_phone_return_shipments.city},{' '}
-												{selected.sell_phone_return_shipments.country}
-											</p>
-										)}
-										<p>
-											Label:{' '}
-											{selected.sell_phone_return_shipments.label_status === 'generated'
-												? `${selected.sell_phone_return_shipments.carrier} · ${selected.sell_phone_return_shipments.tracking_number}`
-												: 'Not yet generated'}
-										</p>
-										{selected.sell_phone_return_shipments.label_url && (
-											<a href={selected.sell_phone_return_shipments.label_url} target="_blank" rel="noreferrer" className="text-primary font-semibold hover:underline">
-												View Label
-											</a>
-										)}
+									<div className="flex items-center gap-2">
+										<span className="text-base font-extrabold tracking-tight text-foreground">
+											{selected.device_brand} {selected.device_model}
+										</span>
+										<button
+											type="button"
+											onClick={() => handleCopyId(selected.id)}
+											className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-mono font-bold text-primary hover:bg-primary/20 transition-all cursor-pointer"
+											title="Click to copy Request ID"
+										>
+											{copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+											{formatRequestId(selected.id)}
+										</button>
 									</div>
-									{writable && selected.sell_phone_return_shipments.paid_at && selected.sell_phone_return_shipments.label_status !== 'generated' && (
-										<div className="mt-3 rounded-2xl border border-border p-4 space-y-3">
-											<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-card-foreground">
-												Attach Label Manually
-											</p>
-											<p className="text-[10.5px] text-muted-foreground -mt-1.5">
-												No carrier API is connected yet — buy the label yourself and paste the details here.
-											</p>
-											<input value={labelCarrier} onChange={(e) => setLabelCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
-											<input value={labelTracking} onChange={(e) => setLabelTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
-											<input value={labelUrl} onChange={(e) => setLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
-											<button onClick={saveLabel} disabled={savingLabel} className={`${adminButton} w-full justify-center`}>
-												{savingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-												Save Label
-											</button>
-										</div>
+									<div className="flex items-center gap-3 text-xs text-muted-foreground mt-1 font-medium">
+										<span className="flex items-center gap-1.5">
+											<Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+											Submitted {new Date(selected.submitted_at).toLocaleDateString()} at {new Date(selected.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+										</span>
+										<span>·</span>
+										<span className="font-semibold text-foreground/80">{selected.user_id ? 'Registered Account' : 'Guest Submission'}</span>
+									</div>
+								</div>
+							</div>
+
+							{/* Consistent Top-Right Header Actions & Step Controls */}
+							<div className="flex flex-wrap items-center justify-end gap-2.5 ml-auto">
+								<SellStatusBadge status={selected.status} />
+
+								<div className="flex items-center gap-2 border-l border-border/80 pl-3">
+									{modalTab !== 'overview' && (
+										<button
+											type="button"
+											onClick={() => {
+												if (modalTab === 'actions') setModalTab('overview')
+												if (modalTab === 'shipment') setModalTab('actions')
+												if (modalTab === 'payment') setModalTab('shipment')
+												if (modalTab === 'timeline') setModalTab('payment')
+											}}
+											className="px-3.5 py-1.5 rounded-full border border-border text-[11px] font-extrabold hover:bg-muted transition-all cursor-pointer"
+										>
+											Previous Step
+										</button>
+									)}
+									{modalTab !== 'timeline' && (
+										<button
+											type="button"
+											onClick={() => {
+												if (modalTab === 'overview') setModalTab('actions')
+												if (modalTab === 'actions') setModalTab('shipment')
+												if (modalTab === 'shipment') setModalTab('payment')
+												if (modalTab === 'payment') setModalTab('timeline')
+											}}
+											className="px-3.5 py-1.5 rounded-full bg-secondary border border-border text-[11px] font-extrabold text-foreground hover:bg-muted transition-all cursor-pointer"
+										>
+											Next Step
+										</button>
 									)}
 								</div>
-							)}
-							{(selected.sell_phone_images ?? []).length > 0 && (
-								<div>
-									<p className={label}>Submitted Photos</p>
-									<div className="grid grid-cols-3 gap-2.5">
-										{selected.sell_phone_images!.map((image) => (
-											<a key={image.id} href={image.image_url} target="_blank" rel="noreferrer" className="block aspect-square rounded-xl overflow-hidden bg-muted border border-border hover:opacity-80 transition-opacity">
-												<img src={image.image_url} alt="Device" className="w-full h-full object-cover" />
-											</a>
-										))}
-									</div>
-								</div>
-							)}
-							{(selected.sell_phone_status_history ?? []).length > 0 && (
-								<div>
-									<p className={label}>Case History</p>
-									<div className="bg-secondary/50 rounded-2xl p-4">
-										<SellStatusTimeline history={selected.sell_phone_status_history!} currentStatus={selected.status} />
-									</div>
-								</div>
-							)}
+
+								{writable && (
+									<button onClick={save} disabled={saving} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full text-[11px] font-extrabold uppercase tracking-[0.16em] shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-60">
+										{saving && <Loader2 className="w-3.5 h-3.5 animate-spin inline mr-1.5" />}
+										{saving ? 'Saving...' : 'Save & Update Request'}
+									</button>
+								)}
+							</div>
 						</div>
 
-						<div className="space-y-5">
-							<div>
-								<label className={label}>Offered Price (USD)</label>
-								<input
-									type="number"
-									step="0.01"
-									value={offeredPrice}
-									onChange={(e) => setOfferedPrice(e.target.value)}
-									className={adminInput}
-									placeholder="0.00"
-									disabled={!writable}
-								/>
-							</div>
-							<div>
-								<label className={label}>Status</label>
-								<div className="flex items-center gap-2 mb-3">
-									<SellStatusBadge status={selected.status} />
-									{status !== selected.status && (
-										<span className="text-[10px] text-muted-foreground">
-											→ changing to <span className="font-semibold capitalize">{status.replace(/_/g, ' ')}</span>
-										</span>
-									)}
+						{/* Sequential Step Progress Bar */}
+						<div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 rounded-2xl bg-muted/60 border border-border/80">
+							<button
+								type="button"
+								onClick={() => setModalTab('overview')}
+								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+									modalTab === 'overview'
+										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
+										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+								}`}
+							>
+								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
+									modalTab === 'overview' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+								}`}>
+									1
+								</span>
+								<div className="text-left overflow-hidden">
+									<span className="block text-[11px] font-bold truncate">Device & Contact</span>
+									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Submission Specs</span>
 								</div>
-								<p className="text-xs text-foreground/75 mb-3">{STATUS_INFO[selected.status]}</p>
+							</button>
 
-								{writable && nextActionsFor(selected.status).length > 0 && (
-									<div className="flex flex-wrap gap-2 mb-3">
-										{nextActionsFor(selected.status).map((action) => (
-											<button
-												key={action.target}
-												type="button"
-												onClick={() => setStatus(action.target)}
-												className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] transition-all cursor-pointer ${ACTION_BUTTON_CLASS[action.tone]} ${
-													status === action.target ? 'ring-2 ring-offset-2 ring-offset-card ring-primary/50' : ''
-												}`}
-											>
-												{action.label}
-											</button>
-										))}
+							<button
+								type="button"
+								onClick={() => setModalTab('actions')}
+								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+									modalTab === 'actions'
+										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
+										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+								}`}
+							>
+								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
+									modalTab === 'actions' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+								}`}>
+									2
+								</span>
+								<div className="text-left overflow-hidden">
+									<span className="block text-[11px] font-bold truncate">Valuation & Offer</span>
+									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Pricing & Action</span>
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => setModalTab('shipment')}
+								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+									modalTab === 'shipment'
+										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
+										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+								}`}
+							>
+								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
+									modalTab === 'shipment' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+								}`}>
+									3
+								</span>
+								<div className="text-left overflow-hidden">
+									<span className="block text-[11px] font-bold truncate">Inbound Shipment</span>
+									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Package & Photos</span>
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => setModalTab('payment')}
+								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+									modalTab === 'payment'
+										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
+										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+								}`}
+							>
+								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
+									modalTab === 'payment' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+								}`}>
+									4
+								</span>
+								<div className="text-left overflow-hidden">
+									<span className="block text-[11px] font-bold truncate">Payout Confirmation</span>
+									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Payment Details</span>
+								</div>
+							</button>
+
+							<button
+								type="button"
+								onClick={() => setModalTab('timeline')}
+								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+									modalTab === 'timeline'
+										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
+										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+								}`}
+							>
+								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
+									modalTab === 'timeline' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
+								}`}>
+									5
+								</span>
+								<div className="text-left overflow-hidden">
+									<span className="block text-[11px] font-bold truncate">Case Timeline</span>
+									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Audit History Log</span>
+								</div>
+							</button>
+						</div>
+
+						{/* 2-Column Split: Narrower Sub-Tab Content on Left (5 cols), Wider Status Action Card on Right (7 cols) */}
+						<div className="grid lg:grid-cols-12 gap-5">
+							{/* Left Column (5 cols): Rest of cards (Narrower) */}
+							<div className="lg:col-span-5 space-y-5">
+								{/* Step 1 Content: Device & Contact */}
+								{modalTab === 'overview' && (
+									<div className="space-y-5">
+										{/* Device Card */}
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">DEVICE OVERVIEW</h4>
+												</div>
+												<span className={`inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider ${
+													selected.condition === 'excellent' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' :
+													selected.condition === 'good' ? 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30' :
+													selected.condition === 'fair' ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30' :
+													'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+												}`}>
+													CONDITION: {selected.condition}
+												</span>
+											</div>
+
+											{selected.description && (
+												<div className="rounded-xl bg-muted/50 border border-border/70 p-4 space-y-2">
+													<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-1.5">
+														<FileText className="w-3.5 h-3.5 text-foreground" />
+														SUBMISSION NOTES & DAMAGE DETAILS
+													</p>
+													<p className="text-xs text-foreground/90 whitespace-pre-line leading-relaxed font-sans font-medium">
+														{selected.description}
+													</p>
+												</div>
+											)}
+										</div>
+
+										{/* Contact Card */}
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<User className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">CUSTOMER CONTACT</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+													{selected.user_id ? 'REGISTERED ACCOUNT' : 'GUEST SUBMISSION'}
+												</span>
+											</div>
+											<div className="grid gap-3 text-xs text-foreground">
+												{selected.contact_email && (
+													<div className="flex items-center gap-3 bg-muted/50 border border-border/70 p-3 rounded-xl">
+														<Mail className="w-4 h-4 text-sky-600 shrink-0" />
+														<a href={`mailto:${selected.contact_email}`} className="text-foreground font-semibold hover:text-primary hover:underline">{selected.contact_email}</a>
+													</div>
+												)}
+												{selected.contact_phone && (
+													<div className="flex items-center gap-3 bg-muted/50 border border-border/70 p-3 rounded-xl">
+														<Phone className="w-4 h-4 text-sky-600 shrink-0" />
+														<span className="font-mono font-extrabold text-foreground tracking-wide">{selected.contact_phone}</span>
+													</div>
+												)}
+											</div>
+											{selected.contact_phone && (
+												<a
+													href={`https://wa.me/${selected.contact_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, this is CellKore regarding your sell request ${formatRequestId(selected.id)}.`)}`}
+													target="_blank"
+													rel="noreferrer"
+													className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-extrabold uppercase tracking-[0.16em] transition-all shadow-sm cursor-pointer"
+												>
+													<MessageCircle className="w-4 h-4" />
+													Open WhatsApp Chat
+												</a>
+											)}
+										</div>
 									</div>
 								)}
 
-								<details className="group">
-									<summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground list-none flex items-center gap-1.5">
-										<ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180" />
-										Advanced: Set Status Manually
-									</summary>
-									<select
-										value={status}
-										onChange={(e) => setStatus(e.target.value as SellPhoneStatus)}
-										className={`${adminInput} cursor-pointer mt-2`}
-										disabled={!writable}
-									>
-										{STATUSES.map((s) => (
-											<option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-										))}
-									</select>
-									<p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-										For corrections or edge cases the buttons above don&apos;t cover. Offer accepted/rejected is normally set by the customer themselves.
-									</p>
-								</details>
-							</div>
-							{status === 'rejected' ? (
-								<div className="space-y-4">
-									<div>
-										<label className={label}>Rejection Reason (shown to customer)</label>
-										<textarea
-											value={rejectionReason}
-											onChange={(e) => setRejectionReason(e.target.value)}
-											className={adminInput}
-											disabled={!writable}
-											rows={3}
-											placeholder="e.g. Device arrived with undisclosed water damage"
-										/>
+								{/* Step 2 Content: Valuation */}
+								{modalTab === 'actions' && (
+									<div className="space-y-5">
+										{/* Pricing Card */}
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">OFFERED PRICE VALUATION</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold font-mono uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+													{offeredPrice ? `$${Number(offeredPrice).toFixed(2)}` : 'VALUATION PENDING'}
+												</span>
+											</div>
+											<div className="relative">
+												<span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-extrabold text-emerald-600 dark:text-emerald-400">$</span>
+												<input
+													type="number"
+													step="0.01"
+													value={offeredPrice}
+													onChange={(e) => setOfferedPrice(e.target.value)}
+													className={`${adminInput} pl-8 font-mono font-extrabold text-base border-emerald-500/30 focus:border-emerald-500`}
+													placeholder="0.00"
+													disabled={!writable}
+												/>
+											</div>
+											<p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
+												Official valuation amount submitted to the customer for approval.
+											</p>
+										</div>
 									</div>
-									{showReturnFeeField && (
-										<div>
-											<label className={label}>Return Shipping Fee (USD)</label>
-											<input
-												type="number"
-												step="0.01"
-												value={returnShippingFee}
-												onChange={(e) => setReturnShippingFee(e.target.value)}
+								)}
+
+								{/* Step 3 Content: Inbound Shipment & Photos */}
+								{modalTab === 'shipment' && (
+									<div className="space-y-5">
+										{/* Inbound Shipment Card */}
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-3.5">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<Truck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">INBOUND SHIPMENT</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30">
+													{selected.shipping_courier ?? 'AWAITING PACKAGE'}
+												</span>
+											</div>
+											<div className="grid sm:grid-cols-2 gap-3 text-xs">
+												<div className="bg-muted/50 border border-border/70 p-3 rounded-xl">
+													<span className="text-muted-foreground text-[10px] uppercase font-extrabold tracking-wider block">Courier</span>
+													<span className="font-extrabold text-foreground">{selected.shipping_courier ?? '—'}</span>
+												</div>
+												<div className="bg-muted/50 border border-border/70 p-3 rounded-xl">
+													<span className="text-muted-foreground text-[10px] uppercase font-extrabold tracking-wider block">Tracking #</span>
+													<span className="font-mono font-extrabold text-foreground">{selected.shipping_tracking_number ?? '—'}</span>
+												</div>
+											</div>
+										</div>
+
+										{/* Submitted Photos */}
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-3.5">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">
+														SUBMITTED PHOTOS
+													</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+													{(selected.sell_phone_images ?? []).length} ATTACHED
+												</span>
+											</div>
+											{(selected.sell_phone_images ?? []).length === 0 ? (
+												<p className="text-xs text-muted-foreground py-6 text-center font-medium">No photos attached to this request.</p>
+											) : (
+												<div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+													{selected.sell_phone_images!.map((image, idx) => (
+														<a
+															key={image.id}
+															href={image.image_url}
+															target="_blank"
+															rel="noreferrer"
+															className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/80 hover:ring-2 hover:ring-primary transition-all block shadow-sm"
+														>
+															<img src={image.image_url} alt={`Device photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+															<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																<ExternalLink className="w-4 h-4 text-white" />
+															</div>
+														</a>
+													))}
+												</div>
+											)}
+										</div>
+
+										{/* Return Shipment Card */}
+										{selected.sell_phone_return_shipments && (
+											<div className="p-5 rounded-2xl border border-amber-500/30 bg-card shadow-sm space-y-3.5">
+												<div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+													<div className="flex items-center gap-2">
+														<Truck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+														<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">RETURN SHIPMENT</h4>
+													</div>
+													<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 text-xs font-extrabold text-amber-800 dark:text-amber-300 bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30 font-mono">
+														${Number(selected.sell_phone_return_shipments.fee_amount).toFixed(2)} FEE
+													</span>
+												</div>
+												<div className="text-xs space-y-2 text-foreground">
+													<p className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+														<ShieldCheck className="w-4 h-4" />
+														<span>
+															{selected.sell_phone_return_shipments.paid_at
+																? `Paid via ${selected.sell_phone_return_shipments.payment_provider} on ${new Date(selected.sell_phone_return_shipments.paid_at).toLocaleDateString()}`
+																: 'Awaiting customer return shipping payment'}
+														</span>
+													</p>
+													{selected.sell_phone_return_shipments.address_line1 && (
+														<p className="text-muted-foreground font-medium">
+															Ship to: {selected.sell_phone_return_shipments.address_line1}, {selected.sell_phone_return_shipments.city}, {selected.sell_phone_return_shipments.country}
+														</p>
+													)}
+													<div className="flex items-center justify-between pt-1">
+														<span className="text-[11px] font-bold text-foreground">
+															Label: {selected.sell_phone_return_shipments.label_status === 'generated'
+																? `${selected.sell_phone_return_shipments.carrier} · ${selected.sell_phone_return_shipments.tracking_number}`
+																: 'Not generated'}
+														</span>
+														{selected.sell_phone_return_shipments.label_url && (
+															<a href={selected.sell_phone_return_shipments.label_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:underline">
+																View Label <ExternalLink className="w-3 h-3" />
+															</a>
+														)}
+													</div>
+												</div>
+
+												{writable && selected.sell_phone_return_shipments.paid_at && selected.sell_phone_return_shipments.label_status !== 'generated' && (
+													<div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2.5">
+														<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground">Attach Label Details</p>
+														<input value={labelCarrier} onChange={(e) => setLabelCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
+														<input value={labelTracking} onChange={(e) => setLabelTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
+														<input value={labelUrl} onChange={(e) => setLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
+														<button onClick={saveLabel} disabled={savingLabel} className={`${adminButton} w-full justify-center mt-2`}>
+															{savingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+															Save Label
+														</button>
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+								)}
+
+								{/* Step 4 Content: Payout Payment */}
+								{modalTab === 'payment' && (
+									<div className="space-y-5">
+										{/* Payment Confirmation Card */}
+										<div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 dark:bg-emerald-950/20 shadow-sm space-y-4">
+											<div className="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+												<div className="flex items-center gap-2">
+													<DollarSign className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-emerald-900 dark:text-emerald-300">
+														PAYOUT PAYMENT CONFIRMATION
+													</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+													{paymentConfirmed ? 'PAYMENT FINALIZED' : 'AWAITING PAYOUT'}
+												</span>
+											</div>
+											<p className="text-[11px] text-muted-foreground -mt-1 leading-relaxed font-medium">
+												Fill this in once the device has been inspected, approved, and payment transfer sent to customer.
+											</p>
+											<div className="space-y-3">
+												<div>
+													<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground mb-1 block">TRANSFER AMOUNT (USD)</label>
+													<input
+														type="number"
+														step="0.01"
+														value={payoutAmount}
+														onChange={(e) => setPayoutAmount(e.target.value)}
+														className={`${adminInput} font-mono font-extrabold border-emerald-500/30 focus:border-emerald-500`}
+														disabled={!writable}
+														placeholder="0.00"
+													/>
+												</div>
+												<div>
+													<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground mb-1 block">TRANSFER REFERENCE / TXID</label>
+													<input
+														value={payoutReference}
+														onChange={(e) => setPayoutReference(e.target.value)}
+														className={`${adminInput} border-emerald-500/30 focus:border-emerald-500`}
+														disabled={!writable}
+														placeholder="Transaction ID / receipt reference"
+													/>
+												</div>
+												<div>
+													<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground mb-1 block">RECEIPT / BANK NOTES</label>
+													<textarea
+														value={payoutNotes}
+														onChange={(e) => setPayoutNotes(e.target.value)}
+														className={`${adminInput} border-emerald-500/30 focus:border-emerald-500`}
+														disabled={!writable}
+														rows={2}
+														placeholder="Bank transfer or payment service notes"
+													/>
+												</div>
+												<label className="flex items-center gap-2.5 pt-1.5 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs font-bold text-emerald-900 dark:text-emerald-200 cursor-pointer">
+													<input
+														type="checkbox"
+														checked={paymentConfirmed}
+														onChange={(e) => setPaymentConfirmed(e.target.checked)}
+														disabled={!writable}
+														className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+													/>
+													Payment transfer officially confirmed & finalized
+												</label>
+											</div>
+										</div>
+									</div>
+								)}
+
+								{/* Step 5 Content: Dedicated Case Timeline Audit Log */}
+								{modalTab === 'timeline' && (
+									<div className="space-y-5">
+										<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-3.5">
+											<div className="flex items-center justify-between border-b border-border/70 pb-3">
+												<div className="flex items-center gap-2">
+													<History className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+													<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">CASE TIMELINE AUDIT LOG</h4>
+												</div>
+												<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+													{(selected.sell_phone_status_history ?? []).length} LOGGED
+												</span>
+											</div>
+											<div className="pt-1">
+												{(selected.sell_phone_status_history ?? []).length === 0 ? (
+													<p className="text-xs text-muted-foreground py-6 text-center font-medium">No history recorded yet.</p>
+												) : (
+													<SellStatusTimeline history={selected.sell_phone_status_history!} currentStatus={selected.status} />
+												)}
+											</div>
+										</div>
+									</div>
+								)}
+							</div>
+
+							{/* Right Column (7 cols): Persistent STATUS & WORKFLOW ACTION Card across EVERY tab (Wider & Prominent) */}
+							<div className="lg:col-span-7">
+								<div className="p-5 rounded-2xl border border-border/80 bg-card shadow-sm space-y-4 sticky top-4">
+									<div className="flex items-center justify-between border-b border-border/70 pb-3">
+										<div className="flex items-center gap-2">
+											<ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+											<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">STATUS & WORKFLOW ACTION</h4>
+										</div>
+										<SellStatusBadge status={selected.status} />
+									</div>
+
+									{status !== selected.status && (
+										<div className="flex items-center gap-2 p-3 rounded-xl bg-muted/70 border border-border text-xs text-foreground font-extrabold">
+											<span>Next status:</span>
+											<span className="uppercase tracking-wide text-emerald-600 font-mono">{status.replace(/_/g, ' ')}</span>
+										</div>
+									)}
+
+									<p className="text-xs text-muted-foreground leading-relaxed font-medium">
+										{STATUS_INFO[selected.status]}
+									</p>
+
+									{writable && nextActionsFor(selected.status).length > 0 && (
+										<div className="space-y-2.5 pt-1">
+											<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground">RECOMMENDED ACTIONS</p>
+											<div className="flex flex-wrap gap-2.5">
+												{nextActionsFor(selected.status).map((action) => (
+													<button
+														key={action.target}
+														type="button"
+														onClick={() => setStatus(action.target)}
+														className={`px-5 py-2.5 rounded-full text-[11px] font-extrabold uppercase tracking-[0.14em] transition-all cursor-pointer ${ACTION_BUTTON_CLASS[action.tone]} ${
+															status === action.target ? 'ring-2 ring-offset-2 ring-offset-card ring-emerald-600' : ''
+														}`}
+													>
+														{action.label}
+													</button>
+												))}
+											</div>
+										</div>
+									)}
+
+									{status === 'rejected' ? (
+										<div className="pt-3 border-t border-rose-500/20 space-y-3">
+											<div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-extrabold text-xs">
+												<AlertTriangle className="w-4 h-4" />
+												<span>REJECTION SETUP</span>
+											</div>
+											<div>
+												<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1 block">
+													REJECTION REASON (SHOWN TO CUSTOMER)
+												</label>
+												<textarea
+													value={rejectionReason}
+													onChange={(e) => setRejectionReason(e.target.value)}
+													className={adminInput}
+													disabled={!writable}
+													rows={2}
+													placeholder="e.g. Device arrived with undisclosed water damage"
+												/>
+											</div>
+											{showReturnFeeField && (
+												<div>
+													<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1 block">
+														RETURN SHIPPING FEE (USD)
+													</label>
+													<input
+														type="number"
+														step="0.01"
+														value={returnShippingFee}
+														onChange={(e) => setReturnShippingFee(e.target.value)}
+														className={adminInput}
+														disabled={!writable}
+														placeholder="0.00"
+													/>
+												</div>
+											)}
+										</div>
+									) : (
+										<div className="pt-3 border-t border-border/70 space-y-2">
+											<label className="text-xs font-extrabold uppercase tracking-[0.16em] text-foreground/90 block">
+												TIMELINE UPDATE NOTE (OPTIONAL)
+											</label>
+											<textarea
+												value={note}
+												onChange={(e) => setNote(e.target.value)}
 												className={adminInput}
 												disabled={!writable}
-												placeholder="0.00"
+												rows={2}
+												placeholder="Add context for this status update..."
 											/>
-											<p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-												Device was already received — the customer will be asked to pay this to get it shipped back.
-											</p>
 										</div>
 									)}
+
+									<details className="group pt-2 border-t border-border/70">
+										<summary className="cursor-pointer text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground list-none flex items-center gap-1.5 py-1">
+											<ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180 text-foreground" />
+											ADVANCED: SET STATUS MANUALLY
+										</summary>
+										<div className="mt-3 space-y-2">
+											<select
+												value={status}
+												onChange={(e) => setStatus(e.target.value as SellPhoneStatus)}
+												className={`${adminInput} cursor-pointer font-bold`}
+												disabled={!writable}
+											>
+												{STATUSES.map((s) => (
+													<option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+												))}
+											</select>
+										</div>
+									</details>
 								</div>
-							) : (
-								<div>
-									<label className={label}>Update Note (optional, shown on timeline)</label>
-									<textarea
-										value={note}
-										onChange={(e) => setNote(e.target.value)}
-										className={adminInput}
-										disabled={!writable}
-										rows={2}
-										placeholder="Add context for this status change"
-									/>
-								</div>
-							)}
-							{status === 'payment_confirmed' && (
-								<div className="rounded-2xl border border-border p-4 space-y-4">
-									<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-card-foreground">Payment Confirmation</p>
-									<p className="text-[10.5px] text-muted-foreground -mt-2">
-										Fill this in once the device has been inspected, approved, and the transfer has been sent to the customer.
-									</p>
-									<div>
-										<label className={label}>Transfer Amount (USD)</label>
-										<input
-											type="number"
-											step="0.01"
-											value={payoutAmount}
-											onChange={(e) => setPayoutAmount(e.target.value)}
-											className={adminInput}
-											disabled={!writable}
-											placeholder="0.00"
-										/>
-									</div>
-									<div>
-										<label className={label}>Transfer Reference</label>
-										<input
-											value={payoutReference}
-											onChange={(e) => setPayoutReference(e.target.value)}
-											className={adminInput}
-											disabled={!writable}
-											placeholder="Transaction ID / receipt code"
-										/>
-									</div>
-									<div>
-										<label className={label}>Receipt Notes</label>
-										<textarea
-											value={payoutNotes}
-											onChange={(e) => setPayoutNotes(e.target.value)}
-											className={adminInput}
-											disabled={!writable}
-											rows={3}
-											placeholder="Bank / transfer confirmation details"
-										/>
-									</div>
-									<label className="flex items-center gap-2 text-xs text-foreground/80">
-										<input
-											type="checkbox"
-											checked={paymentConfirmed}
-											onChange={(e) => setPaymentConfirmed(e.target.checked)}
-											disabled={!writable}
-											className="accent-[var(--primary)]"
-										/>
-										Payment transfer confirmed
-									</label>
-								</div>
-							)}
-							{writable && (
-								<button onClick={save} disabled={saving} className={`${adminButton} w-full justify-center`}>
-									{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-									Save Changes
-								</button>
-							)}
+							</div>
 						</div>
+
 					</div>
 				</Modal>
 			)}

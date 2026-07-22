@@ -85,21 +85,23 @@ export function Modal({
 	title,
 	children,
 	wide = false,
+	extraWide = false,
 }: {
 	open: boolean
 	onClose: () => void
 	title: string
 	children: React.ReactNode
 	wide?: boolean
+	extraWide?: boolean
 }) {
 	if (!open) return null
 	return (
-		<div className="fixed inset-0 z-[9000] flex items-center justify-center p-4">
+		<div className="fixed inset-0 z-[9000] flex items-center justify-center p-3 sm:p-6">
 			<div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose} />
 			<div
 				className={`relative bg-card border border-border rounded-3xl shadow-2xl w-full ${
-					wide ? 'max-w-4xl' : 'max-w-xl'
-				} max-h-[88vh] overflow-y-auto no-scrollbar animate-in zoom-in-95 fade-in duration-200`}
+					extraWide ? 'max-w-[1080px]' : wide ? 'max-w-4xl' : 'max-w-xl'
+				} max-h-[90vh] overflow-y-auto no-scrollbar animate-in zoom-in-95 fade-in duration-200`}
 			>
 				<div className="sticky top-0 bg-card/95 backdrop-blur px-7 py-5 border-b border-border flex items-center justify-between">
 					<h3 className="text-sm font-bold uppercase tracking-[0.16em] text-card-foreground">{title}</h3>
