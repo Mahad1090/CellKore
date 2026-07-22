@@ -4,14 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen, Megaphone
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
 
 interface NavGroup {
 	title: string
-	items: { label: string; href: string; icon: any; permission?: AdminPermission }[]
+	items: { label: string; href: string; icon: any; permission?: AdminPermission; match?: string }[]
 }
 
 const navGroups: NavGroup[] = [
@@ -19,7 +19,7 @@ const navGroups: NavGroup[] = [
 		title: 'CONSOLE',
 		items: [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-			{ label: 'Trade-ins', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
+			{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
 		{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },
 			{ label: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'analytics:read' },
@@ -38,15 +38,14 @@ const navGroups: NavGroup[] = [
 	{
 		title: 'REPAIR SERVICES',
 		items: [
-			{ label: 'Repair Queue', href: '/admin/repair-requests', icon: Wrench },
-			{ label: 'Repair Workflow', href: '/admin/repair-workflow', icon: ListChecks },
-			{ label: 'Repair Payments', href: '/admin/repair-payments', icon: Receipt },
+			{ label: 'Repair Services', href: '/admin/repair-requests', icon: Wrench, match: '/admin/repair-', permission: 'repair-requests:read' },
 		],
 	},
 	{
 		title: 'MANAGEMENT',
 		items: [
 			{ label: 'CMS Content', href: '/admin/content', icon: FileText },
+			{ label: 'Announcement Bar', href: '/admin/announcements', icon: Megaphone },
 			{ label: 'Reviews', href: '/admin/reviews', icon: BookOpen, permission: 'reviews:write' },
 			{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },
 			{ label: 'Marketing', href: '/admin/newsletter', icon: MailPlus, permission: 'newsletter:read' },
@@ -135,7 +134,7 @@ export function AdminSidebar() {
 								)}
 								{visibleItems.map((item) => {
 									const Icon = item.icon
-									const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href))
+									const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.match ?? item.href))
 									return (
 										<Link
 											key={item.href}

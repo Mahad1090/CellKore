@@ -1,11 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import type { Marketplace } from '@/contexts/marketplace-context'
 import type {
+	Announcement,
 	Category,
 	CmsPage,
 	CountryContactInfo,
 	Product,
 	ProductReview,
+	RepairSettings,
 	SocialLink,
 	TaxRate,
 	StoreTestimonial,
@@ -28,6 +30,16 @@ const PRODUCT_SELECT = `
 export async function fetchActiveCategories(): Promise<Category[]> {
 	const { data, error } = await supabase
 		.from('categories')
+		.select('*')
+		.eq('is_active', true)
+		.order('sort_order', { ascending: true })
+	if (error) throw error
+	return data ?? []
+}
+
+export async function fetchActiveAnnouncements(): Promise<Announcement[]> {
+	const { data, error } = await supabase
+		.from('announcements')
 		.select('*')
 		.eq('is_active', true)
 		.order('sort_order', { ascending: true })
@@ -189,6 +201,17 @@ export async function fetchCountryContacts(): Promise<CountryContactInfo[]> {
 		.order('country', { ascending: true })
 	if (error) throw error
 	return data ?? []
+}
+
+/** Converts literal "\n" escape sequences (e.g. from a placeholder seeded via SQL) into real newlines. */
+export function normalizeAddressNewlines(value: string): string {
+	return value.replace(/\\n/g, '\n')
+}
+
+export async function fetchRepairSettings(): Promise<RepairSettings | null> {
+	const { data, error } = await supabase.from('repair_settings').select('*').limit(1).maybeSingle()
+	if (error) throw error
+	return data
 }
 
 export async function fetchSocialLinks(): Promise<SocialLink[]> {

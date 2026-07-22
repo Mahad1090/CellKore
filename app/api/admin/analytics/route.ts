@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 		service.from('products').select('id, name, sku, price, base_price, stock_quantity, lot_quantity, is_active, is_wholesale, created_at, categories(name), wholesale_price_tiers(id, min_quantity, price_per_unit)'),
 		service.from('newsletter_subscribers').select('id, email, created_at'),
 		service.from('contact_inquiries').select('id, status, submitted_at'),
-		service.from('repair_requests').select('id, device_brand, device_model, status, estimated_cost, created_at'),
+		service.from('repair_requests').select('id, device_brand, device_model, status, quote_total, created_at'),
 	])
 
 	const orders = ordersRes.data ?? []
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
 		const brand = rep.device_brand ?? 'Generic'
 		repairStatusMap[st] = (repairStatusMap[st] ?? 0) + 1
 		repairBrandMap[brand] = (repairBrandMap[brand] ?? 0) + 1
-		if (rep.estimated_cost != null) totalRepairCost += Number(rep.estimated_cost)
+		if (rep.quote_total != null) totalRepairCost += Number(rep.quote_total)
 	}
 
 	// 4. Wholesale & Inventory Analytics

@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import {
 	Eye,
 	Search,
@@ -99,13 +98,6 @@ const ACTION_BUTTON_CLASS: Record<ActionTone, string> = {
 	danger: 'bg-rose-600 hover:bg-rose-700 text-white font-bold',
 	neutral: 'bg-slate-700 hover:bg-slate-800 text-white font-bold',
 }
-
-const WORKFLOW_TABS = [
-	{ href: '/admin/sell-requests', label: 'Sell Queue' },
-	{ href: '/admin/repair-requests', label: 'Repair Queue' },
-	{ href: '/admin/repair-workflow', label: 'Repair Workflow' },
-	{ href: '/admin/repair-payments', label: 'Repair Payments' },
-]
 
 export default function AdminSellRequestsPage() {
 	const { toast } = useToast()
@@ -243,22 +235,6 @@ export default function AdminSellRequestsPage() {
 	return (
 		<div>
 			<PageTitle title="Sell Phone Requests" subtitle="Customer device quote queue" />
-
-			<div className="mb-6 flex flex-wrap gap-2">
-				{WORKFLOW_TABS.map((tab) => (
-					<Link
-						key={tab.href}
-						href={tab.href}
-						className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-[0.14em] border transition-all ${
-							tab.href === '/admin/sell-requests'
-								? 'bg-primary text-primary-foreground border-primary'
-								: 'border-border text-foreground/70 hover:border-primary hover:text-foreground'
-						}`}
-					>
-						{tab.label}
-					</Link>
-				))}
-			</div>
 
 			<div className="relative mb-6 max-w-sm">
 				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

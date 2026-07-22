@@ -135,12 +135,14 @@ export default function Home() {
 										hasCustomCover ? 'p-0 min-h-[160px]' : 'p-6'
 									}`}>
 										{hasCustomCover ? (
-											<img 
-												src={coverImage || ''} 
-												alt={category.name} 
-												className={`w-full h-full object-cover scale-100 transition-transform duration-500 group-hover:scale-[1.05] ${
+											<img
+												src={coverImage || ''}
+												alt={category.name}
+												className={`w-full h-full object-cover transition-transform duration-500 ${
 													isSamsung ? 'object-[40%_center]' : 'object-center'
-												}`} 
+												} ${
+													isTablet ? 'scale-110 group-hover:scale-[1.15]' : 'scale-100 group-hover:scale-[1.05]'
+												}`}
 											/>
 										) : (
 											<>

@@ -1,41 +1,337 @@
 'use client'
 
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
+import { History, Loader2, MessageCircle, PackageCheck, Receipt, Search, Smartphone, Truck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
+import { RepairStatusBadge, RepairStatusTimeline } from '@/components/repair-status-timeline'
+import { RepairQuotePayment } from '@/components/repair-quote-payment'
+import { useToast } from '@/components/ui/toast'
+import { supabase } from '@/lib/supabase'
+import type { RepairRequest } from '@/lib/types'
+import { formatRequestId } from '@/lib/sell-request-contact'
 
-const REPAIR_TABS = [
-	{ href: '/repair', label: 'New Request' },
-	{ href: '/repair/status', label: 'Track Status' },
-	{ href: '/repair/workflow', label: 'Workflow' },
-	{ href: '/repair/payments', label: 'Payments' },
+type StatusTab = 'overview' | 'quote' | 'shipment' | 'timeline'
+
+const TABS: { id: StatusTab; label: string; icon: typeof Smartphone }[] = [
+	{ id: 'overview', label: 'Overview', icon: Smartphone },
+	{ id: 'quote', label: 'Quote & Payment', icon: Receipt },
+	{ id: 'shipment', label: 'Shipment', icon: Truck },
+	{ id: 'timeline', label: 'Timeline', icon: History },
 ]
+
+function defaultTabFor(status: RepairRequest['status']): StatusTab {
+	if (status === 'quote_sent' || status === 'quote_accepted') return 'quote'
+	if (status === 'awaiting_device') return 'shipment'
+	return 'overview'
+}
 
 export default function RepairStatusPage() {
 	return (
+		<Suspense
+			fallback={
+				<main className="min-h-screen bg-background">
+					<Navigation />
+					<Footer />
+				</main>
+			}
+		>
+			<RepairStatusPageContent />
+		</Suspense>
+	)
+}
+
+function RepairStatusPageContent() {
+	const { toast } = useToast()
+	const searchParams = useSearchParams()
+	const [id, setId] = useState(searchParams.get('id') ?? '')
+	const [contact, setContact] = useState('')
+	const [loading, setLoading] = useState(false)
+	const [request, setRequest] = useState<RepairRequest | null>(null)
+	const [activeTab, setActiveTab] = useState<StatusTab>('overview')
+	const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null)
+	const [courier, setCourier] = useState('')
+	const [trackingNumber, setTrackingNumber] = useState('')
+	const [submittingShipment, setSubmittingShipment] = useState(false)
+
+	const refetch = async () => {
+		if (!request) return
+		const refreshed = await fetch('/api/repair/track', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ id: request.id, contact: contact.trim() }),
+		}).then((r) => r.json())
+		setRequest(refreshed.request ?? null)
+	}
+
+	const lookup = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!id.trim() || !contact.trim()) return
+		setLoading(true)
+		setRequest(null)
+		try {
+			const res = await fetch('/api/repair/track', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: id.trim(), contact: contact.trim() }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			setRequest(json.request)
+			setActiveTab(defaultTabFor(json.request.status))
+			supabase
+				.from('country_contact_info')
+				.select('whatsapp_number')
+				.not('whatsapp_number', 'is', null)
+				.limit(1)
+				.maybeSingle()
+				.then(
+					({ data }) => setSupportWhatsapp(data?.whatsapp_number ?? null),
+					() => setSupportWhatsapp(null)
+				)
+		} catch (err) {
+			toast({ title: 'Request not found', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setLoading(false)
+		}
+	}
+
+	const submitShipment = async (e: React.FormEvent) => {
+		e.preventDefault()
+		if (!request || !courier.trim() || !trackingNumber.trim()) return
+		setSubmittingShipment(true)
+		try {
+			const res = await fetch(`/api/repair/${request.id}/ship-in`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ courier: courier.trim(), tracking_number: trackingNumber.trim(), contact: contact.trim() }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Shipment details submitted', variant: 'success' })
+			await refetch()
+		} catch (err) {
+			toast({ title: 'Could not submit shipment details', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSubmittingShipment(false)
+		}
+	}
+
+	const inputClass =
+		'w-full px-4 py-3 border border-border rounded-xl bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all'
+
+	return (
 		<main className="min-h-screen bg-background">
 			<Navigation />
-			<section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-				<div className="bg-card border border-border rounded-2xl p-2 grid grid-cols-2 md:grid-cols-4 gap-2">
-					{REPAIR_TABS.map((tab) => (
-						<Link
-							key={tab.href}
-							href={tab.href}
-							className={`text-center px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.14em] transition-all ${
-								tab.href === '/repair/status' ? 'bg-primary text-primary-foreground' : 'text-foreground/70 hover:bg-muted'
-							}`}
-						>
-							{tab.label}
-						</Link>
-					))}
-				</div>
-				<div className="bg-card border border-border rounded-3xl p-8">
-					<h1 className="text-2xl font-bold tracking-luxury uppercase text-foreground">Repair Status Tracking</h1>
-					<p className="text-sm text-muted-foreground mt-3">
-						Navigation tab is ready. Detailed tracking functionality is intentionally not implemented yet.
-					</p>
+
+
+
+			<section className="bg-primary text-primary-foreground py-10 mt-8">
+				<div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+					<h1 className="text-3xl font-bold tracking-luxury uppercase">Track Your Repair Request</h1>
+					<p className="opacity-90 mt-2 text-sm">No account needed — look up your request with its ID and your contact info.</p>
 				</div>
 			</section>
+
+			<div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+				<form onSubmit={lookup} className="bg-card border border-border rounded-3xl p-7 space-y-4">
+					<div>
+						<label className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block">Request ID</label>
+						<input required value={id} onChange={(e) => setId(e.target.value)} placeholder="e.g. CK-AD2ADFAB-..." className={inputClass} />
+					</div>
+					<div>
+						<label className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block">Email or Phone Used</label>
+						<input required value={contact} onChange={(e) => setContact(e.target.value)} placeholder="you@example.com or your phone number" className={inputClass} />
+					</div>
+					<button
+						type="submit"
+						disabled={loading}
+						className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60"
+					>
+						{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+						{loading ? 'Looking up...' : 'Find My Request'}
+					</button>
+				</form>
+			</div>
+
+			{request && (
+				<div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-5">
+					{/* Header Summary Bar */}
+					<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm">
+						<div className="flex items-start justify-between gap-4 flex-wrap">
+							<div>
+								<p className="text-[11px] font-mono font-extrabold text-primary uppercase mb-1">
+									{formatRequestId(request.id)}
+								</p>
+								<h3 className="text-base font-extrabold text-card-foreground">
+									{request.device_brand} {request.device_model}
+								</h3>
+								<p className="text-xs text-muted-foreground mt-0.5 font-medium">
+									Submitted {new Date(request.created_at).toLocaleDateString()} at {new Date(request.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+								</p>
+							</div>
+							<RepairStatusBadge status={request.status} />
+						</div>
+					</div>
+
+					{/* Tab Bar */}
+					<div className="border-b border-border/80 flex items-center gap-6 overflow-x-auto no-scrollbar">
+						{TABS.map((tab) => (
+							<button
+								key={tab.id}
+								type="button"
+								onClick={() => setActiveTab(tab.id)}
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
+									activeTab === tab.id
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
+								}`}
+							>
+								<tab.icon className="w-4 h-4" />
+								{tab.label}
+							</button>
+						))}
+					</div>
+
+					{/* Tab Content */}
+					{activeTab === 'overview' && (
+						<div className="space-y-4">
+							{request.status === 'rejected' && request.rejection_reason && (
+								<div className="bg-card border border-rose-500/30 rounded-3xl p-6 shadow-sm space-y-2">
+									<p className="text-xs font-extrabold uppercase tracking-[0.16em] text-rose-600 dark:text-rose-400">Request Rejected</p>
+									<p className="text-xs text-foreground/90 leading-relaxed font-medium">{request.rejection_reason}</p>
+								</div>
+							)}
+
+							<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-3">
+								<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90 pb-2 border-b border-border/60">Device Details</h4>
+								<div className="text-xs text-foreground/85 space-y-2">
+									<p><span className="text-muted-foreground">Category:</span> <span className="font-semibold capitalize">{request.device_category === 'other' ? request.device_category_other : request.device_category}</span></p>
+									<p><span className="text-muted-foreground">Issues:</span> <span className="font-semibold">{(request.issues ?? []).join(', ') || '—'}</span></p>
+									{request.description && <p className="pt-1 border-t border-border/50 leading-relaxed">{request.description}</p>}
+								</div>
+							</div>
+
+							<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-3">
+								<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90 pb-2 border-b border-border/60">Service & Contact</h4>
+								<div className="text-xs text-foreground/85 space-y-1.5">
+									<p><span className="text-muted-foreground">Service Method:</span> <span className="font-semibold">{request.service_method === 'mail_in' ? 'Mail-in' : 'Store Drop-off'}</span></p>
+									<p><span className="text-muted-foreground">Address:</span> <span className="font-semibold">{request.address_line1}, {request.city}, {request.country}</span></p>
+								</div>
+							</div>
+
+							{supportWhatsapp && (
+								<div className="pt-1 flex justify-center">
+									<a
+										href={`https://wa.me/${supportWhatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hi, I need an update on my repair request ${formatRequestId(request.id)}.`)}`}
+										target="_blank"
+										rel="noreferrer"
+										className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-border bg-card hover:bg-muted text-xs font-extrabold uppercase tracking-[0.14em] text-primary transition-all shadow-xs cursor-pointer"
+									>
+										<MessageCircle className="w-4 h-4 text-emerald-600" />
+										Need Help? Chat on WhatsApp
+									</a>
+								</div>
+							)}
+						</div>
+					)}
+
+					{activeTab === 'quote' && (
+						<div className="space-y-4">
+							<RepairQuotePayment request={request} contact={contact.trim()} onUpdated={refetch} />
+							{!['quote_sent', 'quote_accepted'].includes(request.status) && !request.paid_at && (
+								<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm text-center">
+									<p className="text-xs text-muted-foreground">
+										{request.status === 'submitted'
+											? 'Your repair charges quote will appear here once our team reviews your device.'
+											: 'No quote actions are pending right now.'}
+									</p>
+								</div>
+							)}
+						</div>
+					)}
+
+					{activeTab === 'shipment' && (
+						<div className="space-y-4">
+							{request.status === 'awaiting_device' && (
+								<form onSubmit={submitShipment} className="bg-card border border-sky-500/30 rounded-3xl p-6 shadow-sm space-y-4">
+									<div className="flex items-center gap-2 text-sky-700 dark:text-sky-300">
+										<Truck className="w-4 h-4" />
+										<p className="text-xs font-extrabold uppercase tracking-[0.16em]">Payment confirmed — please ship us your device</p>
+									</div>
+									<p className="text-xs text-muted-foreground leading-relaxed font-medium">
+										Ship your device to CellKore, then enter your shipping details below.
+									</p>
+									<div className="grid sm:grid-cols-2 gap-3">
+										<input value={courier} onChange={(e) => setCourier(e.target.value)} placeholder="Courier name (e.g. DHL)" required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all font-medium" />
+										<input value={trackingNumber} onChange={(e) => setTrackingNumber(e.target.value)} placeholder="Tracking number" required className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all font-mono font-bold" />
+									</div>
+									<button
+										type="submit"
+										disabled={submittingShipment}
+										className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-extrabold uppercase tracking-[0.14em] hover:opacity-90 transition-all cursor-pointer disabled:opacity-60 shadow-sm"
+									>
+										{submittingShipment && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+										Submit Shipment Details
+									</button>
+								</form>
+							)}
+
+							{['device_shipped', 'device_received', 'in_repair', 'repaired', 'shipped_back', 'completed'].includes(request.status) && (
+								<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-3">
+									<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90 pb-2 border-b border-border/60">Inbound Shipment (You → CellKore)</h4>
+									<div className="text-xs text-foreground font-medium space-y-1.5">
+										<p className="flex justify-between border-b border-border/50 pb-1.5"><span className="text-muted-foreground">Carrier:</span> <span className="font-semibold">{request.inbound_carrier ?? '—'}</span></p>
+										<p className="flex justify-between"><span className="text-muted-foreground">Tracking #:</span> <span className="font-mono font-bold">{request.inbound_tracking_number ?? '—'}</span></p>
+									</div>
+								</div>
+							)}
+
+							{['shipped_back', 'completed'].includes(request.status) && (
+								<div className="bg-card border border-emerald-500/30 rounded-3xl p-6 shadow-sm space-y-3">
+									<div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
+										<PackageCheck className="w-4 h-4" />
+										<p className="text-xs font-extrabold uppercase tracking-[0.16em]">Your repaired device is on its way back</p>
+									</div>
+									<div className="text-xs text-foreground font-medium space-y-1.5">
+										<p className="flex justify-between border-b border-border/50 pb-1.5"><span className="text-muted-foreground">Carrier:</span> <span className="font-semibold">{request.outbound_carrier ?? '—'}</span></p>
+										<p className="flex justify-between"><span className="text-muted-foreground">Tracking #:</span> <span className="font-mono font-bold">{request.outbound_tracking_number ?? '—'}</span></p>
+									</div>
+								</div>
+							)}
+
+							{['submitted', 'quote_sent', 'quote_accepted'].includes(request.status) && (
+								<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm text-center">
+									<p className="text-xs text-muted-foreground">
+										Shipment details will appear here once your quote is accepted and paid.
+									</p>
+								</div>
+							)}
+						</div>
+					)}
+
+					{activeTab === 'timeline' && (
+						<div className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-4">
+							<div className="flex items-center justify-between border-b border-border/70 pb-3">
+								<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">
+									PROGRESS TIMELINE HISTORY
+								</h4>
+								<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-3 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+									{(request.repair_status_history ?? []).length} UPDATES
+								</span>
+							</div>
+							{(request.repair_status_history ?? []).length === 0 ? (
+								<p className="text-xs text-muted-foreground py-6 text-center">No history recorded yet.</p>
+							) : (
+								<RepairStatusTimeline history={request.repair_status_history!} currentStatus={request.status} />
+							)}
+						</div>
+					)}
+				</div>
+			)}
+
 			<Footer />
 		</main>
 	)

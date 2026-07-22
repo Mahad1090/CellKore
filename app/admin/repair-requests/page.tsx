@@ -1,19 +1,46 @@
 'use client'
 
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { PageTitle, Panel } from '@/components/admin/ui'
+import { Eye, Search } from 'lucide-react'
+import { PageTitle, EmptyState, adminInput } from '@/components/admin/ui'
+import { RepairRequestModal } from '@/components/admin/repair-request-modal'
+import { RepairStatusBadge } from '@/components/repair-status-timeline'
+import { TableShimmer } from '@/components/shimmer'
+import type { RepairRequest } from '@/lib/types'
 
 const WORKFLOW_TABS = [
-	{ href: '/admin/sell-requests', label: 'Sell Queue' },
 	{ href: '/admin/repair-requests', label: 'Repair Queue' },
 	{ href: '/admin/repair-workflow', label: 'Repair Workflow' },
 	{ href: '/admin/repair-payments', label: 'Repair Payments' },
 ]
 
 export default function AdminRepairRequestsPage() {
+	const [requests, setRequests] = useState<RepairRequest[] | null>(null)
+	const [search, setSearch] = useState('')
+	const [selected, setSelected] = useState<RepairRequest | null>(null)
+
+	const load = useCallback(() => {
+		fetch('/api/admin/repair-requests')
+			.then((res) => res.json())
+			.then((json) => setRequests(json.requests ?? []))
+			.catch(() => setRequests([]))
+	}, [])
+
+	useEffect(load, [load])
+
+	const queue = (requests ?? []).filter((r) => r.status === 'submitted' || r.status === 'rejected')
+	const filtered = queue.filter(
+		(r) =>
+			!search.trim() ||
+			`${r.device_brand} ${r.device_model} ${r.contact_name ?? ''} ${r.contact_email ?? ''}`
+				.toLowerCase()
+				.includes(search.toLowerCase())
+	)
+
 	return (
 		<div>
-			<PageTitle title="Repair Requests" subtitle="Navigation scaffold for the repair operations workflow" />
+			<PageTitle title="Repair Queue" subtitle="Review new repair requests and send charge quotes" />
 
 			<div className="mb-6 flex flex-wrap gap-2">
 				{WORKFLOW_TABS.map((tab) => (
@@ -31,11 +58,68 @@ export default function AdminRepairRequestsPage() {
 				))}
 			</div>
 
-			<Panel title="Coming Next" className="max-w-3xl">
-				<p className="text-sm text-muted-foreground">
-					Repair request listing and status controls are intentionally left as navigation-only for now, per requirement.
-				</p>
-			</Panel>
+			<div className="relative mb-6 max-w-sm">
+				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				<input
+					placeholder="Search device or contact..."
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					className={`${adminInput} pl-11`}
+				/>
+			</div>
+
+			{requests === null ? (
+				<TableShimmer />
+			) : filtered.length === 0 ? (
+				<EmptyState message="No repair requests awaiting review." />
+			) : (
+				<div className="border border-border rounded-3xl overflow-hidden bg-card overflow-x-auto">
+					<table className="w-full text-sm min-w-[720px]">
+						<thead>
+							<tr className="bg-secondary text-left">
+								{['Device', 'Category', 'Contact', 'Submitted', 'Status', ''].map((h) => (
+									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{filtered.map((request) => (
+								<tr key={request.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+									<td className="px-5 py-3.5 font-medium text-card-foreground">
+										{request.device_brand} {request.device_model}
+									</td>
+									<td className="px-5 py-3.5 text-foreground/75 capitalize">{request.device_category}</td>
+									<td className="px-5 py-3.5 text-foreground/75 text-xs">
+										{request.contact_email ?? request.contact_phone ?? '—'}
+									</td>
+									<td className="px-5 py-3.5 text-foreground/75 text-xs">
+										{new Date(request.created_at).toLocaleDateString()}
+									</td>
+									<td className="px-5 py-3.5"><RepairStatusBadge status={request.status} /></td>
+									<td className="px-5 py-3.5">
+										<button
+											onClick={() => setSelected(request)}
+											className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
+											aria-label="View details"
+										>
+											<Eye className="w-4 h-4" />
+										</button>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{selected && (
+				<RepairRequestModal
+					request={selected}
+					onClose={() => setSelected(null)}
+					onSaved={load}
+					focusTab="overview"
+				/>
+			)}
 		</div>
 	)
 }
