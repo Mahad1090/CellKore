@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Plus, Pencil, Trash2, Upload, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Plus, Pencil, Trash2, Upload, Loader2, GripVertical } from 'lucide-react'
 import { PageTitle, EmptyState, Modal, adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
@@ -45,6 +45,7 @@ export default function AdminCategoriesPage() {
 	const [editing, setEditing] = useState<CategoryForm | null>(null)
 	const [saving, setSaving] = useState(false)
 	const [uploading, setUploading] = useState(false)
+	const dragIndex = useRef<number | null>(null)
 
 	const load = useCallback(() => {
 		fetch('/api/admin/categories')
@@ -54,6 +55,31 @@ export default function AdminCategoriesPage() {
 	}, [])
 
 	useEffect(load, [load])
+
+	// ── Drag reorder ────────────────────────────────────────────────────────
+	const onDragStart = (e: React.DragEvent, index: number) => {
+		dragIndex.current = index
+		e.dataTransfer.effectAllowed = 'move'
+	}
+
+	const onDrop = async (e: React.DragEvent, dropIndex: number) => {
+		e.preventDefault()
+		if (dragIndex.current === null || dragIndex.current === dropIndex || !categories) return
+		const reordered = [...categories]
+		const [moved] = reordered.splice(dragIndex.current, 1)
+		reordered.splice(dropIndex, 0, moved)
+		setCategories(reordered)
+		dragIndex.current = null
+		await Promise.all(
+			reordered.map((c, i) =>
+				fetch(`/api/admin/categories/${c.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ sort_order: i }),
+				})
+			)
+		).catch(() => toast({ title: 'Failed to save order', variant: 'error' }))
+	}
 
 	const save = async () => {
 		if (!editing) return
@@ -126,7 +152,7 @@ export default function AdminCategoriesPage() {
 				subtitle="Navigation categories shown on the storefront"
 				actions={
 					writable && (
-						<button onClick={() => setEditing(EMPTY)} className={adminButton}>
+						<button onClick={() => setEditing({ ...EMPTY, sort_order: categories?.length ?? 0 })} className={adminButton}>
 							<Plus className="w-3.5 h-3.5" />
 							Add Category
 						</button>
@@ -143,16 +169,27 @@ export default function AdminCategoriesPage() {
 					<table className="w-full text-sm min-w-[560px]">
 						<thead>
 							<tr className="bg-secondary text-left">
-								{['Category', 'Slug', 'Sort Order', 'Status', ''].map((h) => (
+								<th className="w-8 px-3 py-3.5" />
+								{['Category', 'Slug', 'Status', ''].map((h) => (
 									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
 								))}
 							</tr>
 						</thead>
 						<tbody>
-							{categories.map((category) => {
+							{categories.map((category, index) => {
 								const coverImage = category.image_url || DEFAULT_CATEGORY_COVERS[category.slug] || ''
 								return (
-								<tr key={category.id} className="border-t border-border hover:bg-muted/40 transition-colors">
+								<tr
+									key={category.id}
+									draggable={writable}
+									onDragStart={(e) => onDragStart(e, index)}
+									onDragOver={(e) => e.preventDefault()}
+									onDrop={(e) => onDrop(e, index)}
+									className="border-t border-border hover:bg-muted/40 transition-colors"
+								>
+									<td className="pl-3 pr-1 py-3.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing">
+										{writable && <GripVertical className="w-4 h-4" />}
+									</td>
 									<td className="px-5 py-3.5">
 										<div className="flex items-center gap-3">
 											<div className="w-10 h-10 rounded-xl bg-muted overflow-hidden shrink-0">
@@ -162,7 +199,6 @@ export default function AdminCategoriesPage() {
 										</div>
 									</td>
 									<td className="px-5 py-3.5 text-foreground/75 font-mono text-xs">{category.slug}</td>
-									<td className="px-5 py-3.5 text-foreground/75">{category.sort_order}</td>
 									<td className="px-5 py-3.5">
 										<span
 											className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
@@ -232,16 +268,10 @@ export default function AdminCategoriesPage() {
 								</label>
 							</div>
 						</div>
-						<div className="flex items-center gap-6">
-							<div className="flex-1">
-								<label className={label}>Sort Order</label>
-								<input type="number" value={editing.sort_order} onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })} className={adminInput} />
-							</div>
-							<label className="flex items-center gap-2.5 cursor-pointer mt-6">
-								<input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
-								<span className="text-xs font-semibold text-foreground">Active</span>
-							</label>
-						</div>
+						<label className="flex items-center gap-2.5 cursor-pointer mt-1">
+							<input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
+							<span className="text-xs font-semibold text-foreground">Active</span>
+						</label>
 						<div className="flex justify-end gap-3 pt-4 border-t border-border">
 							<button onClick={() => setEditing(null)} className={adminButtonGhost}>Cancel</button>
 							<button onClick={save} disabled={saving} className={adminButton}>
