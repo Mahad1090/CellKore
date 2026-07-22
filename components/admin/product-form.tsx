@@ -419,11 +419,11 @@ export function ProductFormModal({
 		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
 			<div className="space-y-6">
 				{/* Tab Navigation */}
-				<div className="flex bg-[#F7F7F5] border border-[#E9ECEA]/80 p-1.5 rounded-2xl gap-1 mb-6 text-xs font-semibold text-muted-foreground w-max max-w-full overflow-x-auto no-scrollbar">
+				<div className="flex bg-[#F7F7F5] border border-[#E9ECEA]/80 p-1.5 rounded-2xl gap-1 mb-6 text-xs font-semibold text-muted-foreground w-full">
 					<button
 						type="button"
 						onClick={() => setActiveTab('general')}
-						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+						className={`flex-1 py-2.5 rounded-xl cursor-pointer transition-all text-center ${
 							activeTab === 'general' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
@@ -432,7 +432,7 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('pricing')}
-						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+						className={`flex-1 py-2.5 rounded-xl cursor-pointer transition-all text-center ${
 							activeTab === 'pricing' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
@@ -441,7 +441,7 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('specs')}
-						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+						className={`flex-1 py-2.5 rounded-xl cursor-pointer transition-all text-center ${
 							activeTab === 'specs' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
@@ -450,7 +450,7 @@ export function ProductFormModal({
 					<button
 						type="button"
 						onClick={() => setActiveTab('media')}
-						className={`px-5 py-2.5 rounded-xl cursor-pointer transition-all shrink-0 ${
+						className={`flex-1 py-2.5 rounded-xl cursor-pointer transition-all text-center ${
 							activeTab === 'media' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
 						}`}
 					>
