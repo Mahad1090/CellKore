@@ -5,8 +5,10 @@ import type {
 	CmsPage,
 	CountryContactInfo,
 	Product,
+	ProductReview,
 	SocialLink,
 	TaxRate,
+	StoreTestimonial,
 	WholesalePriceTier,
 } from '@/lib/types'
 
@@ -77,6 +79,52 @@ export async function fetchProductById(id: string): Promise<Product | null> {
 		.maybeSingle()
 	if (error) throw error
 	return (data as unknown as Product) ?? null
+}
+
+export async function fetchProductReviews(productId: string): Promise<ProductReview[]> {
+	const { data, error } = await supabase
+		.from('product_reviews')
+		.select('*')
+		.eq('product_id', productId)
+		.eq('status', 'approved')
+		.order('created_at', { ascending: false })
+	if (error) throw error
+	return (data ?? []) as ProductReview[]
+}
+
+export async function fetchMyProductReview(productId: string, userId: string): Promise<ProductReview | null> {
+	const { data, error } = await supabase
+		.from('product_reviews')
+		.select('*')
+		.eq('product_id', productId)
+		.eq('user_id', userId)
+		.order('created_at', { ascending: false })
+		.limit(1)
+		.maybeSingle()
+	if (error) throw error
+	return (data as ProductReview) ?? null
+}
+
+export async function fetchFeaturedTestimonials(): Promise<StoreTestimonial[]> {
+	const { data, error } = await supabase
+		.from('store_testimonials')
+		.select('*')
+		.eq('status', 'approved')
+		.eq('is_featured', true)
+		.order('created_at', { ascending: false })
+		.limit(6)
+	if (error) throw error
+	return (data ?? []) as StoreTestimonial[]
+}
+
+export async function fetchApprovedTestimonials(): Promise<StoreTestimonial[]> {
+	const { data, error } = await supabase
+		.from('store_testimonials')
+		.select('*')
+		.eq('status', 'approved')
+		.order('created_at', { ascending: false })
+	if (error) throw error
+	return (data ?? []) as StoreTestimonial[]
 }
 
 export async function fetchWholesaleLots(marketplace?: Marketplace): Promise<Product[]> {

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
+import { TestimonialsPreview } from '@/components/testimonials-preview'
 import { ProductCard } from '@/components/product-card'
 import { GridShimmer } from '@/components/shimmer'
 import { useMarketplace } from '@/contexts/marketplace-context'
@@ -198,6 +199,8 @@ export default function Home() {
 					</div>
 				)}
 			</section>
+
+			<TestimonialsPreview />
 
 			{/* ========================================================================= */}
 			{/* DEDICATED FEATURE SECTIONS WITH RUNNING VIDEO BANNERS FOR EACH NAVBAR PORTAL */}

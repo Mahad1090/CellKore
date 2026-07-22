@@ -361,6 +361,40 @@ create table social_links (
   is_active boolean not null default true
 );
 
+create type review_status as enum ('pending', 'approved', 'rejected');
+
+create table product_reviews (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references products(id) on delete cascade,
+  user_id uuid references users(id) on delete set null,
+  reviewer_name text not null,
+  reviewer_email text,
+  rating int not null check (rating between 1 and 5),
+  title text,
+  comment text not null,
+  status review_status not null default 'pending',
+  is_featured boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index idx_product_reviews_product_id on product_reviews(product_id);
+create index idx_product_reviews_status on product_reviews(status);
+
+create table store_testimonials (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users(id) on delete set null,
+  customer_name text not null,
+  customer_email text,
+  rating int not null check (rating between 1 and 5),
+  title text,
+  comment text not null,
+  status review_status not null default 'pending',
+  is_featured boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index idx_store_testimonials_status on store_testimonials(status);
+
 create table newsletter_subscribers (
   id uuid primary key default gen_random_uuid(),
   email text not null unique,

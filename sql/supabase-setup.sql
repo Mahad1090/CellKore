@@ -292,6 +292,8 @@ alter table sell_phone_requests enable row level security;
 alter table sell_phone_images enable row level security;
 alter table contact_inquiries enable row level security;
 alter table newsletter_subscribers enable row level security;
+alter table product_reviews enable row level security;
+alter table store_testimonials enable row level security;
 
 drop policy if exists "anyone can submit sell request" on sell_phone_requests;
 create policy "anyone can submit sell request" on sell_phone_requests for insert with check (true);
@@ -303,6 +305,24 @@ drop policy if exists "anyone can submit inquiry" on contact_inquiries;
 create policy "anyone can submit inquiry" on contact_inquiries for insert with check (true);
 drop policy if exists "anyone can subscribe" on newsletter_subscribers;
 create policy "anyone can subscribe" on newsletter_subscribers for insert with check (true);
+
+drop policy if exists "public approved reviews" on product_reviews;
+create policy "public approved reviews" on product_reviews for select using (status = 'approved');
+
+drop policy if exists "authenticated own reviews" on product_reviews;
+create policy "authenticated own reviews" on product_reviews for select to authenticated using (status = 'approved' or auth.uid() = user_id);
+
+drop policy if exists "authenticated submit reviews" on product_reviews;
+create policy "authenticated submit reviews" on product_reviews for insert to authenticated with check (auth.uid() = user_id);
+
+drop policy if exists "public approved testimonials" on store_testimonials;
+create policy "public approved testimonials" on store_testimonials for select using (status = 'approved');
+
+drop policy if exists "authenticated own testimonials" on store_testimonials;
+create policy "authenticated own testimonials" on store_testimonials for select to authenticated using (status = 'approved' or auth.uid() = user_id);
+
+drop policy if exists "authenticated submit testimonials" on store_testimonials;
+create policy "authenticated submit testimonials" on store_testimonials for insert to authenticated with check (auth.uid() = user_id);
 
 -- Admin-only tables: no anon/auth policies at all — service-role only.
 alter table admin_users enable row level security;

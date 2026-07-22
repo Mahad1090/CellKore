@@ -16,6 +16,7 @@ import { Accordion } from '@/components/ui/accordion'
 import { fetchProductById } from '@/lib/data'
 import { addToLocalCart, getWishlist, toggleWishlist } from '@/lib/cart'
 import { categoryHasValues, getCategoriesForBrand, getCategoryValues } from '@/lib/mobile-specs'
+import { ProductReviewsSection } from '@/components/product-reviews'
 import type { Product } from '@/lib/types'
 
 function getColorHexFallback(colorName: string | null): string {
@@ -572,6 +573,10 @@ export default function ProductDetailPage() {
 						)}
 					</div>
 				</div>
+			</div>
+
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<ProductReviewsSection productId={product.id} productName={product.name} />
 			</div>
 
 			<Footer />

@@ -120,6 +120,7 @@ export function Navigation() {
 		{ href: '/', label: 'Home', icon: Home },
 		{ href: '/about', label: 'About Us', icon: Info },
 		{ href: '/contact', label: 'Contact Us', icon: Mail },
+		{ href: '/testimonials', label: 'Testimonials', icon: BookOpen },
 	]
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -501,6 +502,16 @@ export function Navigation() {
 								>
 									<Mail className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
 									<span className="group-hover:translate-x-1 transition-transform duration-300">Contact Us</span>
+								</Link>
+
+								{/* Testimonials */}
+								<Link
+									href="/testimonials"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<BookOpen className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Testimonials</span>
 								</Link>
 							</nav>
 						</div>

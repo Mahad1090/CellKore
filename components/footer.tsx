@@ -200,6 +200,7 @@ export function Footer() {
 						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
 							<li><Link href="/about" className="hover:text-[#599063] transition-colors">About CellKore</Link></li>
 							<li><Link href="/contact" className="hover:text-[#599063] transition-colors">Support Center</Link></li>
+							<li><Link href="/testimonials" className="hover:text-[#599063] transition-colors">Testimonials</Link></li>
 							<li><Link href="/sell/track" className="hover:text-[#599063] transition-colors">Track Sell Request</Link></li>
 							<li><Link href="/terms" className="hover:text-[#599063] transition-colors">Terms of Service</Link></li>
 							<li><Link href="/privacy" className="hover:text-[#599063] transition-colors">Privacy Policy</Link></li>

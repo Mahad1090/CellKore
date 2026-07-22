@@ -16,6 +16,7 @@ export type AdminPermission =
 	| 'admin-users:write'
 	| 'analytics:read'
 	| 'newsletter:read'
+	| 'reviews:write'
 
 export function normalizeAdminRole(role: AdminRole | string): AdminRole {
 	return role === 'super_admin' ? 'super_admin' : 'admin'
@@ -42,6 +43,7 @@ const MATRIX: Record<AdminPermission, AdminRole[]> = {
 	'admin-users:write': ['super_admin'],
 	'analytics:read': ['super_admin', 'admin'],
 	'newsletter:read': ['super_admin', 'admin'],
+	'reviews:write': ['super_admin', 'admin'],
 }
 
 export function roleHasPermission(role: AdminRole | string, permission: AdminPermission): boolean {

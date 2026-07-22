@@ -41,6 +41,7 @@ export type RepairStatus =
 	| 'accepted'
 	| 'rejected'
 	| 'completed'
+export type ReviewStatus = 'pending' | 'approved' | 'rejected'
 export type AdminRole = 'super_admin' | 'admin'
 
 export interface Category {
@@ -219,6 +220,35 @@ export interface SellPhoneRequest {
 	sell_phone_images?: { id: string; image_url: string }[]
 	sell_phone_status_history?: SellPhoneStatusHistoryEntry[]
 	sell_phone_return_shipments?: SellPhoneReturnShipment | null
+}
+
+export interface ProductReview {
+	id: string
+	product_id: string
+	user_id: string | null
+	reviewer_name: string
+	reviewer_email: string | null
+	rating: number
+	title: string | null
+	comment: string
+	status: ReviewStatus
+	is_featured: boolean
+	created_at: string
+	updated_at: string
+}
+
+export interface StoreTestimonial {
+	id: string
+	user_id: string | null
+	customer_name: string
+	customer_email: string | null
+	rating: number
+	title: string | null
+	comment: string
+	status: ReviewStatus
+	is_featured: boolean
+	created_at: string
+	updated_at: string
 }
 
 export interface SellPhoneStatusHistoryEntry {
