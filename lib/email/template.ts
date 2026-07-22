@@ -6,7 +6,9 @@ export function siteUrl(): string {
 }
 
 export function logoUrl(): string {
-	return `${siteUrl()}/cellkore_apple_green.webp`
+	// PNG, not the site's .webp — many email clients (notably Outlook) don't
+	// render WebP and silently fall back to the alt text instead.
+	return `${siteUrl()}/cellkore_logo_email.png`
 }
 
 export function formatCurrency(amount: number, currency: 'USD' | 'CAD' = 'USD'): string {
@@ -40,8 +42,7 @@ export function renderEmailLayout(opts: {
 				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
 					<tr>
 						<td style="padding:0 4px 20px;text-align:center;">
-							<img src="${logoUrl()}" width="40" height="40" alt="CellKore" style="display:inline-block;vertical-align:middle;border-radius:10px;" />
-							<span style="display:inline-block;vertical-align:middle;margin-left:10px;font-size:15px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:#111111;">CellKore</span>
+							<img src="${logoUrl()}" width="96" height="96" alt="CellKore" style="display:inline-block;border-radius:20px;" />
 						</td>
 					</tr>
 					<tr>
