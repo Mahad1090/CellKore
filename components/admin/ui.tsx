@@ -23,12 +23,12 @@ export function PageTitle({ title, subtitle, actions }: { title: string; subtitl
 	)
 }
 
-export function Panel({ title, children, className = '' }: { title?: string; children: React.ReactNode; className?: string }) {
+export function Panel({ title, children, className = '' }: { title?: React.ReactNode; children: React.ReactNode; className?: string }) {
 	return (
 		<div className={`bg-card border border-border rounded-3xl overflow-hidden ${className}`}>
 			{title && (
 				<div className="px-6 py-4 border-b border-border">
-					<h2 className="text-xs font-bold uppercase tracking-[0.18em] text-card-foreground">{title}</h2>
+					<div className="text-xs font-bold uppercase tracking-[0.18em] text-card-foreground">{title}</div>
 				</div>
 			)}
 			<div className="p-6">{children}</div>

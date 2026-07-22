@@ -143,35 +143,51 @@
 }
 
 .admin-theme-wrapper {
-    /* anchor class for layout body has detection */
+    display: block;
+}
+
+body:has(.admin-theme-wrapper) {
+    background-color: #F7F7F5 !important;
 }
 
 body:has(.admin-theme-wrapper),
 body:has(.admin-theme-wrapper) * {
-    --primary: #121212 !important;
+    --background: #F7F7F5 !important;
+    --card: #ffffff !important;
+    --border: #E9ECEA !important;
+    --primary: #599161 !important;
     --primary-foreground: #ffffff !important;
-    --accent: #121212 !important;
+    --accent: #599161 !important;
     --accent-foreground: #ffffff !important;
-    --ring: #121212 !important;
-    --sidebar-primary: #121212 !important;
+    --ring: #599161 !important;
+    --sidebar: #ffffff !important;
+    --sidebar-foreground: #111111 !important;
+    --sidebar-primary: #599161 !important;
     --sidebar-primary-foreground: #ffffff !important;
-    --sidebar-accent: #1f1f1f !important;
-    --sidebar-accent-foreground: #ffffff !important;
-    --sidebar-ring: #121212 !important;
-    --chart-1: #121212 !important;
+    --sidebar-accent: #EEF7F0 !important;
+    --sidebar-accent-foreground: #111111 !important;
+    --sidebar-border: #E9ECEA !important;
+    --sidebar-ring: #599161 !important;
+    --chart-1: #599161 !important;
     
     /* Tailwind CSS v4 direct variable overrides */
-    --color-primary: #121212 !important;
+    --color-background: #F7F7F5 !important;
+    --color-card: #ffffff !important;
+    --color-border: #E9ECEA !important;
+    --color-primary: #599161 !important;
     --color-primary-foreground: #ffffff !important;
-    --color-accent: #121212 !important;
+    --color-accent: #599161 !important;
     --color-accent-foreground: #ffffff !important;
-    --color-ring: #121212 !important;
+    --color-ring: #599161 !important;
     
-    --color-sidebar-primary: #121212 !important;
+    --color-sidebar: #ffffff !important;
+    --color-sidebar-foreground: #111111 !important;
+    --color-sidebar-primary: #599161 !important;
     --color-sidebar-primary-foreground: #ffffff !important;
-    --color-sidebar-accent: #1f1f1f !important;
-    --color-sidebar-accent-foreground: #ffffff !important;
-    --color-sidebar-ring: #121212 !important;
+    --color-sidebar-accent: #EEF7F0 !important;
+    --color-sidebar-accent-foreground: #111111 !important;
+    --color-sidebar-border: #E9ECEA !important;
+    --color-sidebar-ring: #599161 !important;
 }
 
 /* Base UI Select: selected item highlight (theme variables only) */

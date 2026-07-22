@@ -130,6 +130,7 @@ export default function AdminSellRequestsPage() {
 	const [savingLabel, setSavingLabel] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [copiedId, setCopiedId] = useState(false)
+	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
 
 	const handleCopyId = (id: string) => {
 		const formatted = formatRequestId(id)
@@ -395,106 +396,71 @@ export default function AdminSellRequestsPage() {
 							</div>
 						</div>
 
-						{/* Sequential Step Progress Bar */}
-						<div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-1.5 rounded-2xl bg-muted/60 border border-border/80">
+						{/* Horizontal Sub-Tabs Navigation Bar */}
+						<div className="border-b border-border/80 flex items-center gap-6 overflow-x-auto no-scrollbar">
 							<button
 								type="button"
 								onClick={() => setModalTab('overview')}
-								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
 									modalTab === 'overview'
-										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
-										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
-									modalTab === 'overview' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
-								}`}>
-									1
-								</span>
-								<div className="text-left overflow-hidden">
-									<span className="block text-[11px] font-bold truncate">Device & Contact</span>
-									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Submission Specs</span>
-								</div>
+								<Smartphone className="w-4 h-4 text-emerald-600" />
+								Device & Contact
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setModalTab('actions')}
-								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
 									modalTab === 'actions'
-										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
-										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
-									modalTab === 'actions' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
-								}`}>
-									2
-								</span>
-								<div className="text-left overflow-hidden">
-									<span className="block text-[11px] font-bold truncate">Valuation & Offer</span>
-									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Pricing & Action</span>
-								</div>
+								<DollarSign className="w-4 h-4 text-emerald-600" />
+								Valuation & Offer
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setModalTab('shipment')}
-								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
 									modalTab === 'shipment'
-										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
-										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
-									modalTab === 'shipment' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
-								}`}>
-									3
-								</span>
-								<div className="text-left overflow-hidden">
-									<span className="block text-[11px] font-bold truncate">Inbound Shipment</span>
-									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Package & Photos</span>
-								</div>
+								<Truck className="w-4 h-4 text-sky-600" />
+								Inbound Shipment
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setModalTab('payment')}
-								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
 									modalTab === 'payment'
-										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
-										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
-									modalTab === 'payment' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
-								}`}>
-									4
-								</span>
-								<div className="text-left overflow-hidden">
-									<span className="block text-[11px] font-bold truncate">Payout Confirmation</span>
-									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Payment Details</span>
-								</div>
+								<ShieldCheck className="w-4 h-4 text-emerald-600" />
+								Payout Confirmation
 							</button>
 
 							<button
 								type="button"
 								onClick={() => setModalTab('timeline')}
-								className={`flex items-center gap-2.5 p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
+								className={`flex items-center gap-2 py-3 px-1 text-xs font-extrabold uppercase tracking-[0.14em] cursor-pointer transition-all border-b-2 -mb-px whitespace-nowrap ${
 									modalTab === 'timeline'
-										? 'bg-background text-foreground border border-border/80 shadow-sm font-extrabold'
-										: 'text-muted-foreground hover:text-foreground hover:bg-background/40 font-semibold'
+										? 'border-foreground text-foreground'
+										: 'border-transparent text-muted-foreground hover:text-foreground'
 								}`}
 							>
-								<span className={`w-5 h-5 rounded-full text-[10px] font-mono font-extrabold flex items-center justify-center shrink-0 ${
-									modalTab === 'timeline' ? 'bg-emerald-600 text-white' : 'bg-muted-foreground/20 text-muted-foreground'
-								}`}>
-									5
-								</span>
-								<div className="text-left overflow-hidden">
-									<span className="block text-[11px] font-bold truncate">Case Timeline</span>
-									<span className="block text-[9.5px] text-muted-foreground font-normal truncate">Audit History Log</span>
-								</div>
+								<History className="w-4 h-4 text-indigo-600" />
+								Case Timeline
 							</button>
 						</div>
 
@@ -533,6 +499,38 @@ export default function AdminSellRequestsPage() {
 													</p>
 												</div>
 											)}
+
+											{/* Customer Submitted Photos */}
+											<div className="rounded-xl bg-muted/50 border border-border/70 p-4 space-y-3">
+												<div className="flex items-center justify-between border-b border-border/60 pb-2">
+													<div className="flex items-center gap-1.5 text-foreground font-extrabold text-xs">
+														<ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+														<span className="uppercase tracking-wider">ATTACHED DEVICE PHOTOS</span>
+													</div>
+													<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+														{(selected.sell_phone_images ?? []).length} ATTACHED
+													</span>
+												</div>
+												{(selected.sell_phone_images ?? []).length === 0 ? (
+													<p className="text-xs text-muted-foreground py-3 text-center font-medium">No customer photos attached to this submission.</p>
+												) : (
+													<div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+														{selected.sell_phone_images!.map((image, idx) => (
+															<button
+																key={image.id}
+																type="button"
+																onClick={() => setPreviewImageUrl(image.image_url)}
+																className="group relative aspect-square rounded-xl overflow-hidden bg-background border border-border/80 hover:ring-2 hover:ring-emerald-500 transition-all block shadow-xs cursor-pointer text-left"
+															>
+																<img src={image.image_url} alt={`Device photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+																<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+																	<Eye className="w-4 h-4 text-white" />
+																</div>
+															</button>
+														))}
+													</div>
+												)}
+											</div>
 										</div>
 
 										{/* Contact Card */}
@@ -652,18 +650,17 @@ export default function AdminSellRequestsPage() {
 											) : (
 												<div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
 													{selected.sell_phone_images!.map((image, idx) => (
-														<a
+														<button
 															key={image.id}
-															href={image.image_url}
-															target="_blank"
-															rel="noreferrer"
-															className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/80 hover:ring-2 hover:ring-primary transition-all block shadow-sm"
+															type="button"
+															onClick={() => setPreviewImageUrl(image.image_url)}
+															className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/80 hover:ring-2 hover:ring-emerald-500 transition-all block shadow-sm cursor-pointer text-left"
 														>
 															<img src={image.image_url} alt={`Device photo ${idx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
 															<div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-																<ExternalLink className="w-4 h-4 text-white" />
+																<Eye className="w-4 h-4 text-white" />
 															</div>
-														</a>
+														</button>
 													))}
 												</div>
 											)}
@@ -935,6 +932,26 @@ export default function AdminSellRequestsPage() {
 							</div>
 						</div>
 
+					</div>
+				</Modal>
+			)}
+
+			{/* In-App Photo Lightbox Modal (No external URL leakage) */}
+			{previewImageUrl && (
+				<Modal open={!!previewImageUrl} onClose={() => setPreviewImageUrl(null)} title="ATTACHED DEVICE PHOTO PREVIEW">
+					<div className="flex flex-col items-center justify-center p-2 space-y-4">
+						<div className="relative max-h-[72vh] w-full overflow-hidden rounded-2xl border border-border shadow-xl bg-slate-950 flex items-center justify-center p-2">
+							<img src={previewImageUrl} alt="Full device preview" className="max-h-[70vh] w-auto object-contain rounded-xl shadow-md" />
+						</div>
+						<div className="flex items-center justify-end w-full pt-1">
+							<button
+								type="button"
+								onClick={() => setPreviewImageUrl(null)}
+								className="px-6 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold uppercase tracking-[0.14em] transition-all cursor-pointer shadow-sm"
+							>
+								Close Photo Preview
+							</button>
+						</div>
 					</div>
 				</Modal>
 			)}

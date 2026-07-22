@@ -33,6 +33,10 @@ function ProductsContent() {
 	const [specTemplates, setSpecTemplates] = useState<SpecTemplate[]>([])
 	const [mobileSpecPresets, setMobileSpecPresets] = useState<MobileSpecPreset[]>([])
 	const [search, setSearch] = useState('')
+	const [categoryFilter, setCategoryFilter] = useState('all')
+	const [productTypeFilter, setProductTypeFilter] = useState('all')
+	const [brandFilter, setBrandFilter] = useState('all')
+	const [stockFilter, setStockFilter] = useState('all')
 	const [editing, setEditing] = useState<ProductFormValue | null>(null)
 
 	const load = useCallback(() => {
@@ -61,18 +65,22 @@ function ProductsContent() {
 			.then((json) => setMobileSpecPresets(json.mobileSpecPresets ?? []))
 			.catch(() => setMobileSpecPresets([]))
 	}, [load])
+	const openEdit = useCallback(async (id: string) => {
+		const res = await fetch(`/api/admin/products/${id}`)
+		const json = await res.json()
+		if (res.ok) setEditing(productToForm(json.product))
+	}, [])
 
 	useEffect(() => {
 		if (searchParams.get('new') === '1' && can('products:write')) {
 			setEditing(EMPTY_PRODUCT)
+		} else {
+			const editId = searchParams.get('edit')
+			if (editId && can('products:write')) {
+				openEdit(editId)
+			}
 		}
-	}, [searchParams, can])
-
-	const openEdit = async (id: string) => {
-		const res = await fetch(`/api/admin/products/${id}`)
-		const json = await res.json()
-		if (res.ok) setEditing(productToForm(json.product))
-	}
+	}, [searchParams, can, openEdit])
 
 	const remove = async (product: any) => {
 		const ok = await confirm({
@@ -92,13 +100,33 @@ function ProductsContent() {
 		}
 	}
 
-	const filtered = (products ?? []).filter(
-		(p) =>
+	// Unique brands extracted dynamically from current product list
+	const brands = Array.from(
+		new Set((products ?? []).map((p) => p.brand).filter(Boolean))
+	).sort() as string[]
+
+	const filtered = (products ?? []).filter((p) => {
+		const matchesSearch =
 			!search.trim() ||
 			p.name.toLowerCase().includes(search.toLowerCase()) ||
 			(p.sku ?? '').toLowerCase().includes(search.toLowerCase()) ||
 			(p.brand ?? '').toLowerCase().includes(search.toLowerCase())
-	)
+
+		const matchesCategory = categoryFilter === 'all' || p.category_id === categoryFilter
+		const matchesProductType = productTypeFilter === 'all' || p.product_type_id === productTypeFilter
+		const matchesBrand = brandFilter === 'all' || p.brand === brandFilter
+
+		const stock = (p.product_variants ?? []).reduce(
+			(sum: number, v: any) => sum + v.stock_quantity,
+			0
+		)
+		let matchesStock = true
+		if (stockFilter === 'instock') matchesStock = stock > 0
+		else if (stockFilter === 'outofstock') matchesStock = stock === 0
+		else if (stockFilter === 'lowstock') matchesStock = stock > 0 && stock < 5
+
+		return matchesSearch && matchesCategory && matchesProductType && matchesBrand && matchesStock
+	})
 
 	const writable = can('products:write')
 
@@ -117,14 +145,58 @@ function ProductsContent() {
 				}
 			/>
 
-			<div className="relative mb-6 max-w-sm">
-				<Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-				<input
-					placeholder="Search by name, SKU, brand..."
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className={`${adminInput} pl-11`}
-				/>
+			<div className="flex flex-col gap-3 bg-white p-4 rounded-2xl border border-[#E9ECEA] shadow-3xs mb-6">
+				<div className="relative w-full">
+					<Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+					<input
+						placeholder="Search by name, SKU, brand..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+						className="w-full pl-9 pr-4 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] focus:bg-white transition-all font-sans"
+					/>
+				</div>
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+					<select
+						value={categoryFilter}
+						onChange={(e) => setCategoryFilter(e.target.value)}
+						className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+					>
+						<option value="all">All Categories</option>
+						{categories.map((c) => (
+							<option key={c.id} value={c.id}>{c.name}</option>
+						))}
+					</select>
+					<select
+						value={productTypeFilter}
+						onChange={(e) => setProductTypeFilter(e.target.value)}
+						className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+					>
+						<option value="all">All Product Types</option>
+						{productTypes.map((t) => (
+							<option key={t.id} value={t.id}>{t.name}</option>
+						))}
+					</select>
+					<select
+						value={brandFilter}
+						onChange={(e) => setBrandFilter(e.target.value)}
+						className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+					>
+						<option value="all">All Brands</option>
+						{brands.map((b) => (
+							<option key={b} value={b}>{b}</option>
+						))}
+					</select>
+					<select
+						value={stockFilter}
+						onChange={(e) => setStockFilter(e.target.value)}
+						className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+					>
+						<option value="all">All Stock Statuses</option>
+						<option value="instock">In Stock</option>
+						<option value="lowstock">Low Stock (&lt; 5)</option>
+						<option value="outofstock">Out of Stock</option>
+					</select>
+				</div>
 			</div>
 
 			{products === null ? (

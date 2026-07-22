@@ -223,6 +223,13 @@ export function ProductFormModal({
 	const [selectedPresetId, setSelectedPresetId] = useState('')
 	const [presetNameInput, setPresetNameInput] = useState<string | null>(null)
 	const [savingPreset, setSavingPreset] = useState(false)
+	const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'specs' | 'media'>('general')
+
+	useEffect(() => {
+		if (open) {
+			setActiveTab('general')
+		}
+	}, [open])
 
 	useEffect(() => {
 		setForm(initial)
@@ -410,473 +417,542 @@ export function ProductFormModal({
 
 	return (
 		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
-			<div className="space-y-8">
-				{/* Marketplace — first, since it determines the pricing currency below. A listing is
-				    always exactly one marketplace, never both, so this is single-select. */}
-				<div>
-					<label className={label}>Marketplace</label>
-					<div className="flex gap-4">
-						{(['US', 'CA'] as MarketplaceType[]).map((market) => (
-							<label
-								key={market}
-								className={`flex items-center gap-2.5 px-4 py-2.5 border rounded-full cursor-pointer transition-colors ${
-									form.marketplaces[0] === market ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'
-								}`}
-							>
-								<input
-									type="radio"
-									name="marketplace"
-									checked={form.marketplaces[0] === market}
-									onChange={() => set('marketplaces', [market])}
-									className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
-								/>
-								<span className="text-xs font-semibold text-foreground">
-									{market === 'US' ? 'US Marketplace' : 'Canada Marketplace'}
-								</span>
-							</label>
-						))}
-					</div>
-					<p className="text-xs text-muted-foreground mt-2.5">
-						Pricing below is entered in <strong className="text-foreground">{currency}</strong>.
-					</p>
+			<div className="space-y-6">
+				{/* Tab Navigation */}
+				<div className="flex border-b border-[#E9ECEA] pb-2 mb-6 gap-6 text-xs font-bold uppercase tracking-wider text-muted-foreground overflow-x-auto">
+					<button
+						type="button"
+						onClick={() => setActiveTab('general')}
+						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
+							activeTab === 'general' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						}`}
+					>
+						General Info
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveTab('pricing')}
+						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
+							activeTab === 'pricing' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						}`}
+					>
+						Pricing & Inventory
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveTab('specs')}
+						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
+							activeTab === 'specs' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						}`}
+					>
+						Specifications
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveTab('media')}
+						className={`py-1.5 border-b-2 cursor-pointer transition-colors shrink-0 ${
+							activeTab === 'media' ? 'border-[#599161] text-[#599161] font-extrabold' : 'border-transparent hover:text-[#599161]'
+						}`}
+					>
+						Media & Images
+					</button>
 				</div>
 
-				{/* Category + Product Type — Category first (the main classification), Product Type
-				    to its right (a finer-grained sub-type that auto-fills Category as a convenience). */}
-				<div className="grid sm:grid-cols-2 gap-4">
-					<div>
-						<label className={label}>Category</label>
-						<select value={form.category_id} onChange={(e) => set('category_id', e.target.value)} className={`${adminInput} cursor-pointer`}>
-							<option value="">No category</option>
-							{categories.map((c) => (
-								<option key={c.id} value={c.id}>{c.name}</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label className={label}>Product Type</label>
-						<select
-							value={form.product_type_id}
-							onChange={(e) => handleProductTypeChange(e.target.value)}
-							className={`${adminInput} cursor-pointer`}
-						>
-							<option value="">No product type</option>
-							{productTypes.map((t) => (
-								<option key={t.id} value={t.id}>{t.name}</option>
-							))}
-						</select>
-					</div>
-				</div>
+				<div className="min-h-[350px]">
+					{/* GENERAL TAB */}
+					{activeTab === 'general' && (
+						<div className="space-y-6">
+							{/* Marketplace */}
+							<div>
+								<label className={label}>Marketplace</label>
+								<div className="flex gap-4">
+									{(['US', 'CA'] as MarketplaceType[]).map((market) => (
+										<label
+											key={market}
+											className={`flex items-center gap-2.5 px-4 py-2.5 border rounded-full cursor-pointer transition-colors ${
+												form.marketplaces[0] === market ? 'border-[#599161] bg-[#599161]/5' : 'border-border hover:border-[#599161]'
+											}`}
+										>
+											<input
+												type="radio"
+												name="marketplace"
+												checked={form.marketplaces[0] === market}
+												onChange={() => set('marketplaces', [market])}
+												className="w-3.5 h-3.5 accent-[#599161] cursor-pointer"
+											/>
+											<span className="text-xs font-semibold text-foreground">
+												{market === 'US' ? 'US Marketplace' : 'Canada Marketplace'}
+											</span>
+										</label>
+									))}
+								</div>
+								<p className="text-xs text-muted-foreground mt-2.5">
+									Pricing below is entered in <strong className="text-foreground">{currency}</strong>.
+								</p>
+							</div>
 
-				{/* Core fields */}
-				<div className="grid sm:grid-cols-2 gap-4">
-					<div className="sm:col-span-2">
-						<label className={label}>Name</label>
-						<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Max" />
-					</div>
-					<div>
-						<label className={label}>SKU</label>
-						<div className="flex gap-2">
-							<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-IPH15-BL-128" />
-							<button
-								type="button"
-								onClick={() => set('sku', generateSku(form))}
-								className={`${adminButtonGhost} shrink-0 px-3.5`}
-								title="Auto-generate SKU from brand, name, color and storage"
-							>
-								<Wand2 className="w-3.5 h-3.5" />
-								Auto
-							</button>
+							{/* Category + Product Type */}
+							<div className="grid sm:grid-cols-2 gap-4">
+								<div>
+									<label className={label}>Category</label>
+									<select value={form.category_id} onChange={(e) => set('category_id', e.target.value)} className={`${adminInput} cursor-pointer`}>
+										<option value="">No category</option>
+										{categories.map((c) => (
+											<option key={c.id} value={c.id}>{c.name}</option>
+										))}
+									</select>
+								</div>
+								<div>
+									<label className={label}>Product Type</label>
+									<select
+										value={form.product_type_id}
+										onChange={(e) => handleProductTypeChange(e.target.value)}
+										className={`${adminInput} cursor-pointer`}
+									>
+										<option value="">No product type</option>
+										{productTypes.map((t) => (
+											<option key={t.id} value={t.id}>{t.name}</option>
+										))}
+									</select>
+								</div>
+							</div>
+
+							{/* Core fields */}
+							<div className="grid sm:grid-cols-2 gap-4">
+								<div className="sm:col-span-2">
+									<label className={label}>Name</label>
+									<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Max" />
+								</div>
+								<div>
+									<label className={label}>SKU</label>
+									<div className="flex gap-2">
+										<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-IPH15-BL-128" />
+										<button
+											type="button"
+											onClick={() => set('sku', generateSku(form))}
+											className={`${adminButtonGhost} shrink-0 px-3.5`}
+											title="Auto-generate SKU from brand, name, color and storage"
+										>
+											<Wand2 className="w-3.5 h-3.5 text-[#599161]" />
+											Auto
+										</button>
+									</div>
+								</div>
+								<div>
+									<label className={label}>Brand</label>
+									<input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={adminInput} placeholder="Apple" />
+								</div>
+								<div>
+									<label className={label}>Condition</label>
+									<select value={form.condition} onChange={(e) => set('condition', e.target.value as ProductCondition)} className={`${adminInput} cursor-pointer`}>
+										<option value="new">New</option>
+										<option value="used">Used</option>
+										<option value="refurbished">Refurbished</option>
+									</select>
+								</div>
+								<div className="flex items-center gap-6 sm:col-span-2">
+									<label className="flex items-center gap-2.5 cursor-pointer">
+										<input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} className="w-4 h-4 accent-[#599161] cursor-pointer" />
+										<span className="text-xs font-semibold text-foreground">Active listing</span>
+									</label>
+								</div>
+							</div>
 						</div>
-					</div>
-					<div>
-						<label className={label}>Brand</label>
-						<input value={form.brand} onChange={(e) => set('brand', e.target.value)} className={adminInput} placeholder="Apple" />
-					</div>
-					<div>
-						<label className={label}>Condition</label>
-						<select value={form.condition} onChange={(e) => set('condition', e.target.value as ProductCondition)} className={`${adminInput} cursor-pointer`}>
-							<option value="new">New</option>
-							<option value="used">Used</option>
-							<option value="refurbished">Refurbished</option>
-						</select>
-					</div>
-					<div>
-						<label className={label}>Purchase Price (Cost, <strong className="text-foreground">{currency}</strong>)</label>
-						<input
-							type="number"
-							step="0.01"
-							value={form.purchase_price}
-							onChange={(e) => handlePurchasePriceChange(e.target.value)}
-							className={adminInput}
-							placeholder="600.00"
-						/>
-					</div>
-					<div>
-						<label className={label}>Profit %</label>
-						<input
-							type="number"
-							step="0.1"
-							value={profitPercent}
-							onChange={(e) => handleProfitPercentChange(e.target.value)}
-							className={adminInput}
-							placeholder="20"
-						/>
-					</div>
-					<div>
-						<label className={label}>Base Price (Selling Price, <strong className="text-foreground">{currency}</strong>)</label>
-						<input
-							type="number"
-							step="0.01"
-							value={form.base_price}
-							onChange={(e) => handleBasePriceChange(e.target.value)}
-							className={adminInput}
-							placeholder="999.00"
-						/>
-					</div>
-					<div className="sm:col-span-2">
-						<label className={label}>Description</label>
-						<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} />
-					</div>
-					<div className="flex items-center gap-6 sm:col-span-2">
-						<label className="flex items-center gap-2.5 cursor-pointer">
-							<input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active', e.target.checked)} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
-							<span className="text-xs font-semibold text-foreground">Active listing</span>
-						</label>
-					</div>
-				</div>
+					)}
 
-				{/* Mobile specifications editor — only for phone-type products */}
-				{showMobileSpecs && (
-					<div>
-						<label className={`${label} mb-3`}>Mobile Specifications</label>
-
-						<div className="flex flex-wrap items-center gap-2.5 mb-4">
-							<select
-								value={selectedPresetId}
-								onChange={(e) => setSelectedPresetId(e.target.value)}
-								className={`${adminInput} w-auto min-w-[220px] cursor-pointer`}
-							>
-								<option value="">Load a preset...</option>
-								{sortedPresets.map((p) => (
-									<option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>
-								))}
-							</select>
-							<button
-								type="button"
-								onClick={loadPreset}
-								disabled={!selectedPresetId}
-								className={`${adminButtonGhost} px-3.5 py-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-							>
-								Load Preset
-							</button>
-
-							{presetNameInput === null ? (
-								<button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
-									Save as Preset
-								</button>
-							) : (
-								<div className="flex items-center gap-2">
+					{/* PRICING & INVENTORY TAB */}
+					{activeTab === 'pricing' && (
+						<div className="space-y-6">
+							<div className="grid sm:grid-cols-3 gap-4">
+								<div>
+									<label className={label}>Purchase Price (Cost, <strong className="text-foreground">{currency}</strong>)</label>
 									<input
-										autoFocus
-										value={presetNameInput}
-										onChange={(e) => setPresetNameInput(e.target.value)}
-										placeholder="Preset name, e.g. iPhone 15 Pro"
-										className={`${adminInput} w-auto min-w-[200px]`}
+										type="number"
+										step="0.01"
+										value={form.purchase_price}
+										onChange={(e) => handlePurchasePriceChange(e.target.value)}
+										className={adminInput}
+										placeholder="600.00"
 									/>
-									<button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
-										{savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-										Save
+								</div>
+								<div>
+									<label className={label}>Profit %</label>
+									<input
+										type="number"
+										step="0.1"
+										value={profitPercent}
+										onChange={(e) => handleProfitPercentChange(e.target.value)}
+										className={adminInput}
+										placeholder="20"
+									/>
+								</div>
+								<div>
+									<label className={label}>Base Price (Selling Price, <strong className="text-foreground">{currency}</strong>)</label>
+									<input
+										type="number"
+										step="0.01"
+										value={form.base_price}
+										onChange={(e) => handleBasePriceChange(e.target.value)}
+										className={adminInput}
+										placeholder="999.00"
+									/>
+								</div>
+							</div>
+
+							<div className="sm:col-span-2">
+								<label className={label}>Description</label>
+								<textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className={`${adminInput} resize-none`} placeholder="Detailed description of the product..." />
+							</div>
+
+							{/* Variants grid */}
+							<div className="pt-2">
+								<div className="flex items-center justify-between mb-3">
+									<label className={label}>Variants — Stock & Price Adjustments</label>
+									<button
+										type="button"
+										onClick={() => set('variants', [...form.variants, { color: '', swatch_hex: '#cccccc', storage: '', ram: '', stock_quantity: 0, price_adjustment: 0 }])}
+										className={`${adminButtonGhost} px-3.5 py-1.5`}
+									>
+										<Plus className="w-3 h-3 text-[#599161]" />
+										Add Variant
 									</button>
-									<button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
-										Cancel
-									</button>
+								</div>
+								{form.variants.length > 0 ? (
+									<div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
+										<table className="w-full text-sm min-w-[480px]">
+											<thead>
+												<tr className="bg-secondary text-left">
+													<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Color</th>
+													<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">RAM</th>
+													<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Storage</th>
+													<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Stock Qty</th>
+													<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Adj. (± <strong className="text-foreground">{currency}</strong>)</th>
+													<th className="w-12" />
+												</tr>
+											</thead>
+											<tbody>
+												{form.variants.map((variant, index) => (
+													<tr key={index} className="border-t border-border">
+														<td className="px-3 py-2">
+															<div className="flex items-center gap-2">
+																<input
+																	type="color"
+																	value={variant.swatch_hex || '#cccccc'}
+																	onChange={(e) => {
+																		const next = [...form.variants]
+																		next[index] = { ...variant, swatch_hex: e.target.value }
+																		set('variants', next)
+																	}}
+																	className="w-8 h-8 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
+																	title="Swatch color"
+																/>
+																<input
+																	value={variant.color}
+																	onChange={(e) => {
+																		const next = [...form.variants]
+																		next[index] = { ...variant, color: e.target.value }
+																		set('variants', next)
+																	}}
+																	className={adminInput}
+																	placeholder="Midnight Blue"
+																/>
+															</div>
+														</td>
+														<td className="px-3 py-2">
+															<input
+																value={variant.ram}
+																onChange={(e) => {
+																	const next = [...form.variants]
+																	next[index] = { ...variant, ram: e.target.value }
+																	set('variants', next)
+																}}
+																className={adminInput}
+																placeholder="8GB"
+															/>
+														</td>
+														<td className="px-3 py-2">
+															<input
+																value={variant.storage}
+																onChange={(e) => {
+																	const next = [...form.variants]
+																	next[index] = { ...variant, storage: e.target.value }
+																	set('variants', next)
+																}}
+																className={adminInput}
+																placeholder="128GB"
+															/>
+														</td>
+														<td className="px-3 py-2">
+															<input
+																type="number"
+																min={0}
+																value={variant.stock_quantity}
+																onChange={(e) => {
+																	const next = [...form.variants]
+																	next[index] = { ...variant, stock_quantity: Number(e.target.value) }
+																	set('variants', next)
+																}}
+																className={adminInput}
+															/>
+														</td>
+														<td className="px-3 py-2">
+															<input
+																type="number"
+																step="0.01"
+																value={variant.price_adjustment}
+																onChange={(e) => {
+																	const next = [...form.variants]
+																	next[index] = { ...variant, price_adjustment: Number(e.target.value) }
+																	set('variants', next)
+																}}
+																className={adminInput}
+															/>
+														</td>
+														<td className="px-3 py-2 text-center">
+															<button
+																type="button"
+																onClick={() => set('variants', form.variants.filter((_, i) => i !== index))}
+																className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+																aria-label="Remove variant"
+															>
+																<Trash2 className="w-4 h-4" />
+															</button>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								) : (
+									<p className="text-xs text-muted-foreground py-2 pl-1">No variants added yet.</p>
+								)}
+							</div>
+						</div>
+					)}
+
+					{/* SPECIFICATIONS TAB */}
+					{activeTab === 'specs' && (
+						<div className="space-y-6">
+							{/* Mobile specifications editor — only for phone-type products */}
+							{showMobileSpecs && (
+								<div>
+									<label className={`${label} mb-3`}>Mobile Specifications</label>
+
+									<div className="flex flex-wrap items-center gap-2.5 mb-4">
+										<select
+											value={selectedPresetId}
+											onChange={(e) => setSelectedPresetId(e.target.value)}
+											className={`${adminInput} w-auto min-w-[220px] cursor-pointer`}
+										>
+											<option value="">Load a preset...</option>
+											{sortedPresets.map((p) => (
+												<option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>
+											))}
+										</select>
+										<button
+											type="button"
+											onClick={loadPreset}
+											disabled={!selectedPresetId}
+											className={`${adminButtonGhost} px-3.5 py-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+										>
+											Load Preset
+										</button>
+
+										{presetNameInput === null ? (
+											<button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
+												Save as Preset
+											</button>
+										) : (
+											<div className="flex items-center gap-2">
+												<input
+													autoFocus
+													value={presetNameInput}
+													onChange={(e) => setPresetNameInput(e.target.value)}
+													placeholder="Preset name, e.g. iPhone 15 Pro"
+													className={`${adminInput} w-auto min-w-[200px]`}
+												/>
+												<button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
+													{savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+													Save
+												</button>
+												<button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
+													Cancel
+												</button>
+											</div>
+										)}
+									</div>
+									<p className="text-xs text-muted-foreground -mt-2 mb-4">
+										Loading a preset replaces the fields below with its saved values.
+									</p>
+
+									<MobileSpecsForm
+										value={form.mobile_specifications}
+										brand={form.brand}
+										onChange={(next) => set('mobile_specifications', next)}
+									/>
+								</div>
+							)}
+
+							{/* Spec Template editor — only for non-phone-type products */}
+							{!showMobileSpecs && (
+								<div>
+									{templatesForType.length > 0 ? (
+										<div>
+											<label className={`${label} mb-3`}>Specifications</label>
+											<SpecTemplateSection
+												templates={templatesForType}
+												selectedTemplateId={form.spec_template_id}
+												onSelectTemplate={handleSpecTemplateChange}
+												onImport={importTemplateFields}
+												entries={form.template_spec_entries}
+												onEntriesChange={(next) => set('template_spec_entries', next)}
+												custom={form.template_custom_specs}
+												onCustomChange={(next) => set('template_custom_specs', next)}
+											/>
+										</div>
+									) : (
+										<p className="text-xs text-muted-foreground py-4">No specification templates match this product type.</p>
+									)}
 								</div>
 							)}
 						</div>
-						<p className="text-xs text-muted-foreground -mt-2 mb-4">
-							Loading a preset replaces the fields below with its saved values — still fully editable per-product afterward.
-						</p>
-
-						<MobileSpecsForm
-							value={form.mobile_specifications}
-							brand={form.brand}
-							onChange={(next) => set('mobile_specifications', next)}
-						/>
-					</div>
-				)}
-
-				{/* Spec Template editor — only for non-phone-type products that have at least one template */}
-				{!showMobileSpecs && templatesForType.length > 0 && (
-					<div>
-						<label className={`${label} mb-3`}>Specifications</label>
-						<SpecTemplateSection
-							templates={templatesForType}
-							selectedTemplateId={form.spec_template_id}
-							onSelectTemplate={handleSpecTemplateChange}
-							onImport={importTemplateFields}
-							entries={form.template_spec_entries}
-							onEntriesChange={(next) => set('template_spec_entries', next)}
-							custom={form.template_custom_specs}
-							onCustomChange={(next) => set('template_custom_specs', next)}
-						/>
-					</div>
-				)}
-
-				{/* Variants grid */}
-				<div>
-					<div className="flex items-center justify-between mb-3">
-						<label className={label}>Variants — Stock & Price Adjustments</label>
-						<button
-							type="button"
-							onClick={() => set('variants', [...form.variants, { color: '', swatch_hex: '#cccccc', storage: '', ram: '', stock_quantity: 0, price_adjustment: 0 }])}
-							className={`${adminButtonGhost} px-3.5 py-1.5`}
-						>
-							<Plus className="w-3 h-3" />
-							Add Variant
-						</button>
-					</div>
-					{form.variants.length > 0 && (
-						<div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
-							<table className="w-full text-sm min-w-[480px]">
-								<thead>
-									<tr className="bg-secondary text-left">
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Color</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">RAM</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Storage</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Stock Qty</th>
-										<th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Adj. (± <strong className="text-foreground">{currency}</strong>)</th>
-										<th className="w-12" />
-									</tr>
-								</thead>
-								<tbody>
-									{form.variants.map((variant, index) => (
-										<tr key={index} className="border-t border-border">
-											<td className="px-3 py-2">
-												<div className="flex items-center gap-2">
-													<input
-														type="color"
-														value={variant.swatch_hex || '#cccccc'}
-														onChange={(e) => {
-															const next = [...form.variants]
-															next[index] = { ...variant, swatch_hex: e.target.value }
-															set('variants', next)
-														}}
-														className="w-8 h-8 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
-														title="Swatch color"
-													/>
-													<input
-														value={variant.color}
-														onChange={(e) => {
-															const next = [...form.variants]
-															next[index] = { ...variant, color: e.target.value }
-															set('variants', next)
-														}}
-														className={adminInput}
-														placeholder="Midnight Blue"
-													/>
-												</div>
-											</td>
-											<td className="px-3 py-2">
-												<input
-													value={variant.ram}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, ram: e.target.value }
-														set('variants', next)
-													}}
-													className={adminInput}
-													placeholder="8GB"
-												/>
-											</td>
-											<td className="px-3 py-2">
-												<input
-													value={variant.storage}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, storage: e.target.value }
-														set('variants', next)
-													}}
-													className={adminInput}
-													placeholder="128GB"
-												/>
-											</td>
-											<td className="px-3 py-2">
-												<input
-													type="number"
-													min={0}
-													value={variant.stock_quantity}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, stock_quantity: Number(e.target.value) }
-														set('variants', next)
-													}}
-													className={adminInput}
-												/>
-											</td>
-											<td className="px-3 py-2">
-												<input
-													type="number"
-													step="0.01"
-													value={variant.price_adjustment}
-													onChange={(e) => {
-														const next = [...form.variants]
-														next[index] = { ...variant, price_adjustment: Number(e.target.value) }
-														set('variants', next)
-													}}
-													className={adminInput}
-												/>
-											</td>
-											<td className="px-3 py-2">
-												<button
-													type="button"
-													onClick={() => set('variants', form.variants.filter((_, i) => i !== index))}
-													className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-													aria-label="Remove variant"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
 					)}
-				</div>
 
-
-
-				{/* Image manager — grouped by variant color, uploads/new rows tag to the selected color */}
-				<div>
-					<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-						<label className={label}>Images</label>
-						<div className="flex items-center gap-2">
-							<select
-								value={uploadVariantColor}
-								onChange={(e) => setUploadVariantColor(e.target.value)}
-								className={`${adminInput} w-52 cursor-pointer`}
-							>
-								<option value="">Shared (all colors)</option>
-								{form.variants
-									.map((v) => v.color.trim())
-									.filter(Boolean)
-									.map((color) => (
-										<option key={color} value={color}>{color}</option>
-									))}
-							</select>
-							<label className={`${adminButtonGhost} px-3.5 py-2 cursor-pointer`}>
-								{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-								Upload
-								<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleUpload(e.target.files); e.target.value = '' }} />
-							</label>
-							<button
-								type="button"
-								onClick={() =>
-									set('images', [
-										...form.images,
-										{ image_url: '', sort_order: form.images.length, is_primary: form.images.length === 0, variant_color: uploadVariantColor },
-									])
-								}
-								className={`${adminButtonGhost} px-3.5 py-1.5`}
-							>
-								<Plus className="w-3 h-3" />
-								Add Image URL
-							</button>
-						</div>
-					</div>
-					<div className="space-y-5">
-						{[
-							{ color: '', label: 'Shared (all colors)' },
-							...form.variants
-								.map((v) => v.color.trim())
-								.filter(Boolean)
-								.filter((color, i, arr) => arr.indexOf(color) === i)
-								.map((color) => ({ color, label: color })),
-						].map((group) => {
-							const rows = form.images
-								.map((image, index) => ({ image, index }))
-								.filter(({ image }) => image.variant_color.trim() === group.color)
-							if (group.color && rows.length === 0) return null
-							return (
-								<div key={group.color || '__shared__'}>
-									<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground mb-2">{group.label}</p>
-									<div className="space-y-2.5">
-										{rows.map(({ image, index }, groupPos) => (
-											<div key={index} className="flex items-center gap-2.5">
-												<div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0 border border-border">
-													{image.image_url && <img src={image.image_url} alt="" className="w-full h-full object-cover" />}
-												</div>
-												<input
-													placeholder="Paste image URL"
-													value={image.image_url}
-													onChange={(e) => {
-														const next = [...form.images]
-														next[index] = { ...image, image_url: e.target.value }
-														set('images', next)
-													}}
-													className={`${adminInput} flex-1`}
-												/>
-												<button
-													type="button"
-													onClick={() => {
-														set('images', form.images.map((img, i) => ({ ...img, is_primary: i === index })))
-													}}
-													className={`p-2.5 rounded-full transition-all cursor-pointer ${
-														image.is_primary ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-muted'
-													}`}
-													title="Set as primary/thumbnail image"
-												>
-													<Star className={`w-4 h-4 ${image.is_primary ? 'fill-current' : ''}`} />
-												</button>
-												<div className="flex flex-col">
-													<button
-														type="button"
-														disabled={groupPos === 0}
-														onClick={() => {
-															const prevIndex = rows[groupPos - 1].index
-															const next = [...form.images]
-															;[next[prevIndex], next[index]] = [next[index], next[prevIndex]]
-															set('images', next)
-														}}
-														className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
-														aria-label="Move up"
-													>
-														▲
-													</button>
-													<button
-														type="button"
-														disabled={groupPos === rows.length - 1}
-														onClick={() => {
-															const nextIndex = rows[groupPos + 1].index
-															const next = [...form.images]
-															;[next[nextIndex], next[index]] = [next[index], next[nextIndex]]
-															set('images', next)
-														}}
-														className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
-														aria-label="Move down"
-													>
-														▼
-													</button>
-												</div>
-												<button
-													type="button"
-													onClick={() => set('images', form.images.filter((_, i) => i !== index))}
-													className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-													aria-label="Remove image"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
-											</div>
-										))}
-										{rows.length === 0 && (
-											<p className="text-xs text-muted-foreground">No images yet.</p>
-										)}
+					{/* MEDIA & IMAGES TAB */}
+					{activeTab === 'media' && (
+						<div className="space-y-6">
+							<div>
+								<div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+									<label className={label}>Images</label>
+									<div className="flex flex-wrap items-center gap-2">
+										<select
+											value={uploadVariantColor}
+											onChange={(e) => setUploadVariantColor(e.target.value)}
+											className={`${adminInput} w-52 cursor-pointer`}
+										>
+											<option value="">Shared (all colors)</option>
+											{form.variants
+												.map((v) => v.color.trim())
+												.filter(Boolean)
+												.map((color) => (
+													<option key={color} value={color}>{color}</option>
+												))}
+										</select>
+										<label className={`${adminButtonGhost} px-3.5 py-2 cursor-pointer whitespace-nowrap shrink-0`}>
+											{uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5 text-[#599161]" />}
+											Upload
+											<input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { handleUpload(e.target.files); e.target.value = '' }} />
+										</label>
+										<button
+											type="button"
+											onClick={() =>
+												set('images', [
+													...form.images,
+													{ image_url: '', sort_order: form.images.length, is_primary: form.images.length === 0, variant_color: uploadVariantColor },
+												])
+											}
+											className={`${adminButtonGhost} px-3.5 py-1.5 whitespace-nowrap shrink-0`}
+										>
+											<Plus className="w-3 h-3 text-[#599161]" />
+											Add Image URL
+										</button>
 									</div>
 								</div>
-							)
-						})}
-					</div>
+								<div className="space-y-5">
+									{[
+										{ color: '', label: 'Shared (all colors)' },
+										...form.variants
+											.map((v) => v.color.trim())
+											.filter(Boolean)
+											.filter((color, i, arr) => arr.indexOf(color) === i)
+											.map((color) => ({ color, label: color })),
+									].map((group) => {
+										const rows = form.images
+											.map((image, index) => ({ image, index }))
+											.filter(({ image }) => image.variant_color.trim() === group.color)
+										if (group.color && rows.length === 0) return null
+										return (
+											<div key={group.color || '__shared__'}>
+												<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground mb-2">{group.label}</p>
+												<div className="space-y-2.5">
+													{rows.map(({ image, index }, groupPos) => (
+														<div key={index} className="flex items-center gap-2.5">
+															<div className="w-12 h-12 rounded-xl overflow-hidden bg-muted shrink-0 border border-border">
+																{image.image_url && <img src={image.image_url} alt="" className="w-full h-full object-cover" />}
+															</div>
+															<input
+																placeholder="Paste image URL"
+																value={image.image_url}
+																onChange={(e) => {
+																	const next = [...form.images]
+																	next[index] = { ...image, image_url: e.target.value }
+																	set('images', next)
+																}}
+																className={`${adminInput} flex-1`}
+															/>
+															<button
+																type="button"
+																onClick={() => {
+																	set('images', form.images.map((img, i) => ({ ...img, is_primary: i === index })))
+																}}
+																className={`p-2.5 rounded-full transition-all cursor-pointer ${
+																	image.is_primary ? 'text-[#599161] bg-[#599161]/10' : 'text-muted-foreground hover:text-[#599161] hover:bg-muted'
+																}`}
+																title="Set as primary/thumbnail image"
+															>
+																<Star className={`w-4 h-4 ${image.is_primary ? 'fill-current' : ''}`} />
+															</button>
+															<div className="flex flex-col">
+																<button
+																	type="button"
+																	disabled={groupPos === 0}
+																	onClick={() => {
+																		const prevIndex = rows[groupPos - 1].index
+																		const next = [...form.images]
+																		;[next[prevIndex], next[index]] = [next[index], next[prevIndex]]
+																		set('images', next)
+																	}}
+																	className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
+																	aria-label="Move up"
+																>
+																	▲
+																</button>
+																<button
+																	type="button"
+																	disabled={groupPos === rows.length - 1}
+																	onClick={() => {
+																		const nextIndex = rows[groupPos + 1].index
+																		const next = [...form.images]
+																		;[next[nextIndex], next[index]] = [next[index], next[nextIndex]]
+																		set('images', next)
+																	}}
+																	className="text-muted-foreground hover:text-foreground disabled:opacity-30 cursor-pointer text-xs leading-none py-0.5"
+																	aria-label="Move down"
+																>
+																	▼
+																</button>
+															</div>
+															<button
+																type="button"
+																onClick={() => set('images', form.images.filter((_, i) => i !== index))}
+																className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+																aria-label="Remove image"
+															>
+																<Trash2 className="w-4 h-4" />
+															</button>
+														</div>
+													))}
+													{rows.length === 0 && (
+														<p className="text-xs text-muted-foreground">No images yet.</p>
+													)}
+												</div>
+											</div>
+										)
+									})}
+								</div>
+							</div>
+						</div>
+					)}
 				</div>
 
 				{/* Actions */}
