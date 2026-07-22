@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
+import { sendSellRequestStatusEmail } from '@/lib/email/sell-requests'
+import type { SellPhoneStatus } from '@/lib/types'
 
 const VALID_STATUSES = [
 	'submitted',
@@ -92,6 +94,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			note,
 			changed_by: 'admin',
 		})
+
+		const { data: updated } = await service
+			.from('sell_phone_requests')
+			.select('id, contact_email, device_brand, device_model, condition, offered_price, payout_amount, rejection_reason')
+			.eq('id', id)
+			.maybeSingle()
+		if (updated) {
+			await sendSellRequestStatusEmail(updated, body.status as SellPhoneStatus)
+		}
 	}
 
 	return NextResponse.json({ success: true })

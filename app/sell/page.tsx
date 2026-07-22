@@ -158,6 +158,12 @@ export default function SellYourPhonePage() {
 				)
 			}
 
+			fetch('/api/sell-requests/notify-new', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: requestId }),
+			}).catch(() => undefined)
+
 			setSubmittedRequestId(requestId)
 			setSubmitted(true)
 			window.scrollTo({ top: 0, behavior: 'smooth' })

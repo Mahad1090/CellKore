@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('repair_requests')
-		.select('id, user_id, status, contact_email, contact_phone, quote_total, shipping_options')
+		.select('id, user_id, status, contact_email, contact_phone, device_brand, device_model, quote_items, quote_total, quote_currency, shipping_options')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })

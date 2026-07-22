@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient, generateOrderReference } from '@/lib/supabase-server'
 import { taxRateForCountry } from '@/lib/tax'
+import { sendOrderConfirmationEmail, sendNewOrderAdminAlert } from '@/lib/email/orders'
 
 export interface CheckoutItemInput {
 	productId: string
@@ -177,18 +178,22 @@ export interface ShippingAddressInput {
 	country: string
 }
 
-export async function computeTax(
-	service: SupabaseClient,
-	subtotalAfterDiscount: number,
-	address: ShippingAddressInput
-): Promise<number> {
+export async function getTaxRateForAddress(service: SupabaseClient, address: ShippingAddressInput): Promise<number> {
 	const { data } = await service
 		.from('tax_rates')
 		.select('country_code, tax_rate, is_active')
 		.eq('country_code', (address.country ?? '').toUpperCase())
 		.eq('is_active', true)
 		.maybeSingle()
-	const rate = taxRateForCountry(data ? [data] : [], address.country ?? '')
+	return taxRateForCountry(data ? [data] : [], address.country ?? '')
+}
+
+export async function computeTax(
+	service: SupabaseClient,
+	subtotalAfterDiscount: number,
+	address: ShippingAddressInput
+): Promise<number> {
+	const rate = await getTaxRateForAddress(service, address)
 	return Math.round(subtotalAfterDiscount * rate * 100) / 100
 }
 
@@ -201,6 +206,7 @@ export interface FinalizeOrderParams {
 	shippingAddress: ShippingAddressInput
 	gift?: GiftOptions | null
 	paymentProvider: string
+	customerEmail?: string | null
 }
 
 /**
@@ -300,6 +306,44 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 				.maybeSingle()
 			if (cart) await service.from('cart_items').delete().eq('cart_id', cart.id)
 		}
+
+		// Reconstruct the price breakdown for the receipt emails. The exact
+		// promo-code discount amount isn't available this far downstream, but
+		// it's fully derivable: tax was applied to (subtotal - discount), so
+		// working backwards from the known charged total recovers both.
+		const subtotal = params.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
+		const extras = giftFees(params.gift)
+		const rate = await getTaxRateForAddress(service, params.shippingAddress)
+		const discountedSubtotal = Math.round(((params.total - extras) / (1 + rate)) * 100) / 100
+		const discount = Math.max(0, Math.round((subtotal - discountedSubtotal) * 100) / 100)
+		const tax = Math.max(0, Math.round((params.total - extras - discountedSubtotal) * 100) / 100)
+
+		if (params.customerEmail) {
+			await sendOrderConfirmationEmail({
+				to: params.customerEmail,
+				reference: params.reference,
+				items: params.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice })),
+				subtotal,
+				discount,
+				tax,
+				extras,
+				total: params.total,
+				marketplace: params.marketplace,
+				shippingAddress: params.shippingAddress,
+			})
+		}
+		await sendNewOrderAdminAlert({
+			reference: params.reference,
+			subtotal,
+			discount,
+			tax,
+			extras,
+			total: params.total,
+			marketplace: params.marketplace,
+			itemCount: params.items.length,
+			customerEmail: params.customerEmail,
+			shippingAddress: params.shippingAddress,
+		})
 
 		return { orderId: order.id }
 	} catch (err) {

@@ -16,7 +16,7 @@ export async function markRepairPaid(
 ): Promise<void> {
 	const { data: existing } = await service
 		.from('repair_requests')
-		.select('id, contact_email, contact_phone, quote_total, shipping_cost')
+		.select('id, contact_email, contact_phone, device_brand, device_model, quote_total, shipping_cost')
 		.eq('id', requestId)
 		.maybeSingle()
 	if (!existing) return

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase-server'
 import { matchesContact } from '@/lib/sell-request-contact'
+import { sendSellRequestShipmentAdminAlert } from '@/lib/email/sell-requests'
 
 // Customer-facing endpoint: once a customer has accepted the offer, they
 // report how they shipped the device to us. Runs server-side
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('sell_phone_requests')
-		.select('id, user_id, status, contact_email, contact_phone')
+		.select('id, user_id, status, contact_email, contact_phone, device_brand, device_model')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
@@ -66,6 +67,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 		note: `Courier: ${courier} · Tracking #: ${tracking}`,
 		changed_by: 'customer',
 	})
+
+	await sendSellRequestShipmentAdminAlert({ ...existing, courier, tracking })
 
 	return NextResponse.json({ success: true })
 }

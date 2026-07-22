@@ -5,7 +5,6 @@ import { Phone, Mail, MessageCircle, Check, Loader2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
-import { supabase } from '@/lib/supabase'
 import { fetchCountryContacts } from '@/lib/data'
 import type { CountryContactInfo } from '@/lib/types'
 
@@ -35,15 +34,19 @@ export default function ContactPage() {
 		}
 		setSubmitting(true)
 		try {
-			const { error } = await supabase.from('contact_inquiries').insert({
-				name: form.name.trim(),
-				email: form.email.trim(),
-				phone: form.phone.trim() || null,
-				country: form.country,
-				message: form.message.trim(),
-				status: 'new',
+			const res = await fetch('/api/contact', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: form.name.trim(),
+					email: form.email.trim(),
+					phone: form.phone.trim() || null,
+					country: form.country,
+					message: form.message.trim(),
+				}),
 			})
-			if (error) throw error
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
 			setSubmitted(true)
 		} catch (err) {
 			toast({

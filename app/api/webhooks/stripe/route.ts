@@ -80,6 +80,7 @@ export async function POST(request: NextRequest) {
 				},
 				gift: JSON.parse(meta.gift || 'null'),
 				paymentProvider: 'stripe-webhook',
+				customerEmail: session.customer_details?.email ?? session.customer_email ?? null,
 			})
 		} catch {
 			// finalizePaidOrder already flagged the incident to admin_logs.

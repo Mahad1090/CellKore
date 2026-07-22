@@ -70,6 +70,7 @@ export async function POST(request: NextRequest) {
 			shippingAddress: checkout.shippingAddress,
 			gift: checkout.gift,
 			paymentProvider: 'paypal-capture',
+			customerEmail: capture.payer?.email_address ?? null,
 		})
 
 		return NextResponse.json({ success: true, orderId, orderReference })

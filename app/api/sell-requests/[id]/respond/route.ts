@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createServiceClient } from '@/lib/supabase-server'
 import { matchesContact } from '@/lib/sell-request-contact'
+import { sendSellRequestCustomerDecisionAdminAlert } from '@/lib/email/sell-requests'
 
 // Customer-facing endpoint: once admin has approved a request and set an
 // offered_price, the customer accepts or rejects that offer here. Accepting
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('sell_phone_requests')
-		.select('id, user_id, status, offered_price, contact_email, contact_phone')
+		.select('id, user_id, status, offered_price, contact_email, contact_phone, device_brand, device_model')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
@@ -59,6 +60,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 				: 'Customer declined the offer',
 		changed_by: 'customer',
 	})
+
+	await sendSellRequestCustomerDecisionAdminAlert(existing, decision)
 
 	return NextResponse.json({ success: true })
 }

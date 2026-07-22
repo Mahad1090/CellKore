@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('repair_requests')
-		.select('id, contact_email, contact_phone')
+		.select('id, contact_email, contact_phone, device_brand, device_model')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
@@ -48,7 +48,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 		note: `Carrier: ${carrier} · Tracking #: ${trackingNumber}`,
 		changed_by: 'admin',
 	})
-	await notifyRepairStatusChange(existing, 'shipped_back')
+	await notifyRepairStatusChange(
+		{ ...existing, outbound_carrier: carrier, outbound_tracking_number: trackingNumber },
+		'shipped_back'
+	)
 
 	return NextResponse.json({ success: true })
 }

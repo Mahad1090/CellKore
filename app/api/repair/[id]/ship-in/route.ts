@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('repair_requests')
-		.select('id, user_id, status, contact_email, contact_phone')
+		.select('id, user_id, status, contact_email, contact_phone, device_brand, device_model')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
@@ -47,7 +47,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 		note: `Courier: ${courier} · Tracking #: ${tracking}`,
 		changed_by: 'customer',
 	})
-	await notifyRepairStatusChange(existing, 'device_shipped')
+	await notifyRepairStatusChange(
+		{ ...existing, inbound_carrier: courier, inbound_tracking_number: tracking },
+		'device_shipped'
+	)
 
 	return NextResponse.json({ success: true })
 }
