@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, Megaphone
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
@@ -45,6 +45,7 @@ const navGroups: NavGroup[] = [
 		title: 'MANAGEMENT',
 		items: [
 			{ label: 'CMS Content', href: '/admin/content', icon: FileText },
+			{ label: 'Announcement Bar', href: '/admin/announcements', icon: Megaphone },
 			{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },
 			{ label: 'Marketing', href: '/admin/newsletter', icon: MailPlus, permission: 'newsletter:read' },
 			{ label: 'Admin Users', href: '/admin/admin-users', icon: Shield, permission: 'admin-users:write' },

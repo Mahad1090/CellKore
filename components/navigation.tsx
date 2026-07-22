@@ -10,9 +10,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 import { useMarketplace, type Marketplace } from '@/contexts/marketplace-context'
-import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
+import { fetchActiveAnnouncements, fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
 import { getLocalCart, getWishlist } from '@/lib/cart'
-import type { Category, Product } from '@/lib/types'
+import type { Announcement, Category, Product } from '@/lib/types'
 import { primaryImage } from '@/lib/types'
 
 const MARKETPLACE_OPTIONS: { value: Marketplace; label: string }[] = [
@@ -72,6 +72,7 @@ export function Navigation() {
 	const [searchModalOpen, setSearchModalOpen] = useState(false)
 	const [marketMenuOpen, setMarketMenuOpen] = useState(false)
 	const [categories, setCategories] = useState<Category[]>([])
+	const [announcements, setAnnouncements] = useState<Announcement[]>([])
 	const [intBannerDismissed, setIntBannerDismissed] = useState(false)
 	const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [profileMenuOpen, setProfileMenuOpen] = useState(false)
@@ -107,6 +108,11 @@ export function Navigation() {
 	// Dynamic category navigation from the database
 	useEffect(() => {
 		fetchActiveCategories().then(setCategories).catch(() => setCategories([]))
+	}, [])
+
+	// Admin-editable announcement bar messages
+	useEffect(() => {
+		fetchActiveAnnouncements().then(setAnnouncements).catch(() => setAnnouncements([]))
 	}, [])
 
 	useEffect(() => {
@@ -155,22 +161,24 @@ export function Navigation() {
 	return (
 		<div className="w-full">
 			{/* Premium Announcement Bar */}
-			<div className="w-full bg-accent border-b border-accent/20 overflow-hidden py-3 text-accent-foreground">
-				<div className="relative flex overflow-hidden">
-					<div className="animate-marquee whitespace-nowrap flex gap-16 text-[10px] tracking-[0.25em] font-sans uppercase font-medium">
-						{[0, 1].map((dup) => (
-							<span key={dup} className="flex gap-16">
-								<span>Complimentary Express Delivery on All Orders</span>
-								<span className="opacity-50">•</span>
-								<span>Certified Authentic Inventory & Grading</span>
-								<span className="opacity-50">•</span>
-								<span>Wholesale Contracts & Bulk Pricing Available</span>
-								<span className="opacity-50">•</span>
-							</span>
-						))}
+			{announcements.length > 0 && (
+				<div className="w-full bg-accent border-b border-accent/20 overflow-hidden py-3 text-accent-foreground">
+					<div className="relative flex overflow-hidden">
+						<div className="animate-marquee whitespace-nowrap flex gap-16 text-[10px] tracking-[0.25em] font-sans uppercase font-medium">
+							{[0, 1].map((dup) => (
+								<span key={dup} className="flex gap-16">
+									{announcements.map((announcement) => (
+										<span key={announcement.id} className="flex gap-16">
+											<span>{announcement.text}</span>
+											<span className="opacity-50">•</span>
+										</span>
+									))}
+								</span>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
+			)}
 
 			{/* International visitor marketplace banner */}
 			{isInternational && !intBannerDismissed && (

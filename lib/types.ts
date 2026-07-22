@@ -70,6 +70,14 @@ export interface ProductType {
 	created_at: string
 }
 
+export interface Announcement {
+	id: string
+	text: string
+	sort_order: number
+	is_active: boolean
+	created_at: string
+}
+
 export interface SpecTemplateField {
 	id?: string
 	key: string

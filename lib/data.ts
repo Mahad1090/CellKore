@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Marketplace } from '@/contexts/marketplace-context'
 import type {
+	Announcement,
 	Category,
 	CmsPage,
 	CountryContactInfo,
@@ -27,6 +28,16 @@ const PRODUCT_SELECT = `
 export async function fetchActiveCategories(): Promise<Category[]> {
 	const { data, error } = await supabase
 		.from('categories')
+		.select('*')
+		.eq('is_active', true)
+		.order('sort_order', { ascending: true })
+	if (error) throw error
+	return data ?? []
+}
+
+export async function fetchActiveAnnouncements(): Promise<Announcement[]> {
+	const { data, error } = await supabase
+		.from('announcements')
 		.select('*')
 		.eq('is_active', true)
 		.order('sort_order', { ascending: true })
