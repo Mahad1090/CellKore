@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, ArrowUpRight, ChevronLeft, ChevronRight, X
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
@@ -21,7 +21,7 @@ const navGroups: NavGroup[] = [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 			{ label: 'Trade-ins', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
-			{ label: 'Customers', href: '/admin/inquiries', icon: Users, permission: 'inquiries:read' },
+		{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },
 			{ label: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'analytics:read' },
 		],
 	},
@@ -30,8 +30,7 @@ const navGroups: NavGroup[] = [
 		items: [
 			{ label: 'Products', href: '/admin/products', icon: Package, permission: 'products:read' },
 			{ label: 'Product Types', href: '/admin/product-types', icon: Layers, permission: 'products:read' },
-			{ label: 'Spec Templates', href: '/admin/spec-templates', icon: ListChecks, permission: 'products:read' },
-			{ label: 'Mobile Spec Presets', href: '/admin/mobile-spec-presets', icon: Smartphone, permission: 'products:read' },
+			{ label: 'Specs', href: '/admin/specs', icon: ListChecks, permission: 'products:read' },
 			{ label: 'Wholesale Lots', href: '/admin/wholesale', icon: Boxes, permission: 'products:read' },
 			{ label: 'Categories', href: '/admin/categories', icon: Tag, permission: 'products:read' },
 		],

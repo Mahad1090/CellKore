@@ -472,13 +472,18 @@ export function WholesaleFormModal({
 											</td>
 											<td className="px-2 py-2">
 												<div className="flex items-center gap-1.5">
-													<input
-														type="color"
-														value={variant.swatch_hex || '#cccccc'}
-														onChange={(e) => setVariant(index, { swatch_hex: e.target.value })}
-														className="w-7 h-7 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
-														title="Swatch color"
-													/>
+													<div
+														className="relative w-7 h-7 rounded-full border border-[#E9ECEA] shadow-3xs shrink-0 overflow-hidden cursor-pointer"
+														style={{ backgroundColor: variant.swatch_hex || '#cccccc' }}
+													>
+														<input
+															type="color"
+															value={variant.swatch_hex || '#cccccc'}
+															onChange={(e) => setVariant(index, { swatch_hex: e.target.value })}
+															className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+															title="Swatch color"
+														/>
+													</div>
 													<input value={variant.color} onChange={(e) => setVariant(index, { color: e.target.value })} className={adminInput} placeholder="Midnight Blue" />
 												</div>
 											</td>
@@ -531,70 +536,7 @@ export function WholesaleFormModal({
 					)}
 				</div>
 
-				{/* Specifications editor */}
-				<div>
-					<div className="flex items-center justify-between mb-3">
-						<label className={label}>Specifications</label>
-						<button
-							type="button"
-							onClick={() => set('specs', [...form.specs, { key: DEFAULT_SPEC_KEYS[0], customKey: '', value: '' }])}
-							className={`${adminButtonGhost} px-3.5 py-1.5`}
-						>
-							<Plus className="w-3 h-3" />
-							Add Spec
-						</button>
-					</div>
-					<div className="space-y-2.5">
-						{form.specs.map((spec, index) => (
-							<div key={index} className="flex flex-wrap gap-2.5 items-center">
-								<select
-									value={spec.key}
-									onChange={(e) => {
-										const next = [...form.specs]
-										next[index] = { ...spec, key: e.target.value }
-										set('specs', next)
-									}}
-									className={`${adminInput} w-44 cursor-pointer`}
-								>
-									{DEFAULT_SPEC_KEYS.map((key) => (
-										<option key={key} value={key}>{key}</option>
-									))}
-									<option value={CUSTOM_KEY}>Custom Spec Key</option>
-								</select>
-								{spec.key === CUSTOM_KEY && (
-									<input
-										placeholder="Custom key"
-										value={spec.customKey}
-										onChange={(e) => {
-											const next = [...form.specs]
-											next[index] = { ...spec, customKey: e.target.value }
-											set('specs', next)
-										}}
-										className={`${adminInput} w-40`}
-									/>
-								)}
-								<input
-									placeholder="Value"
-									value={spec.value}
-									onChange={(e) => {
-										const next = [...form.specs]
-										next[index] = { ...spec, value: e.target.value }
-										set('specs', next)
-									}}
-									className={`${adminInput} flex-1 min-w-[140px]`}
-								/>
-								<button
-									type="button"
-									onClick={() => set('specs', form.specs.filter((_, i) => i !== index))}
-									className="p-2.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-									aria-label="Remove specification"
-								>
-									<Trash2 className="w-4 h-4" />
-								</button>
-							</div>
-						))}
-					</div>
-				</div>
+
 
 				{/* Image manager */}
 				<div>

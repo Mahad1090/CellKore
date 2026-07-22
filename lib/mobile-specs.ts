@@ -39,7 +39,7 @@ export const MOBILE_SPEC_CATEGORIES: SpecCategory[] = [
 			text('model', 'Model'),
 			text('series', 'Series'),
 			text('releaseDate', 'Release Date'),
-			text('launchPrice', 'Launch Price'),
+
 			text('operatingSystem', 'Operating System'),
 			text('buildMaterial', 'Build Material'),
 			text('dimensions', 'Dimensions'),

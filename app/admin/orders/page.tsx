@@ -418,7 +418,16 @@ function OrderRow({
 				<td className="px-5 py-3.5 font-mono text-xs font-bold text-[#599161]">
 					{order.reference ?? '—'}
 				</td>
-				<td className="px-5 py-3.5 text-foreground/75">{order.marketplace}</td>
+				<td className="px-5 py-3.5">
+					<span className="inline-flex items-center gap-2 text-xs font-semibold text-foreground/80">
+						<img
+							src={order.marketplace === 'CA' ? 'https://flagcdn.com/ca.svg' : 'https://flagcdn.com/us.svg'}
+							alt={order.marketplace === 'CA' ? 'Canada' : 'United States'}
+							className="w-5 h-3.5 rounded-sm object-cover shadow-sm"
+						/>
+						{order.marketplace}
+					</span>
+				</td>
 				<td className="px-5 py-3.5 font-semibold text-card-foreground">
 					${Number(order.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
 				</td>

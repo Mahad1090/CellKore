@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wand2, Upload, Loader2, Star } from 'lucide-react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
@@ -17,6 +17,8 @@ import type {
 	SpecTemplate,
 	TemplateSpecEntry,
 } from '@/lib/types'
+
+type Tab = 'general' | 'pricing' | 'specs' | 'media' | 'review'
 
 interface VariantRow {
 	id?: string
@@ -223,7 +225,7 @@ export function ProductFormModal({
 	const [selectedPresetId, setSelectedPresetId] = useState('')
 	const [presetNameInput, setPresetNameInput] = useState<string | null>(null)
 	const [savingPreset, setSavingPreset] = useState(false)
-	const [activeTab, setActiveTab] = useState<'general' | 'pricing' | 'specs' | 'media'>('general')
+	const [activeTab, setActiveTab] = useState<Tab>('general')
 
 	useEffect(() => {
 		if (open) {
@@ -330,11 +332,7 @@ export function ProductFormModal({
 	}
 
 	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
-	// Canada marketplace prices in CAD; otherwise (US only, or no marketplace picked yet) prices are USD.
 	const currency = form.marketplaces.includes('CA') ? 'CAD' : 'USD'
-	// Unset product type (including all pre-existing products) defaults to showing Mobile
-	// Specifications, matching behavior before Product Types existed; an explicit non-phone
-	// type (Charger, Phone Case, ...) hides it.
 	const selectedProductType = productTypes.find((t) => t.id === form.product_type_id)
 	const showMobileSpecs = !form.product_type_id || selectedProductType?.is_phone_type
 
@@ -344,13 +342,8 @@ export function ProductFormModal({
 		if (matched?.category_id) set('category_id', matched.category_id)
 	}
 
-	// Spec Templates only apply where Mobile Specifications doesn't (non-phone product types) —
-	// the two are mutually exclusive per product.
 	const templatesForType = specTemplates.filter((t) => t.product_type_id === form.product_type_id && t.is_active)
 
-	// Picking a template just selects it; the admin then explicitly chooses whether to import its
-	// default values or start blank (importTemplateFields), so switching templates never silently
-	// discards or auto-fills values.
 	const handleSpecTemplateChange = (templateId: string) => {
 		const matched = templatesForType.find((t) => t.id === templateId)
 		set('spec_template_id', templateId)
@@ -375,8 +368,6 @@ export function ProductFormModal({
 		)
 	}
 
-	// Presets matching the current Brand (substring, case-insensitive) sort first, same idea as
-	// getBrandFeatureCategories — a preset's values are copied in directly, replacing whatever's there.
 	const sortedPresets = [...mobileSpecPresets]
 		.filter((p) => p.is_active)
 		.sort((a, b) => {
@@ -415,9 +406,54 @@ export function ProductFormModal({
 		}
 	}
 
+	const TABS: Tab[] = ['general', 'pricing', 'specs', 'media', 'review']
+	const tabIndex = TABS.indexOf(activeTab)
+
+	const nextTab = () => {
+		if (tabIndex < TABS.length - 1) setActiveTab(TABS[tabIndex + 1])
+	}
+
+	const prevTab = () => {
+		if (tabIndex > 0) setActiveTab(TABS[tabIndex - 1])
+	}
+
+	const renderActionButtons = (borderClass: string) => (
+		<div className={`flex flex-wrap items-center justify-between gap-3 ${borderClass}`}>
+			<div>
+				{tabIndex > 0 && (
+					<button type="button" onClick={prevTab} className={adminButtonGhost}>
+						<ChevronLeft className="w-4 h-4" /> Back
+					</button>
+				)}
+			</div>
+			<div className="flex items-center gap-2">
+				{tabIndex < TABS.length - 1 && (
+					<button
+						type="button"
+						onClick={nextTab}
+						className="flex items-center gap-1.5 bg-[#EEF7F0] text-[#599161] hover:bg-[#599161] hover:text-white text-xs font-bold px-4 py-2 rounded-full transition-all cursor-pointer border border-[#C8E6CE] shadow-3xs"
+					>
+						Next Step <ChevronRight className="w-4 h-4" />
+					</button>
+				)}
+				<button type="button" onClick={save} disabled={saving} className={adminButton}>
+					{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+					{saving ? 'Saving...' : 'Save Product'}
+				</button>
+			</div>
+		</div>
+	)
+
+	const categoryName = categories.find((c) => c.id === form.category_id)?.name ?? '—'
+	const productTypeName = productTypes.find((pt) => pt.id === form.product_type_id)?.name ?? '—'
+	const totalStockQty = form.variants.reduce((sum, v) => sum + (Number(v.stock_quantity) || 0), 0)
+
 	return (
 		<Modal open={open} onClose={onClose} title={form.id ? 'Edit Product' : 'Create Product'} wide>
 			<div className="space-y-6">
+				{/* Top Action Bar (Cancel, Back, Next Step, Save Product) */}
+				{renderActionButtons('pb-4 border-b border-border')}
+
 				{/* Tab Navigation */}
 				<div className="flex bg-[#F7F7F5] border border-[#E9ECEA]/80 p-1.5 rounded-2xl gap-1 mb-6 text-xs font-semibold text-muted-foreground w-full">
 					<button
@@ -455,6 +491,15 @@ export function ProductFormModal({
 						}`}
 					>
 						Media & Images
+					</button>
+					<button
+						type="button"
+						onClick={() => setActiveTab('review')}
+						className={`flex-1 py-2.5 rounded-xl cursor-pointer transition-all text-center ${
+							activeTab === 'review' ? 'bg-white text-[#599161] font-extrabold shadow-3xs' : 'hover:text-foreground'
+						}`}
+					>
+						Review
 					</button>
 				</div>
 
@@ -635,17 +680,22 @@ export function ProductFormModal({
 													<tr key={index} className="border-t border-border">
 														<td className="px-3 py-2">
 															<div className="flex items-center gap-2">
-																<input
-																	type="color"
-																	value={variant.swatch_hex || '#cccccc'}
-																	onChange={(e) => {
-																		const next = [...form.variants]
-																		next[index] = { ...variant, swatch_hex: e.target.value }
-																		set('variants', next)
-																	}}
-																	className="w-8 h-8 rounded-full border border-border cursor-pointer shrink-0 p-0 bg-transparent"
-																	title="Swatch color"
-																/>
+																<div
+																	className="relative w-7 h-7 rounded-full border border-[#E9ECEA] shadow-3xs shrink-0 overflow-hidden cursor-pointer"
+																	style={{ backgroundColor: variant.swatch_hex || '#cccccc' }}
+																>
+																	<input
+																		type="color"
+																		value={variant.swatch_hex || '#cccccc'}
+																		onChange={(e) => {
+																			const next = [...form.variants]
+																			next[index] = { ...variant, swatch_hex: e.target.value }
+																			set('variants', next)
+																		}}
+																		className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+																		title="Swatch color"
+																	/>
+																</div>
 																<input
 																	value={variant.color}
 																	onChange={(e) => {
@@ -953,16 +1003,131 @@ export function ProductFormModal({
 							</div>
 						</div>
 					)}
+
+					{/* REVIEW TAB */}
+					{activeTab === 'review' && (
+						<div className="space-y-6 animate-in fade-in-50 duration-200">
+							{/* Header Banner */}
+							<div className="text-center py-4 px-6 bg-gradient-to-b from-[#F4F9F5] to-transparent rounded-2xl border border-[#E0EFE3]">
+								<div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161] text-[11px] font-bold uppercase tracking-wider mb-2">
+									<Eye className="w-3.5 h-3.5" /> Product Review
+								</div>
+								<h3 className="text-base font-extrabold text-foreground tracking-tight">{form.name || 'Untitled Product'}</h3>
+								<p className="text-xs text-muted-foreground mt-0.5">Please review the product configuration before saving.</p>
+							</div>
+
+							{/* Summary Stat Cards */}
+							<div className="grid sm:grid-cols-3 gap-3.5">
+								<div className="bg-white p-4 rounded-2xl border border-border/80 shadow-3xs text-center flex flex-col items-center justify-center space-y-1">
+									<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Category & Type</span>
+									<span className="font-bold text-foreground text-xs">{categoryName}</span>
+									<span className="text-[11px] text-muted-foreground">{productTypeName}</span>
+								</div>
+
+								<div className="bg-white p-4 rounded-2xl border border-border/80 shadow-3xs text-center flex flex-col items-center justify-center space-y-1">
+									<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Selling Price</span>
+									<span className="font-black text-[#599161] text-lg">${form.base_price || '0.00'} <span className="text-xs font-semibold text-muted-foreground">{currency}</span></span>
+									{form.purchase_price && (
+										<span className="text-[11px] text-muted-foreground">Cost: ${form.purchase_price} ({profitPercent}% margin)</span>
+									)}
+								</div>
+
+								<div className="bg-white p-4 rounded-2xl border border-border/80 shadow-3xs text-center flex flex-col items-center justify-center space-y-1">
+									<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Inventory & Status</span>
+									<span className="font-bold text-foreground text-xs">{totalStockQty} Units in Stock</span>
+									<span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 capitalize">
+										● {form.condition} condition · {form.is_active ? 'Active' : 'Draft'}
+									</span>
+								</div>
+							</div>
+
+							{/* Details Grid */}
+							<div className="bg-white rounded-2xl border border-border/80 p-5 space-y-4 shadow-3xs">
+								<h4 className="text-xs font-bold text-foreground uppercase tracking-wider text-center pb-2 border-b border-border/60">Product Details</h4>
+								<div className="grid sm:grid-cols-2 gap-4 text-xs">
+									<div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
+										<span className="text-muted-foreground font-medium">Brand</span>
+										<span className="font-bold text-foreground">{form.brand || '—'}</span>
+									</div>
+									<div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
+										<span className="text-muted-foreground font-medium">SKU</span>
+										<span className="font-mono font-bold text-foreground">{form.sku || 'Auto-generated'}</span>
+									</div>
+									<div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
+										<span className="text-muted-foreground font-medium">Marketplaces</span>
+										<div className="flex gap-1">
+											{form.marketplaces.map((m) => (
+												<span key={m} className="px-2 py-0.5 rounded-md bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161] font-bold text-[10px]">
+													{m}
+												</span>
+											))}
+										</div>
+									</div>
+									<div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
+										<span className="text-muted-foreground font-medium">Variants Count</span>
+										<span className="font-bold text-foreground">{form.variants.length} variant{form.variants.length !== 1 ? 's' : ''}</span>
+									</div>
+								</div>
+							</div>
+
+							{/* Variants breakdown table if present */}
+							{form.variants.length > 0 && (
+								<div className="bg-white rounded-2xl border border-border/80 p-5 space-y-3 shadow-3xs">
+									<h4 className="text-xs font-bold text-foreground uppercase tracking-wider text-center">Variants Summary</h4>
+									<div className="border border-border/60 rounded-xl overflow-hidden text-xs">
+										<table className="w-full text-center">
+											<thead className="bg-secondary text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+												<tr>
+													<th className="py-2 px-3 text-left">Color</th>
+													<th className="py-2 px-3">Storage</th>
+													<th className="py-2 px-3">RAM</th>
+													<th className="py-2 px-3">Stock</th>
+													<th className="py-2 px-3">Adjustment</th>
+												</tr>
+											</thead>
+											<tbody className="divide-y divide-border/60">
+												{form.variants.map((v, i) => (
+													<tr key={i} className="hover:bg-muted/20">
+														<td className="py-2 px-3 text-left flex items-center gap-2">
+															{v.swatch_hex && (
+																<span className="w-3.5 h-3.5 rounded-full border border-border shrink-0 shadow-3xs" style={{ backgroundColor: v.swatch_hex }} />
+															)}
+															<span className="font-medium">{v.color || 'Default'}</span>
+														</td>
+														<td className="py-2 px-3 text-muted-foreground">{v.storage || '—'}</td>
+														<td className="py-2 px-3 text-muted-foreground">{v.ram || '—'}</td>
+														<td className="py-2 px-3 font-bold text-foreground">{v.stock_quantity}</td>
+														<td className="py-2 px-3 font-medium text-[#599161]">{v.price_adjustment ? `+${currency} ${v.price_adjustment}` : '—'}</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								</div>
+							)}
+
+							{/* Image preview grid */}
+							{form.images.length > 0 && (
+								<div className="bg-white rounded-2xl border border-border/80 p-5 space-y-3 shadow-3xs">
+									<h4 className="text-xs font-bold text-foreground uppercase tracking-wider text-center">Media & Photos ({form.images.length})</h4>
+									<div className="flex flex-wrap justify-center gap-3">
+										{form.images.map((img, i) => (
+											<div key={i} className="w-16 h-16 rounded-2xl border border-border/80 overflow-hidden bg-muted relative group shadow-3xs">
+												<img src={img.image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+												{img.is_primary && (
+													<span className="absolute bottom-1 right-1 bg-[#599161] text-white p-0.5 rounded-full text-[9px] shadow-3xs" title="Primary Photo">★</span>
+												)}
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+					)}
 				</div>
 
-				{/* Actions */}
-				<div className="flex justify-end gap-3 pt-4 border-t border-border">
-					<button type="button" onClick={onClose} className={adminButtonGhost}>Cancel</button>
-					<button type="button" onClick={save} disabled={saving} className={adminButton}>
-						{saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-						{saving ? 'Saving...' : 'Save Product'}
-					</button>
-				</div>
+				{/* Bottom Action Bar */}
+				{renderActionButtons('pt-4 border-t border-border mt-6')}
 			</div>
 		</Modal>
 	)

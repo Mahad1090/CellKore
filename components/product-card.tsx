@@ -199,7 +199,7 @@ export function ProductCard({ product }: { product: Product }) {
 					{/* Price & Brand Icon */}
 					<div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
 						<div className="flex items-baseline gap-1.5">
-							<span className="text-sm md:text-[17px] font-bold text-emerald-600 dark:text-emerald-500 tracking-tight">
+							<span className="text-sm md:text-[17px] font-bold text-[#599161] tracking-tight">
 								${basePrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
 							</span>
 							{hasDiscount && (

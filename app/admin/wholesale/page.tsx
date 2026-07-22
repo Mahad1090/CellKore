@@ -22,6 +22,10 @@ export default function AdminWholesalePage() {
 	const [categories, setCategories] = useState<Category[]>([])
 	const [productTypes, setProductTypes] = useState<ProductType[]>([])
 	const [search, setSearch] = useState('')
+	const [filterCategory, setFilterCategory] = useState('')
+	const [filterBrand, setFilterBrand] = useState('')
+	const [filterStatus, setFilterStatus] = useState('')
+	const [sortBy, setSortBy] = useState('newest')
 	const [editing, setEditing] = useState<WholesaleFormValue | null>(null)
 	const [wizardOpen, setWizardOpen] = useState(false)
 	
@@ -153,13 +157,26 @@ export default function AdminWholesalePage() {
 		loadTiers()
 	}
 
-	const filteredLots = (lots ?? []).filter(
-		(l) =>
-			!search.trim() ||
-			l.name.toLowerCase().includes(search.toLowerCase()) ||
-			(l.sku ?? '').toLowerCase().includes(search.toLowerCase()) ||
-			(l.brand ?? '').toLowerCase().includes(search.toLowerCase())
-	)
+	const filteredLots = (lots ?? [])
+		.filter((l) => {
+			if (search.trim() && !l.name.toLowerCase().includes(search.toLowerCase()) && !(l.sku ?? '').toLowerCase().includes(search.toLowerCase()) && !(l.brand ?? '').toLowerCase().includes(search.toLowerCase())) return false
+			if (filterCategory && (l.categories?.id ?? l.category_id) !== filterCategory) return false
+			if (filterBrand && (l.brand ?? '') !== filterBrand) return false
+			if (filterStatus === 'active' && !l.is_active) return false
+			if (filterStatus === 'inactive' && l.is_active) return false
+			return true
+		})
+		.sort((a, b) => {
+			if (sortBy === 'name_asc') return (a.name ?? '').localeCompare(b.name ?? '')
+			if (sortBy === 'name_desc') return (b.name ?? '').localeCompare(a.name ?? '')
+			if (sortBy === 'price_asc') return Number(a.base_price) - Number(b.base_price)
+			if (sortBy === 'price_desc') return Number(b.base_price) - Number(a.base_price)
+			if (sortBy === 'qty_desc') return Number(b.lot_quantity ?? 0) - Number(a.lot_quantity ?? 0)
+			// newest first (default)
+			return new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()
+		})
+
+	const lotBrands = Array.from(new Set((lots ?? []).map((l) => l.brand).filter(Boolean))) as string[]
 
 	const writable = can('wholesale:write')
 	const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
@@ -182,16 +199,59 @@ export default function AdminWholesalePage() {
 
 			{/* Wholesale Lots Catalog Section */}
 			<div className="space-y-6">
-				<div className="flex flex-wrap items-center justify-between gap-4">
-					<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-foreground">Wholesale Lot Listings</h2>
-					<div className="relative w-full sm:max-w-xs">
-						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+				{/* Filter Panel */}
+				<div className="flex flex-col gap-3 bg-white p-4 rounded-2xl border border-[#E9ECEA] shadow-3xs mb-6">
+					<div className="relative w-full">
+						<Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
 						<input
-							placeholder="Search lots by name, SKU..."
+							placeholder="Search by name, SKU, brand..."
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
-							className={`${adminInput} pl-10 py-2`}
+							className="w-full pl-9 pr-4 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] focus:bg-white transition-all font-sans"
 						/>
+					</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+						<select
+							value={filterCategory}
+							onChange={(e) => setFilterCategory(e.target.value)}
+							className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+						>
+							<option value="">All Categories</option>
+							{categories.map((c) => (
+								<option key={c.id} value={c.id}>{c.name}</option>
+							))}
+						</select>
+						<select
+							value={filterStatus}
+							onChange={(e) => setFilterStatus(e.target.value)}
+							className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+						>
+							<option value="">All Statuses</option>
+							<option value="active">Active</option>
+							<option value="inactive">Inactive</option>
+						</select>
+						<select
+							value={filterBrand}
+							onChange={(e) => setFilterBrand(e.target.value)}
+							className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+						>
+							<option value="">All Brands</option>
+							{lotBrands.map((b) => (
+								<option key={b} value={b}>{b}</option>
+							))}
+						</select>
+						<select
+							value={sortBy}
+							onChange={(e) => setSortBy(e.target.value)}
+							className="w-full px-3 py-2 rounded-xl border border-[#E9ECEA] bg-[#F7F7F5] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer font-sans capitalize font-semibold"
+						>
+							<option value="newest">Sort: Newest First</option>
+							<option value="name_asc">Sort: Name A→Z</option>
+							<option value="name_desc">Sort: Name Z→A</option>
+							<option value="price_asc">Sort: Price Low→High</option>
+							<option value="price_desc">Sort: Price High→Low</option>
+							<option value="qty_desc">Sort: Most Units</option>
+						</select>
 					</div>
 				</div>
 

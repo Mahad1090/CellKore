@@ -27,6 +27,7 @@ interface BulkPayload {
 	quantity_per_lot: number
 	items: BulkItem[]
 	images: { image_url: string; sort_order: number; is_primary: boolean }[]
+	specs?: { key: string; customKey: string; value: string }[]
 }
 
 function compact(value: string, length: number): string {
@@ -154,6 +155,22 @@ export async function POST(request: NextRequest) {
 			marketplaces: payload.marketplaces?.length ? payload.marketplaces : ['US'],
 			images: payload.images.map((img) => ({ ...img, variant_color: null })),
 			wholesale_colors: distinctColors,
+			template_specifications: payload.specs?.length
+				? {
+						entries: payload.specs
+							.filter((s) => s.value.trim())
+							.map((s) => {
+								const labelStr = s.key === '__custom__' ? s.customKey.trim() : s.key
+								return {
+									key: labelStr.toLowerCase().replace(/[^a-z0-9]+/g, ''),
+									label: labelStr,
+									value: s.value.trim(),
+									type: 'text' as const,
+								}
+							}),
+						custom: [],
+				  }
+				: undefined,
 		}
 
 		const syncError = await syncProductRelations(service, product.id, relationsPayload)

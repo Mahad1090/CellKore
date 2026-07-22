@@ -12,12 +12,10 @@ interface ProductTypeForm {
 	id?: string
 	name: string
 	category_id: string
-	is_phone_type: boolean
 	is_active: boolean
-	sort_order: number
 }
 
-const EMPTY: ProductTypeForm = { name: '', category_id: '', is_phone_type: false, is_active: true, sort_order: 0 }
+const EMPTY: ProductTypeForm = { name: '', category_id: '', is_active: true }
 
 export default function AdminProductTypesPage() {
 	const { toast, confirm } = useToast()
@@ -112,7 +110,7 @@ export default function AdminProductTypesPage() {
 					<table className="w-full text-sm min-w-[560px]">
 						<thead>
 							<tr className="bg-secondary text-left">
-								{['Name', 'Category', 'Phone Type', 'Sort Order', 'Status', ''].map((h) => (
+								{['Name', 'Category', 'Status', ''].map((h) => (
 									<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
 								))}
 							</tr>
@@ -122,16 +120,7 @@ export default function AdminProductTypesPage() {
 								<tr key={productType.id} className="border-t border-border hover:bg-muted/40 transition-colors">
 									<td className="px-5 py-3.5 font-medium text-card-foreground">{productType.name}</td>
 									<td className="px-5 py-3.5 text-foreground/75">{categoryName(productType.category_id)}</td>
-									<td className="px-5 py-3.5">
-										<span
-											className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
-												productType.is_phone_type ? 'bg-primary/10 text-primary' : 'bg-secondary text-foreground/60'
-											}`}
-										>
-											{productType.is_phone_type ? 'Phone' : 'No'}
-										</span>
-									</td>
-									<td className="px-5 py-3.5 text-foreground/75">{productType.sort_order}</td>
+
 									<td className="px-5 py-3.5">
 										<span
 											className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
@@ -150,9 +139,7 @@ export default function AdminProductTypesPage() {
 															id: productType.id,
 															name: productType.name,
 															category_id: productType.category_id ?? '',
-															is_phone_type: productType.is_phone_type,
 															is_active: productType.is_active,
-															sort_order: productType.sort_order,
 														})
 													}
 													className="p-2 rounded-full text-muted-foreground hover:text-primary hover:bg-muted transition-all cursor-pointer"
@@ -197,28 +184,10 @@ export default function AdminProductTypesPage() {
 								))}
 							</select>
 						</div>
-						<label className="flex items-center gap-2.5 cursor-pointer">
-							<input
-								type="checkbox"
-								checked={editing.is_phone_type}
-								onChange={(e) => setEditing({ ...editing, is_phone_type: e.target.checked })}
-								className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
-							/>
-							<span className="text-xs font-semibold text-foreground">Is Phone Type</span>
+						<label className="flex items-center gap-2.5 cursor-pointer mt-1">
+							<input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
+							<span className="text-xs font-semibold text-foreground">Active</span>
 						</label>
-						<p className="text-[10px] text-muted-foreground -mt-2 leading-normal">
-							When on, products of this type show the Mobile Specifications editor on the product form.
-						</p>
-						<div className="flex items-center gap-6">
-							<div className="flex-1">
-								<label className={label}>Sort Order</label>
-								<input type="number" value={editing.sort_order} onChange={(e) => setEditing({ ...editing, sort_order: Number(e.target.value) })} className={adminInput} />
-							</div>
-							<label className="flex items-center gap-2.5 cursor-pointer mt-6">
-								<input type="checkbox" checked={editing.is_active} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="w-4 h-4 accent-[var(--primary)] cursor-pointer" />
-								<span className="text-xs font-semibold text-foreground">Active</span>
-							</label>
-						</div>
 						<div className="flex justify-end gap-3 pt-4 border-t border-border">
 							<button onClick={() => setEditing(null)} className={adminButtonGhost}>Cancel</button>
 							<button onClick={save} disabled={saving} className={adminButton}>
