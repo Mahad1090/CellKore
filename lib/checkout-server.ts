@@ -64,7 +64,7 @@ export async function resolveAndValidateItems(
 
 		const { data: product, error } = await service
 			.from('products')
-			.select('id, name, base_price, is_active, is_wholesale, product_images ( image_url, is_primary, sort_order )')
+			.select('id, name, base_price, discount_percent, is_on_sale, is_active, is_wholesale, product_images ( image_url, is_primary, sort_order )')
 			.eq('id', item.productId)
 			.maybeSingle()
 		if (error) throw error
@@ -85,6 +85,11 @@ export async function resolveAndValidateItems(
 				throw new StockError('Variant out of stock', item.variantId)
 			}
 			unitPrice += Number(variant.price_adjustment)
+		}
+
+		// Apply an admin-configured sale discount before any wholesale tier override below.
+		if (product.is_on_sale && Number(product.discount_percent) > 0) {
+			unitPrice = unitPrice * (1 - Number(product.discount_percent) / 100)
 		}
 
 		if (product.is_wholesale) {

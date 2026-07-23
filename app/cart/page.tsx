@@ -18,7 +18,7 @@ import {
 import { fetchProductById, fetchTaxRates } from '@/lib/data'
 import { taxRateForCountry } from '@/lib/tax'
 import type { Product, TaxRate } from '@/lib/types'
-import { primaryImage } from '@/lib/types'
+import { primaryImage, isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
 
 interface HydratedItem extends LocalCartItem {
 	product: Product
@@ -76,7 +76,12 @@ export default function CartPage() {
 
 	const unitPrice = (item: HydratedItem) => {
 		const variant = (item.product.product_variants ?? []).find((v) => v.id === item.variantId)
-		return Number(item.product.base_price) + Number(variant?.price_adjustment ?? 0)
+		return getDiscountedPrice(item.product, variant)
+	}
+
+	const originalUnitPrice = (item: HydratedItem) => {
+		const variant = (item.product.product_variants ?? []).find((v) => v.id === item.variantId)
+		return getOriginalPrice(item.product, variant)
 	}
 
 	const subtotal = useMemo(
@@ -165,9 +170,16 @@ export default function CartPage() {
 													</button>
 												</div>
 												<div className="flex items-center gap-4">
-													<span className="text-sm font-bold text-card-foreground">
-														${(unitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-													</span>
+													<div className="flex items-baseline gap-2">
+														<span className="text-sm font-bold text-card-foreground">
+															${(unitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+														</span>
+														{isProductOnSale(item.product) && (
+															<span className="text-xs text-muted-foreground line-through">
+																${(originalUnitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+															</span>
+														)}
+													</div>
 													<button
 														onClick={() => syncItems(items.filter((_, i) => i !== index))}
 														className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"

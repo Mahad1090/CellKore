@@ -17,7 +17,7 @@ import type {
 // Explicit column list (not "*") so purchase_price — admin-only cost data — never
 // reaches this public/anon-key query used by the storefront.
 const PRODUCT_SELECT = `
-	id, category_id, sku, name, brand, condition, base_price, description,
+	id, category_id, sku, name, brand, condition, base_price, discount_percent, is_on_sale, description,
 	is_wholesale, lot_quantity, is_active, mobile_specifications, template_specifications,
 	created_at, updated_at,
 	categories ( id, name, slug, image_url, is_active, sort_order, created_at ),

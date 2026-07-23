@@ -18,6 +18,7 @@ import { addToLocalCart, getWishlist, toggleWishlist } from '@/lib/cart'
 import { categoryHasValues, getCategoriesForBrand, getCategoryValues } from '@/lib/mobile-specs'
 import { ProductReviewsSection } from '@/components/product-reviews'
 import type { Product } from '@/lib/types'
+import { isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
 
 function getColorHexFallback(colorName: string | null): string {
 	if (!colorName) return '#cccccc'
@@ -274,7 +275,9 @@ export default function ProductDetailPage() {
 	const customSpecs = (mobileSpecs.custom ?? []).filter((c) => c.key.trim() && c.value.trim())
 	const templateEntries = (product.template_specifications?.entries ?? []).filter((e) => e.value.trim())
 	const templateCustom = (product.template_specifications?.custom ?? []).filter((c) => c.label.trim() && c.value.trim())
-	const displayPrice = Number(product.base_price) + Number(selectedVariant?.price_adjustment ?? 0)
+	const displayOriginalPrice = getOriginalPrice(product, selectedVariant)
+	const hasDiscount = isProductOnSale(product)
+	const displayPrice = hasDiscount ? getDiscountedPrice(product, selectedVariant) : displayOriginalPrice
 	const maxStock = selectedVariant?.stock_quantity ?? 0
 	const inStock = variants.length === 0 || maxStock > 0
 
@@ -385,11 +388,23 @@ export default function ProductDetailPage() {
 							<span className="px-3 py-1 rounded-full bg-secondary text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80 capitalize">
 								{product.condition}
 							</span>
+							{hasDiscount && (
+								<span className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[10px] font-bold uppercase tracking-[0.14em]">
+									{Number(product.discount_percent)}% Off
+								</span>
+							)}
 						</div>
 
-						<p className="text-3xl font-bold text-primary mb-6">
-							${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-						</p>
+						<div className="flex items-baseline gap-3 mb-6">
+							<p className="text-3xl font-bold text-primary">
+								${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+							</p>
+							{hasDiscount && (
+								<p className="text-lg font-medium text-muted-foreground line-through decoration-muted-foreground/60">
+									${displayOriginalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+								</p>
+							)}
+						</div>
 
 						{product.description && (
 							<p className="text-sm text-foreground/75 leading-relaxed mb-8">{product.description}</p>

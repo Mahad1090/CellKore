@@ -35,6 +35,9 @@ export async function PUT(request: NextRequest, { params }: Params) {
 	const { id } = await params
 
 	const payload = (await request.json()) as ProductPayload
+	if (payload.discount_percent != null && (payload.discount_percent < 0 || payload.discount_percent > 100)) {
+		return NextResponse.json({ error: 'Discount percent must be between 0 and 100' }, { status: 400 })
+	}
 	const service = createServiceClient()
 
 	const { error } = await service
@@ -49,6 +52,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
 			condition: payload.condition ?? 'new',
 			base_price: payload.base_price,
 			purchase_price: payload.purchase_price ?? null,
+			discount_percent: payload.discount_percent ?? 0,
+			is_on_sale: payload.is_on_sale ?? false,
 			description: payload.description || null,
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,

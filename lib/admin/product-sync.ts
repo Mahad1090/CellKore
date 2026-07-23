@@ -12,6 +12,8 @@ export interface ProductPayload {
 	condition?: ProductCondition
 	base_price: number
 	purchase_price?: number | null
+	discount_percent?: number
+	is_on_sale?: boolean
 	description?: string | null
 	is_wholesale?: boolean
 	lot_quantity?: number | null

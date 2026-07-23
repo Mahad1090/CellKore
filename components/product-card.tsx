@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Heart, Smartphone } from 'lucide-react'
 import type { Product } from '@/lib/types'
-import { primaryImage, totalStock } from '@/lib/types'
+import { primaryImage, totalStock, isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
 import { getWishlist } from '@/lib/cart'
 
 const CONDITION_LABELS: Record<string, string> = {
@@ -17,23 +17,6 @@ const CONDITION_CLASSES: Record<string, string> = {
 	new: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30',
 	used: 'bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200/60 dark:border-zinc-800/60',
 	refurbished: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/30',
-}
-
-function getOriginalPrice(basePrice: number, name: string): number | null {
-	const price = Number(basePrice)
-	if (price <= 0) return null
-	
-	const lowerName = name.toLowerCase()
-	if (lowerName.includes('se')) return 399
-	if (lowerName.includes('11')) return 699
-	if (lowerName.includes('12')) return 799
-	if (lowerName.includes('13')) return 899
-	if (lowerName.includes('14')) return 999
-	if (lowerName.includes('15')) return 1099
-	
-	if (price < 100) return Math.round(price * 3.5 + 49)
-	if (price < 300) return Math.round(price * 2.2 + 99)
-	return Math.round(price * 1.6 + 149)
 }
 
 function getBrandIcon(brand: string | null) {
@@ -79,9 +62,9 @@ export function ProductCard({ product }: { product: Product }) {
 	const outOfStock = hasVariants && totalStock(product) === 0
 	const href = product.is_wholesale ? `/wholesale/${product.id}` : `/products/${product.id}`
 	
-	const basePrice = Number(product.base_price)
-	const originalPrice = getOriginalPrice(basePrice, product.name)
-	const hasDiscount = originalPrice !== null && originalPrice > basePrice
+	const basePrice = getOriginalPrice(product)
+	const hasDiscount = isProductOnSale(product)
+	const discountedPrice = getDiscountedPrice(product)
 
 	const [isWishlisted, setIsWishlisted] = useState(false)
 
@@ -139,6 +122,11 @@ export function ProductCard({ product }: { product: Product }) {
 						}`}>
 							{CONDITION_LABELS[product.condition] ?? product.condition}
 						</span>
+						{hasDiscount && (
+							<span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[8px] font-bold uppercase tracking-wider shadow-sm">
+								{Number(product.discount_percent)}% Off
+							</span>
+						)}
 						{outOfStock && (
 							<span className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-600 text-[8px] font-bold uppercase tracking-wider shadow-sm">
 								{product.is_wholesale ? 'Sold Out' : 'Out of Stock'}
@@ -200,11 +188,11 @@ export function ProductCard({ product }: { product: Product }) {
 					<div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
 						<div className="flex items-baseline gap-1.5">
 							<span className="text-sm md:text-[17px] font-bold text-[#599161] tracking-tight">
-								${basePrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+								${(hasDiscount ? discountedPrice : basePrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
 							</span>
 							{hasDiscount && (
 								<span className="text-[10px] md:text-xs text-muted-foreground line-through decoration-muted-foreground/60 font-medium">
-									${originalPrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+									${basePrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
 								</span>
 							)}
 						</div>

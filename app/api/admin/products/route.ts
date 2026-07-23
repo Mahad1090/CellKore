@@ -35,6 +35,9 @@ export async function POST(request: NextRequest) {
 	if (!payload.name || payload.base_price == null) {
 		return NextResponse.json({ error: 'Name and base price are required' }, { status: 400 })
 	}
+	if (payload.discount_percent != null && (payload.discount_percent < 0 || payload.discount_percent > 100)) {
+		return NextResponse.json({ error: 'Discount percent must be between 0 and 100' }, { status: 400 })
+	}
 
 	const service = createServiceClient()
 	const { data: product, error } = await service
@@ -49,6 +52,8 @@ export async function POST(request: NextRequest) {
 			condition: payload.condition ?? 'new',
 			base_price: payload.base_price,
 			purchase_price: payload.purchase_price ?? null,
+			discount_percent: payload.discount_percent ?? 0,
+			is_on_sale: payload.is_on_sale ?? false,
 			description: payload.description || null,
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,

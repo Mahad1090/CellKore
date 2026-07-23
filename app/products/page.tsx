@@ -9,6 +9,7 @@ import { GridShimmer } from '@/components/shimmer'
 import { useMarketplace } from '@/contexts/marketplace-context'
 import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
 import type { Category, Product } from '@/lib/types'
+import { getDiscountedPrice } from '@/lib/types'
 export default function ProductsPage() {
 	return (
 		<Suspense
@@ -92,8 +93,8 @@ function ProductsPageContent() {
 	const sorted = useMemo(() => {
 		if (!products) return null
 		const list = [...products]
-		if (sortBy === 'price-low') list.sort((a, b) => a.base_price - b.base_price)
-		if (sortBy === 'price-high') list.sort((a, b) => b.base_price - a.base_price)
+		if (sortBy === 'price-low') list.sort((a, b) => getDiscountedPrice(a) - getDiscountedPrice(b))
+		if (sortBy === 'price-high') list.sort((a, b) => getDiscountedPrice(b) - getDiscountedPrice(a))
 		if (sortBy === 'name') list.sort((a, b) => a.name.localeCompare(b.name))
 		return list
 	}, [products, sortBy])

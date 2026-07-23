@@ -158,6 +158,8 @@ export interface Product {
 	condition: ProductCondition
 	base_price: number
 	purchase_price?: number | null
+	discount_percent: number
+	is_on_sale: boolean
 	description: string | null
 	is_wholesale: boolean
 	lot_quantity?: number | null
@@ -433,4 +435,22 @@ export function primaryImage(product: Product): string | null {
 
 export function totalStock(product: Product): number {
 	return (product.product_variants ?? []).reduce((sum, v) => sum + v.stock_quantity, 0)
+}
+
+/** Whether a product currently has an active, admin-enabled discount. */
+export function isProductOnSale(product: Product): boolean {
+	return !!product.is_on_sale && Number(product.discount_percent) > 0
+}
+
+/** The regular (pre-discount) price for a product, optionally for a specific variant. */
+export function getOriginalPrice(product: Product, variant?: ProductVariant | null): number {
+	return Number(product.base_price) + Number(variant?.price_adjustment ?? 0)
+}
+
+/** The price a customer actually pays, after any active sale discount is applied. */
+export function getDiscountedPrice(product: Product, variant?: ProductVariant | null): number {
+	const original = getOriginalPrice(product, variant)
+	if (!isProductOnSale(product)) return original
+	const discounted = original * (1 - Number(product.discount_percent) / 100)
+	return Math.round(discounted * 100) / 100
 }

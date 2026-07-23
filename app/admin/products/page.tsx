@@ -236,7 +236,18 @@ function ProductsContent() {
 										<td className="px-5 py-3.5 text-foreground/75 font-mono text-xs">{product.sku ?? '—'}</td>
 										<td className="px-5 py-3.5 text-foreground/75">{product.categories?.name ?? '—'}</td>
 										<td className="px-5 py-3.5 font-semibold text-card-foreground">
-											${Number(product.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+											{product.is_on_sale && Number(product.discount_percent) > 0 ? (
+												<div className="flex flex-col">
+													<span className="text-[#599161]">
+														${(Number(product.base_price) * (1 - Number(product.discount_percent) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+													</span>
+													<span className="text-[10px] font-normal text-muted-foreground line-through">
+														${Number(product.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+													</span>
+												</div>
+											) : (
+												<>${Number(product.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</>
+											)}
 										</td>
 										<td className="px-5 py-3.5">
 											<span className={stock === 0 && (product.product_variants ?? []).length > 0 ? 'text-destructive font-semibold' : 'text-foreground/75'}>
@@ -245,13 +256,20 @@ function ProductsContent() {
 										</td>
 
 										<td className="px-5 py-3.5">
-											<span
-												className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
-													product.is_active ? 'bg-primary/10 text-primary' : 'bg-secondary text-foreground/60'
-												}`}
-											>
-												{product.is_active ? 'Active' : 'Inactive'}
-											</span>
+											<div className="flex flex-col gap-1 items-start">
+												<span
+													className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] ${
+														product.is_active ? 'bg-primary/10 text-primary' : 'bg-secondary text-foreground/60'
+													}`}
+												>
+													{product.is_active ? 'Active' : 'Inactive'}
+												</span>
+												{product.is_on_sale && Number(product.discount_percent) > 0 && (
+													<span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-[0.1em] bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161]">
+														{product.discount_percent}% Off
+													</span>
+												)}
+											</div>
 										</td>
 										<td className="px-5 py-3.5">
 											{writable && (
