@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Trash2, ArrowRight, Minus, Plus, ShoppingCart, Smartphone } from 'lucide-react'
+import { Trash2, ArrowRight, Minus, Plus, ShoppingCart, Smartphone, Loader2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { TableShimmer } from '@/components/shimmer'
@@ -29,6 +29,7 @@ export default function CartPage() {
 	const { marketplace } = useMarketplace()
 	const [items, setItems] = useState<HydratedItem[] | null>(null)
 	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+	const [navigatingCheckout, setNavigatingCheckout] = useState(false)
 
 	useEffect(() => {
 		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
@@ -221,10 +222,21 @@ export default function CartPage() {
 							</div>
 							<Link
 								href="/checkout"
-								className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all shadow-lg"
+								prefetch={true}
+								onClick={() => setNavigatingCheckout(true)}
+								className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all shadow-lg cursor-pointer"
 							>
-								Proceed to Checkout
-								<ArrowRight className="w-4 h-4" />
+								{navigatingCheckout ? (
+									<>
+										<Loader2 className="w-4 h-4 animate-spin" />
+										Loading Checkout...
+									</>
+								) : (
+									<>
+										Proceed to Checkout
+										<ArrowRight className="w-4 h-4" />
+									</>
+								)}
 							</Link>
 						</div>
 					</div>

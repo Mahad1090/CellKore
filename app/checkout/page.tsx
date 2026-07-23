@@ -154,23 +154,29 @@ export default function CheckoutPage() {
 		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
 	}, [])
 
-	// ---- Load cart ----
+	// ---- Load cart in parallel ----
 	useEffect(() => {
 		if (authLoading) return
+		let active = true
 		;(async () => {
 			try {
 				const raw = await loadCartItems(user?.id ?? null)
-				const hydrated: HydratedItem[] = []
-				for (const item of raw) {
-					const product = await fetchProductById(item.productId)
-					if (!product) continue
-					hydrated.push({ ...item, product })
+				const hydrated = await Promise.all(
+					raw.map(async (item) => {
+						const product = await fetchProductById(item.productId)
+						return product ? { ...item, product } : null
+					})
+				)
+				if (active) {
+					setItems(hydrated.filter(Boolean) as HydratedItem[])
 				}
-				setItems(hydrated)
 			} catch {
-				setItems([])
+				if (active) setItems([])
 			}
 		})()
+		return () => {
+			active = false
+		}
 	}, [user, authLoading])
 
 	const set = <K extends keyof CheckoutForm>(field: K, value: CheckoutForm[K]) =>
