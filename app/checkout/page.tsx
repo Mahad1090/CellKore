@@ -109,7 +109,8 @@ export default function CheckoutPage() {
 		if (authLoading || prefillStage.current >= 2) return
 		if (user) {
 			prefillStage.current = 2
-			const nameParts = (user.full_name || '').split(' ')
+			const userFullName = (user as any).full_name || user.user_metadata?.full_name || user.user_metadata?.name || ''
+			const nameParts = userFullName.split(' ')
 			const userFirst = nameParts[0] || ''
 			const userLast = nameParts.slice(1).join(' ') || ''
 
