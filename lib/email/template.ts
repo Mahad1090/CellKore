@@ -6,11 +6,6 @@ export function siteUrl(): string {
 }
 
 export function logoUrl(): string {
-	// PNG, not the site's .webp — many email clients (notably Outlook) don't
-	// render WebP at all. The ?v= is regenerated on every call (not a fixed
-	// version) so each email gets a URL Gmail/Outlook's image proxy has
-	// never seen before — a static query string was still occasionally
-	// getting served as a cached failure from an earlier fetch attempt.
 	return `${siteUrl()}/cellkore_logo_email.png?v=${Date.now()}`
 }
 
@@ -24,52 +19,175 @@ interface EmailAction {
 }
 
 /**
- * Shared branded wrapper for every outgoing email — mirrors the storefront's
- * visual language (rounded cards, uppercase tracked eyebrows, pill CTAs,
- * brand green) using table-based markup + inline styles so it renders
- * consistently across webmail clients, not just modern browsers.
+ * Shared branded wrapper for every outgoing email — matches the user's reference email layout
+ * with top shipping bar, logo header, pill eyebrow, banner picture container, catchy CTA box without arrow,
+ * fixed non-stretchy gift icon, CellKore logo green branding (#5a9263), and multi-column footer.
  */
 export function renderEmailLayout(opts: {
 	eyebrow?: string
 	heading: string
 	bodyHtml: string
+	imageUrl?: string
 	action?: EmailAction
 }): string {
-	const { eyebrow, heading, bodyHtml, action } = opts
+	const { eyebrow = 'NEWSLETTER & NEW ARRIVALS', heading, bodyHtml, imageUrl, action } = opts
+
+	const actionLabel = action?.label?.trim() || 'EXPLORE COLLECTION'
+
 	return `<!doctype html>
-<html>
-<body style="margin:0;padding:0;background:#f2f3f1;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
-	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f3f1;padding:36px 16px;">
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+		body { margin: 0; padding: 0; background-color: #f4f6f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+		a { color: #5a9263; text-decoration: none; }
+		a:hover { text-decoration: underline; }
+		h1 a { color: #111827 !important; text-decoration: none !important; }
+	</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+	<!-- Main Wrapper -->
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f4;padding:32px 16px 48px;">
 		<tr>
 			<td align="center">
-				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+					
+					<!-- Brand Logo Header -->
 					<tr>
-						<td style="padding:0 4px 20px;text-align:center;">
-							<img src="${logoUrl()}" width="96" height="96" alt="CellKore" style="display:inline-block;border-radius:20px;" />
+						<td style="padding:0 0 28px;text-align:center;">
+							<a href="${siteUrl()}" target="_blank" style="display:inline-block;text-decoration:none;">
+								<img src="${logoUrl()}" width="110" height="110" alt="CellKore" style="display:inline-block;border-radius:24px;" />
+							</a>
+							<p style="margin:6px 0 0;font-size:12px;color:#6b7280;font-weight:600;letter-spacing:0.02em;">
+								Premium Devices. Trusted Worldwide.
+							</p>
 						</td>
 					</tr>
+
+					<!-- Main Email Card -->
 					<tr>
-						<td style="background:#ffffff;border-radius:22px;overflow:hidden;border:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+						<td style="background-color:#ffffff;border-radius:28px;overflow:hidden;border:1px solid #e5e8e5;box-shadow:0 4px 20px rgba(0,0,0,0.03);">
 							<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+								
+								<!-- Content Body Area -->
 								<tr>
-									<td style="height:5px;background:${BRAND_COLOR};line-height:0;font-size:0;">&nbsp;</td>
-								</tr>
-								<tr>
-									<td style="padding:36px 36px 8px;">
-										${eyebrow ? `<p style="margin:0 0 10px;font-size:10px;font-weight:800;letter-spacing:0.24em;text-transform:uppercase;color:${BRAND_COLOR};">${eyebrow}</p>` : ''}
-										<h1 style="margin:0 0 18px;font-size:22px;line-height:1.35;color:#111111;font-weight:800;">${heading}</h1>
-										<div style="font-size:14px;line-height:1.7;color:#44403c;">${bodyHtml}</div>
+									<td style="padding:40px 40px 24px;">
+										
+										<!-- Eyebrow Badge -->
+										${
+											eyebrow
+												? `<div style="margin-bottom:18px;">
+														<span style="display:inline-block;padding:6px 16px;background:#eef7f0;color:#5a9263;font-size:10px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;border-radius:999px;border:1px solid #c8e6ce;">
+															&bull; ${eyebrow}
+														</span>
+													</div>`
+												: ''
+										}
+										
+										<!-- Main Heading -->
+										<h1 style="margin:0 0 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;color:#111827;font-weight:800;letter-spacing:-0.02em;">
+											${heading}
+										</h1>
+
+										<!-- Banner Image Attachment -->
+										${
+											imageUrl
+												? `<div style="margin:24px 0;border-radius:20px;overflow:hidden;border:1px solid #e5e8e5;">
+														<img src="${imageUrl}" alt="Newsletter preview" style="display:block;width:100%;height:auto;border-radius:20px;" />
+													</div>`
+												: ''
+										}
+
+										<!-- Body Message Content -->
+										<div style="font-size:15px;line-height:1.75;color:#374151;font-weight:400;margin-top:16px;">
+											${bodyHtml}
+										</div>
+
+										<!-- Catchy CTA Announcement Box (Fixed Non-Stretchy Icon & Brand Green Button) -->
 										${
 											action
-												? `<div style="margin-top:30px;"><a href="${action.url}" style="display:inline-block;background:${BRAND_COLOR};color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;">${action.label}</a></div>`
+												? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:36px;background:#f2f8f4;border:1px solid #c8e6ce;border-radius:22px;padding:20px 22px;">
+														<tr>
+															<td>
+																<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+																	<tr>
+																		<td style="vertical-align:middle;">
+																			<table role="presentation" cellpadding="0" cellspacing="0">
+																				<tr>
+																					<td style="width:44px;min-width:44px;vertical-align:middle;">
+																						<div style="width:44px;height:44px;min-width:44px;min-height:44px;max-width:44px;max-height:44px;border-radius:50%;background:#5a9263;text-align:center;line-height:44px;">
+																							<span style="font-size:20px;line-height:44px;">&#127873;</span>
+																						</div>
+																					</td>
+																					<td style="padding-left:14px;vertical-align:middle;">
+																						<p style="margin:0;font-size:13px;font-weight:800;color:#111827;letter-spacing:-0.01em;">
+																							Exclusive New Arrival Collection
+																						</p>
+																						<p style="margin:2px 0 0;font-size:11px;color:#6b7280;font-weight:500;">
+																							Tap below to discover new inventory &amp; exclusive deals.
+																						</p>
+																					</td>
+																				</tr>
+																			</table>
+																		</td>
+																		<td align="right" style="vertical-align:middle;padding-left:16px;">
+																			<a href="${action.url}" target="_blank" style="display:inline-block;padding:12px 24px;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#5a9263;text-decoration:none;border-radius:999px;background:#ffffff;border:2px solid #5a9263;white-space:nowrap;">
+																				${actionLabel}
+																			</a>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+														</tr>
+													</table>`
 												: ''
 										}
 									</td>
 								</tr>
+
+								<!-- Multi-column Footer Card Section -->
 								<tr>
-									<td style="padding:24px 36px;background:#fafaf9;border-top:1px solid #f0efed;">
-										<p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;">CellKore</p>
-										<p style="margin:0;font-size:11px;color:#a8a29e;line-height:1.6;">Premium Electronics Hub &middot; This is an automated message — for help, contact <a href="mailto:support@cellkore.com" style="color:${BRAND_COLOR};text-decoration:none;">support@cellkore.com</a></p>
+									<td style="padding:32px 40px;background:#f8faf8;border-top:1px solid #eaf0eb;">
+										<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+											<tr>
+												<td width="60%" style="vertical-align:top;padding-right:20px;">
+													<img src="${logoUrl()}" width="70" height="70" alt="CellKore" style="display:block;border-radius:14px;margin-bottom:12px;" />
+													<p style="margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#111827;">ABOUT CELLKORE</p>
+													<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.6;font-weight:500;">
+														CellKore is your trusted store for premium electronics. We bring you top-quality devices, unbeatable prices, and exceptional service.
+													</p>
+												</td>
+												<td width="40%" style="vertical-align:top;">
+													<p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#111827;">NEED HELP?</p>
+													<p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#5a9263;">
+														<a href="mailto:support@cellkore.com" style="color:#5a9263;text-decoration:none;">support@cellkore.com</a>
+													</p>
+													<p style="margin:0 0 4px;font-size:11px;color:#6b7280;font-weight:500;">
+														+1 (234) 567-8900
+													</p>
+													<p style="margin:0;font-size:11px;color:#6b7280;font-weight:500;">
+														<a href="${siteUrl()}" style="color:#6b7280;text-decoration:none;">www.cellkore.com</a>
+													</p>
+												</td>
+											</tr>
+										</table>
+									</td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+
+					<!-- Bottom Copyright Footnote -->
+					<tr>
+						<td style="padding:24px 0 0;text-align:center;">
+							<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td align="center" style="font-size:11px;color:#9ca3af;font-weight:500;">
+										&copy; ${new Date().getFullYear()} CellKore. All rights reserved. &nbsp;&middot;&nbsp; 
+										<a href="${siteUrl()}/privacy-policy" style="color:#6b7280;text-decoration:none;">Unsubscribe</a> &nbsp;|&nbsp; 
+										<a href="${siteUrl()}/terms" style="color:#6b7280;text-decoration:none;">Manage Preferences</a>
 									</td>
 								</tr>
 							</table>
@@ -93,65 +211,4 @@ export function renderSectionCard(html: string): string {
 
 export function renderDivider(): string {
 	return `<div style="height:1px;background:#f0efed;margin:16px 0;"></div>`
-}
-
-export interface EmailOrderItem {
-	name: string
-	quantity: number
-	unitPrice: number
-}
-
-/** Line-item table matching the storefront's order-summary styling. */
-export function renderOrderItemsTable(items: EmailOrderItem[], currency: 'USD' | 'CAD'): string {
-	const rows = items
-		.map(
-			(i) => `
-				<tr>
-					<td style="padding:10px 0;border-bottom:1px solid #f0efed;color:#111111;font-weight:600;">${i.name}</td>
-					<td style="padding:10px 0;border-bottom:1px solid #f0efed;color:#78716c;text-align:center;white-space:nowrap;">&times;${i.quantity}</td>
-					<td style="padding:10px 0;border-bottom:1px solid #f0efed;color:#111111;text-align:right;white-space:nowrap;">${formatCurrency(i.unitPrice * i.quantity, currency)}</td>
-				</tr>`
-		)
-		.join('')
-	return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;margin:4px 0;">${rows}</table>`
-}
-
-/** Subtotal / discount / tax / extras / total breakdown, right-aligned like a receipt. */
-export function renderOrderSummary(summary: {
-	subtotal: number
-	discount?: number
-	tax?: number
-	extras?: number
-	total: number
-	currency: 'USD' | 'CAD'
-}): string {
-	const { subtotal, discount = 0, tax = 0, extras = 0, total, currency } = summary
-	const line = (label: string, value: string, opts?: { bold?: boolean; negative?: boolean }) => `
-		<tr>
-			<td style="padding:4px 0;color:${opts?.bold ? '#111111' : '#78716c'};font-size:${opts?.bold ? '14px' : '13px'};font-weight:${opts?.bold ? '800' : '400'};">${label}</td>
-			<td style="padding:4px 0;text-align:right;color:${opts?.bold ? '#111111' : '#44403c'};font-size:${opts?.bold ? '15px' : '13px'};font-weight:${opts?.bold ? '800' : '600'};">${opts?.negative ? '&minus;' : ''}${value}</td>
-		</tr>`
-	return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
-		${line('Subtotal', formatCurrency(subtotal, currency))}
-		${discount > 0 ? line('Discount', formatCurrency(discount, currency), { negative: true }) : ''}
-		${tax > 0 ? line('Tax', formatCurrency(tax, currency)) : ''}
-		${extras > 0 ? line('Gift Options', formatCurrency(extras, currency)) : ''}
-		<tr><td colspan="2" style="padding-top:8px;"><div style="height:1px;background:#e7e5e4;"></div></td></tr>
-		${line('Total', formatCurrency(total, currency), { bold: true })}
-	</table>`
-}
-
-export function renderAddress(address: {
-	line1: string
-	line2?: string | null
-	city: string
-	stateProvince?: string | null
-	postalCode?: string | null
-	country: string
-}): string {
-	return `<p style="margin:0;color:#44403c;">
-		${address.line1}${address.line2 ? `<br/>${address.line2}` : ''}<br/>
-		${address.city}${address.stateProvince ? `, ${address.stateProvince}` : ''} ${address.postalCode ?? ''}<br/>
-		${address.country}
-	</p>`
 }

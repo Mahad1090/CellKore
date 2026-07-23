@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 	if ('error' in auth) return auth.error
 
 	try {
-		const { subject, link, message } = await request.json()
+		const { subject, link, buttonText, message, imageUrl } = await request.json()
 		if (!subject || !message) {
 			return NextResponse.json({ error: 'Subject and Message Content are required' }, { status: 400 })
 		}
@@ -45,14 +45,15 @@ export async function POST(request: NextRequest) {
 
 		const formattedParagraphs = message
 			.split('\n\n')
-			.map((p: string) => `<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.7; color: #44403c;">${p.replace(/\n/g, '<br/>')}</p>`)
+			.map((p: string) => `<p style="margin: 0 0 16px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.75; color: #374151; font-weight: 400;">${p.replace(/\n/g, '<br/>')}</p>`)
 			.join('')
 
 		const html = renderEmailLayout({
 			eyebrow: 'NEWSLETTER & NEW ARRIVALS',
-			heading: subject,
+			heading: subject.trim(),
 			bodyHtml: formattedParagraphs,
-			action: link?.trim() ? { label: 'View Arrival / Collection', url: link.trim() } : undefined,
+			imageUrl: imageUrl?.trim() || undefined,
+			action: link?.trim() ? { label: buttonText?.trim() || 'EXPLORE COLLECTION', url: link.trim() } : undefined,
 		})
 
 		// Send email using the shared CellKore branded template to all active subscribers

@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Send, Loader2, Trash2, Mail, Users, CheckCircle2, ChevronRight, Home } from 'lucide-react'
+import { Send, Loader2, Trash2, Mail, Users, CheckCircle2, ChevronRight, Home, ImagePlus, X, Upload } from 'lucide-react'
 import { adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
+import { uploadViaAdminApi } from '@/lib/storage'
 
 interface Subscriber {
 	id: string
@@ -21,6 +22,9 @@ export default function AdminNewsletterPage() {
 	const [subscribers, setSubscribers] = useState<Subscriber[] | null>(null)
 	const [subject, setSubject] = useState('')
 	const [link, setLink] = useState('')
+	const [buttonText, setButtonText] = useState('')
+	const [imageUrl, setImageUrl] = useState('')
+	const [uploadingImage, setUploadingImage] = useState(false)
 	const [message, setMessage] = useState('')
 	const [sending, setSending] = useState(false)
 	const [search, setSearch] = useState('')
@@ -35,6 +39,22 @@ export default function AdminNewsletterPage() {
 	useEffect(() => {
 		loadSubscribers()
 	}, [])
+
+	const handleImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0]
+		if (!file) return
+		setUploadingImage(true)
+		try {
+			const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+			const url = await uploadViaAdminApi(`newsletter/${Date.now()}-${sanitizedName}`, file)
+			setImageUrl(url)
+			toast({ title: 'Image attached!', description: 'Banner picture uploaded for newsletter.', variant: 'success' })
+		} catch (err) {
+			toast({ title: 'Upload failed', description: err instanceof Error ? err.message : 'Upload failed', variant: 'error' })
+		} finally {
+			setUploadingImage(false)
+		}
+	}
 
 	const handleSendBroadcast = async (e: React.FormEvent) => {
 		e.preventDefault()
@@ -60,7 +80,13 @@ export default function AdminNewsletterPage() {
 			const res = await fetch('/api/admin/newsletter', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ subject: subject.trim(), link: link.trim(), message: message.trim() }),
+				body: JSON.stringify({
+					subject: subject.trim(),
+					link: link.trim(),
+					buttonText: buttonText.trim(),
+					message: message.trim(),
+					imageUrl: imageUrl.trim(),
+				}),
 			})
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error)
@@ -72,6 +98,8 @@ export default function AdminNewsletterPage() {
 			})
 			setSubject('')
 			setLink('')
+			setButtonText('')
+			setImageUrl('')
 			setMessage('')
 		} catch (err) {
 			toast({ title: 'Failed to send', description: err instanceof Error ? err.message : 'Error sending broadcast', variant: 'error' })
@@ -150,6 +178,72 @@ export default function AdminNewsletterPage() {
 								className={`${adminInput} bg-muted/20 border-border/80 font-medium text-xs`}
 								disabled={!writable || sending}
 							/>
+						</div>
+
+						<div>
+							<label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-2 block">
+								BUTTON TEXT / CTA LABEL (OPTIONAL)
+							</label>
+							<input
+								value={buttonText}
+								onChange={(e) => setButtonText(e.target.value)}
+								placeholder="e.g. SHOP NEW ARRIVALS, EXPLORE COLLECTION, CLAIM DEAL"
+								className={`${adminInput} bg-muted/20 border-border/80 font-medium text-xs`}
+								disabled={!writable || sending}
+							/>
+						</div>
+
+						{/* BANNER / ATTACHMENT PICTURE */}
+						<div>
+							<label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-2 block">
+								ATTACHMENT / BANNER PICTURE (OPTIONAL)
+							</label>
+
+							{imageUrl.trim() ? (
+								<div className="relative inline-block rounded-2xl overflow-hidden border border-border/80 shadow-3xs max-w-sm group">
+									<img
+										src={imageUrl}
+										alt="Newsletter attachment preview"
+										className="max-h-48 w-full object-cover"
+									/>
+									<button
+										type="button"
+										onClick={() => setImageUrl('')}
+										className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-black transition-colors cursor-pointer flex items-center gap-1 text-[10px] px-2.5 font-bold uppercase tracking-wider"
+										title="Remove image"
+									>
+										<X className="w-3.5 h-3.5" />
+										Remove
+									</button>
+								</div>
+							) : (
+								<div>
+									<label
+										className={`inline-flex items-center gap-2.5 px-5 py-3 bg-secondary text-secondary-foreground font-bold text-xs rounded-xl border border-border/80 hover:bg-muted transition-all cursor-pointer shadow-3xs ${
+											uploadingImage ? 'opacity-50 pointer-events-none' : ''
+										}`}
+									>
+										{uploadingImage ? (
+											<>
+												<Loader2 className="w-4 h-4 animate-spin text-primary" />
+												Uploading Picture...
+											</>
+										) : (
+											<>
+												<Upload className="w-4 h-4 text-primary" />
+												Upload Banner Picture
+											</>
+										)}
+										<input
+											type="file"
+											accept="image/*"
+											onChange={handleImageFileUpload}
+											className="hidden"
+											disabled={!writable || sending || uploadingImage}
+										/>
+									</label>
+								</div>
+							)}
 						</div>
 
 						<div>
