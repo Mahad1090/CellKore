@@ -2,7 +2,10 @@ export const BRAND_COLOR = '#5a9263'
 export const BRAND_COLOR_DARK = '#477650'
 
 export function siteUrl(): string {
-	return process.env.NEXT_PUBLIC_SITE_URL || 'https://cellkore.com'
+	if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim() !== '') {
+		return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')
+	}
+	return 'https://cellkore.com'
 }
 
 export function logoUrl(): string {
