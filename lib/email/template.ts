@@ -324,29 +324,33 @@ export function renderDivider(): string {
 export interface EmailOrderItem {
 	name: string
 	sku?: string
-	qty: number
-	price: number
+	qty?: number
+	quantity?: number
+	price?: number
+	unitPrice?: number
 	image_url?: string
 }
 
 export function renderOrderItemsTable(items: EmailOrderItem[], currency: 'USD' | 'CAD' = 'USD'): string {
 	if (!items || items.length === 0) return ''
 	const rows = items
-		.map(
-			(item) => `
+		.map((item) => {
+			const qty = item.quantity ?? item.qty ?? 1
+			const price = item.unitPrice ?? item.price ?? 0
+			return `
 		<tr>
 			<td style="padding:10px 0;border-bottom:1px solid #f0efed;">
 				<p style="margin:0;font-weight:600;color:#111111;font-size:14px;">${item.name}</p>
 				${item.sku ? `<p style="margin:2px 0 0;font-size:11px;color:#78716c;">SKU: ${item.sku}</p>` : ''}
 			</td>
 			<td align="center" style="padding:10px 0;border-bottom:1px solid #f0efed;font-size:13px;color:#444444;">
-				${item.qty}
+				${qty}
 			</td>
 			<td align="right" style="padding:10px 0;border-bottom:1px solid #f0efed;font-weight:600;font-size:14px;color:#111111;">
-				${formatCurrency(item.price * item.qty, currency)}
+				${formatCurrency(price * qty, currency)}
 			</td>
 		</tr>`
-		)
+		})
 		.join('')
 
 	return `
