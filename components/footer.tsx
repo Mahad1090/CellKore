@@ -289,18 +289,12 @@ export function Footer() {
 				</div>
 
 				{/* Bottom Bar */}
-				<div className="pt-6 border-t border-[#599063]/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+				<div className="pt-6 border-t border-[#599063]/25 flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 text-center sm:text-left">
 					<div className="flex items-center gap-2">
 						<span className="w-2 h-2 rounded-full bg-[#599063]" />
 						<p className="text-xs text-[#2d4633] font-medium">
 							© {new Date().getFullYear()} <span className="font-extrabold text-[#0e1710]">CellKore</span>, A brand name owned by Yulkore Group Inc.
 						</p>
-					</div>
-
-					<div className="flex flex-wrap items-center justify-center gap-4 text-[10px] uppercase tracking-[0.16em] text-[#1e3323] font-bold">
-						<span>Certified North America Hub</span>
-						<span>•</span>
-						<span>All Sales Final Policy</span>
 					</div>
 				</div>
 
