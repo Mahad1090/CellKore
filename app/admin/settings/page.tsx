@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Loader2, Globe, ExternalLink, Copy } from 'lucide-react'
 import { PageTitle, Panel, EmptyState, adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { CountrySelect } from '@/components/ui/country-select'
@@ -10,6 +10,17 @@ import { useAdmin } from '@/contexts/admin-context'
 import { normalizeAddressNewlines } from '@/lib/data'
 import { SHIPPING_COUNTRIES } from '@/lib/shipping-countries'
 import type { SocialLink, TaxRate } from '@/lib/types'
+
+function renderPlatformIcon(platform: string) {
+	const p = platform.toLowerCase()
+	if (p.includes('amazon')) return <img src="/amazon.svg" alt="Amazon" className="w-4 h-4 object-contain" />
+	if (p.includes('facebook')) return <img src="/facebook.svg" alt="Facebook" className="w-4 h-4 object-contain" />
+	if (p.includes('instagram')) return <img src="/instagram.svg" alt="Instagram" className="w-4 h-4 object-contain" />
+	if (p.includes('tiktok')) return <img src="/tiktok.svg" alt="TikTok" className="w-4 h-4 object-contain" />
+	if (p.includes('whatsapp')) return <img src="/whatsapp.svg" alt="WhatsApp" className="w-4 h-4 object-contain" />
+	if (p.includes('ebay')) return <img src="/ebay.svg" alt="eBay" className="w-4 h-4 object-contain" />
+	return <Globe className="w-4 h-4 text-muted-foreground" />
+}
 
 const TABS = [
 	{ id: 'tax', label: 'Tax Rates' },
@@ -305,88 +316,150 @@ export default function AdminSettingsPage() {
 			)}
 
 			{tab === 'social' && (
-				<div>
-				{writable && (
-					<Panel title="Add Platform" className="max-w-3xl mb-8">
-						<div className="grid sm:grid-cols-3 gap-3">
-							<input
-								placeholder="Platform (e.g. Instagram)"
-								value={newLink.platform}
-								onChange={(e) => setNewLink({ ...newLink, platform: e.target.value })}
-								className={adminInput}
-							/>
-							<input
-								placeholder="https://instagram.com/cellkore"
-								value={newLink.url}
-								onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-								className={adminInput}
-							/>
-							<button onClick={add} disabled={saving} className={`${adminButton} justify-center`}>
-								{saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-								Add Link
-							</button>
-						</div>
-					</Panel>
-				)}
+				<div className="max-w-4xl space-y-6">
+					{/* Store Settings Panel Header */}
+					<div className="bg-card border border-border rounded-3xl p-6 shadow-sm">
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80 mb-6">
+							<div>
+								<div className="flex items-center gap-2">
+									<Globe className="w-5 h-5 text-primary" />
+									<h2 className="text-lg font-serif text-foreground font-bold tracking-tight">Store Settings</h2>
+								</div>
+								<p className="text-xs text-muted-foreground mt-1 font-sans">
+									These links appear in the website header, footer, and contact sections.
+								</p>
+							</div>
 
-				{links === null ? (
-					<TableShimmer />
-				) : links.length === 0 ? (
-					<EmptyState message="No social links configured." />
-				) : (
-					<div className="border border-border rounded-3xl overflow-hidden bg-card overflow-x-auto max-w-3xl">
-						<table className="w-full text-sm min-w-[520px]">
-							<thead>
-								<tr className="bg-secondary text-left">
-									{['Platform', 'URL', 'Active', ''].map((h) => (
-										<th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.14em] text-foreground/70">{h}</th>
-									))}
-								</tr>
-							</thead>
-							<tbody>
-								{links.map((link) => (
-									<tr key={link.id} className="border-t border-border hover:bg-muted/40 transition-colors">
-										<td className="px-5 py-3.5 font-medium text-card-foreground">{link.platform}</td>
-										<td className="px-5 py-3.5">
-											{writable ? (
+							{writable && (
+								<div className="flex items-center gap-2.5">
+									<span className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground whitespace-nowrap">
+										ADD PLATFORM:
+									</span>
+									<select
+										onChange={async (e) => {
+											const val = e.target.value
+											if (!val) return
+											try {
+												const res = await fetch('/api/admin/social-links', {
+													method: 'POST',
+													headers: { 'Content-Type': 'application/json' },
+													body: JSON.stringify({ platform: val, url: '', is_active: true }),
+												})
+												const json = await res.json()
+												if (!res.ok) throw new Error(json.error || 'Failed to add platform')
+												toast({ title: 'Platform added', description: `${val} added to store settings.`, variant: 'success' })
+												load()
+											} catch (err) {
+												toast({ title: 'Error', description: err instanceof Error ? err.message : 'Error', variant: 'error' })
+											}
+											e.target.value = ''
+										}}
+										className="px-3.5 py-2 bg-muted/30 border border-border/80 rounded-xl text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer"
+									>
+										<option value="">Choose platform...</option>
+										<option value="Amazon Store">Amazon Store</option>
+										<option value="Facebook">Facebook</option>
+										<option value="Instagram">Instagram</option>
+										<option value="TikTok">TikTok</option>
+										<option value="WhatsApp Canada Number">WhatsApp Canada Number</option>
+										<option value="WhatsApp Group Invite Link">WhatsApp Group Invite Link</option>
+										<option value="WhatsApp US Number">WhatsApp US Number</option>
+										<option value="eBay Store">eBay Store</option>
+										<option value="Google Business">Google Business</option>
+									</select>
+								</div>
+							)}
+						</div>
+
+						{/* Platform Cards List */}
+						{links === null ? (
+							<TableShimmer />
+						) : links.length === 0 ? (
+							<EmptyState message="No store platforms configured. Choose a platform above to get started." />
+						) : (
+							<div className="space-y-4">
+								{links.map((link) => {
+									const isWhatsapp = link.platform.toLowerCase().includes('whatsapp')
+									return (
+										<div
+											key={link.id}
+											className="bg-card border border-border/80 rounded-2xl p-5 hover:border-primary/40 transition-all shadow-3xs group"
+										>
+											<div className="flex items-center justify-between gap-3 mb-2.5">
+												<div className="flex items-center gap-2">
+													{renderPlatformIcon(link.platform)}
+													<span className="text-[11px] font-bold uppercase tracking-[0.16em] text-foreground font-sans">
+														{link.platform}
+													</span>
+												</div>
+
+												{writable && (
+													<button
+														type="button"
+														onClick={() => remove(link)}
+														className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+													>
+														<Trash2 className="w-3.5 h-3.5" />
+														Remove Link
+													</button>
+												)}
+											</div>
+
+											<div className="flex items-center gap-2">
 												<input
 													defaultValue={link.url}
+													placeholder={
+														isWhatsapp
+															? 'e.g. +1 (206) 841-2427'
+															: `https://www.${link.platform.toLowerCase().replace(/[^a-z0-9]/g, '')}.com/...`
+													}
 													onBlur={(e) => {
-														if (e.target.value !== link.url) update({ ...link, url: e.target.value })
+														if (e.target.value !== link.url) {
+															update({ ...link, url: e.target.value })
+														}
 													}}
-													className={`${adminInput} py-1.5`}
+													disabled={!writable}
+													className={`${adminInput} bg-muted/20 border-border/80 text-xs font-medium flex-1`}
 												/>
-											) : (
-												<span className="text-foreground/75 text-xs">{link.url}</span>
-											)}
-										</td>
-										<td className="px-5 py-3.5">
-											<input
-												type="checkbox"
-												checked={link.is_active}
-												disabled={!writable}
-												onChange={(e) => update({ ...link, is_active: e.target.checked })}
-												className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
-											/>
-										</td>
-										<td className="px-5 py-3.5">
-											{writable && (
-												<button
-													onClick={() => remove(link)}
-													className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-													aria-label="Remove"
-												>
-													<Trash2 className="w-4 h-4" />
-												</button>
-											)}
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
+
+												{link.url.trim() && (
+													<>
+														<a
+															href={
+																link.url.startsWith('http')
+																	? link.url
+																	: isWhatsapp
+																	? `https://wa.me/${link.url.replace(/\D/g, '')}`
+																	: `https://${link.url}`
+															}
+															target="_blank"
+															rel="noopener noreferrer"
+															className="p-2.5 rounded-xl border border-border/80 bg-secondary hover:bg-muted text-foreground transition-all cursor-pointer"
+															title="Open Link in New Tab"
+														>
+															<ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+														</a>
+														<button
+															type="button"
+															onClick={() => {
+																navigator.clipboard.writeText(link.url)
+																toast({ title: 'Copied to clipboard', variant: 'success' })
+															}}
+															className="p-2.5 rounded-xl border border-border/80 bg-secondary hover:bg-muted text-foreground transition-all cursor-pointer"
+															title="Copy to Clipboard"
+														>
+															<Copy className="w-3.5 h-3.5 text-muted-foreground" />
+														</button>
+													</>
+												)}
+											</div>
+										</div>
+									)
+								})}
+							</div>
+						)}
 					</div>
-				)}
-			</div>
+				</div>
 			)}
 
 			{tab === 'repair' && (

@@ -260,9 +260,63 @@ export function Footer() {
 							</button>
 						</form>
 
-						<div className="flex items-center gap-1.5 text-[10px] text-[#2d4633] font-bold">
+						<div className="flex items-center gap-1.5 text-[10px] text-[#2d4633] font-bold mb-4">
 							<Lock className="w-3 h-3 text-[#275330]" />
 							<span>No spam · Unsubscribe anytime</span>
+						</div>
+
+						{/* Follow Us / Store Social Platforms */}
+						<div className="pt-2 border-t border-[#599063]/25 w-full">
+							<p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#0e1710] mb-2.5">
+								Follow Us &amp; Stores
+							</p>
+							<div className="flex flex-wrap items-center gap-2">
+								{socialLinks.length > 0 ? (
+									socialLinks.map((link) => {
+										const p = link.platform.toLowerCase()
+										let iconSrc = '/facebook.svg'
+										if (p.includes('instagram')) iconSrc = '/instagram.svg'
+										if (p.includes('tiktok')) iconSrc = '/tiktok.svg'
+										if (p.includes('whatsapp')) iconSrc = '/whatsapp.svg'
+										if (p.includes('amazon')) iconSrc = '/amazon.svg'
+										if (p.includes('ebay')) iconSrc = '/ebay.svg'
+
+										return (
+											<a
+												key={link.id}
+												href={
+													link.url.startsWith('http')
+														? link.url
+														: p.includes('whatsapp')
+														? `https://wa.me/${link.url.replace(/\D/g, '')}`
+														: `https://${link.url}`
+												}
+												target="_blank"
+												rel="noreferrer"
+												className="w-9 h-9 rounded-lg bg-white border border-[#599063]/30 hover:border-[#599063] flex items-center justify-center transition-all cursor-pointer shadow-3xs"
+												title={link.platform}
+											>
+												<img src={iconSrc} alt={link.platform} className="w-4.5 h-4.5 object-contain" />
+											</a>
+										)
+									})
+								) : (
+									<>
+										<a href="https://facebook.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-white border border-[#599063]/30 hover:border-[#599063] flex items-center justify-center transition-all shadow-3xs">
+											<img src="/facebook.svg" alt="Facebook" className="w-4.5 h-4.5 object-contain" />
+										</a>
+										<a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-white border border-[#599063]/30 hover:border-[#599063] flex items-center justify-center transition-all shadow-3xs">
+											<img src="/instagram.svg" alt="Instagram" className="w-4.5 h-4.5 object-contain" />
+										</a>
+										<a href="https://tiktok.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-white border border-[#599063]/30 hover:border-[#599063] flex items-center justify-center transition-all shadow-3xs">
+											<img src="/tiktok.svg" alt="TikTok" className="w-4.5 h-4.5 object-contain" />
+										</a>
+										<a href="https://whatsapp.com" target="_blank" rel="noreferrer" className="w-9 h-9 rounded-lg bg-white border border-[#599063]/30 hover:border-[#599063] flex items-center justify-center transition-all shadow-3xs">
+											<img src="/whatsapp.svg" alt="WhatsApp" className="w-4.5 h-4.5 object-contain" />
+										</a>
+									</>
+								)}
+							</div>
 						</div>
 					</div>
 

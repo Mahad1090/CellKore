@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
 	const auth = await requireAdmin(request, 'settings:write')
 	if ('error' in auth) return auth.error
 	const body = await request.json()
-	if (!body.platform || !body.url) {
-		return NextResponse.json({ error: 'platform and url are required' }, { status: 400 })
+	if (!body.platform) {
+		return NextResponse.json({ error: 'platform is required' }, { status: 400 })
 	}
 	const service = createServiceClient()
 	const { data, error } = await service
 		.from('social_links')
-		.insert({ platform: body.platform, url: body.url, is_active: body.is_active ?? true })
+		.insert({ platform: body.platform, url: body.url ?? '', is_active: body.is_active ?? true })
 		.select('id')
 		.single()
 	if (error) return NextResponse.json({ error: error.message }, { status: 500 })
