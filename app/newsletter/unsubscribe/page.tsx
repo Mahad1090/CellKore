@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { MailX, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react'
@@ -9,16 +9,17 @@ import { Footer } from '@/components/footer'
 
 function UnsubscribeForm() {
 	const searchParams = useSearchParams()
-	const initialEmail = searchParams.get('email') ?? ''
+	const initialEmail = (searchParams.get('email') ?? '').trim()
 
 	const [email, setEmail] = useState(initialEmail)
 	const [loading, setLoading] = useState(false)
 	const [unsubscribed, setUnsubscribed] = useState(false)
 	const [errorMsg, setErrorMsg] = useState<string | null>(null)
+	const hasAutoProcessed = useRef(false)
 
-	const handleUnsubscribe = async (e: React.FormEvent) => {
-		e.preventDefault()
-		if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+	const doUnsubscribe = async (targetEmail: string) => {
+		const cleaned = targetEmail.trim().toLowerCase()
+		if (!/^\S+@\S+\.\S+$/.test(cleaned)) {
 			setErrorMsg('Please enter a valid email address.')
 			return
 		}
@@ -30,7 +31,7 @@ function UnsubscribeForm() {
 			const res = await fetch('/api/newsletter/unsubscribe', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email: email.trim().toLowerCase() }),
+				body: JSON.stringify({ email: cleaned }),
 			})
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error || 'Unsubscribe request failed')
@@ -43,10 +44,30 @@ function UnsubscribeForm() {
 		}
 	}
 
+	// Auto-process unsubscribe if email parameter is present in URL
+	useEffect(() => {
+		if (initialEmail && !hasAutoProcessed.current) {
+			hasAutoProcessed.current = true
+			doUnsubscribe(initialEmail)
+		}
+	}, [initialEmail])
+
+	const handleFormSubmit = (e: React.FormEvent) => {
+		e.preventDefault()
+		doUnsubscribe(email)
+	}
+
 	return (
 		<div className="max-w-xl mx-auto px-4 py-16 sm:py-24">
 			<div className="bg-card border border-border rounded-3xl p-8 sm:p-12 shadow-sm text-center font-sans space-y-6">
-				{unsubscribed ? (
+				{loading ? (
+					<div className="py-12 space-y-4">
+						<Loader2 className="w-10 h-10 animate-spin mx-auto text-[#599161]" />
+						<p className="text-sm font-semibold text-muted-foreground">
+							Unsubscribing <strong className="text-foreground">{email}</strong>...
+						</p>
+					</div>
+				) : unsubscribed ? (
 					<div className="space-y-4">
 						<div className="w-16 h-16 mx-auto rounded-full bg-[#EEF7F0] border border-[#C8E6CE] flex items-center justify-center text-[#599161]">
 							<CheckCircle2 className="w-8 h-8" />
@@ -77,7 +98,7 @@ function UnsubscribeForm() {
 								Unsubscribe from Newsletter
 							</h1>
 							<p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-								We are sorry to see you go! Enter or confirm your email address below to unsubscribe from CellKore updates.
+								Confirm your email address below to unsubscribe from CellKore newsletter updates.
 							</p>
 						</div>
 
@@ -87,7 +108,7 @@ function UnsubscribeForm() {
 							</div>
 						)}
 
-						<form onSubmit={handleUnsubscribe} className="space-y-4 text-left">
+						<form onSubmit={handleFormSubmit} className="space-y-4 text-left">
 							<div>
 								<label className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground block mb-2">
 									Your Email Address
@@ -107,13 +128,7 @@ function UnsubscribeForm() {
 								disabled={loading}
 								className="w-full py-3.5 px-6 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs uppercase tracking-[0.16em] rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
 							>
-								{loading ? (
-									<>
-										<Loader2 className="w-4 h-4 animate-spin" /> Unsubscribing...
-									</>
-								) : (
-									'Confirm Unsubscribe'
-								)}
+								Confirm Unsubscribe
 							</button>
 						</form>
 
