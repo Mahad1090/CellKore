@@ -18,7 +18,7 @@ import { primaryImage } from '@/lib/types'
 const MARKETPLACE_OPTIONS: { value: Marketplace; label: string }[] = [
 	{ value: 'US', label: 'US Marketplace' },
 	{ value: 'CA', label: 'Canada Marketplace' },
-	{ value: 'BOTH', label: 'US & Canada' },
+	// { value: 'BOTH', label: 'US & Canada' },
 ]
 
 function UsFlag({ className }: { className?: string }) {

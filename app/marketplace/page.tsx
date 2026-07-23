@@ -12,7 +12,7 @@ import type { Product } from '@/lib/types'
 const TABS: { value: Marketplace; label: string }[] = [
 	{ value: 'US', label: 'United States' },
 	{ value: 'CA', label: 'Canada' },
-	{ value: 'BOTH', label: 'Both Marketplaces' },
+	// { value: 'BOTH', label: 'Both Marketplaces' },
 ]
 
 export default function MarketplacePage() {
