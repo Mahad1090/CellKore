@@ -248,6 +248,7 @@ export function ProductFormModal({
   const [presetNameInput, setPresetNameInput] = useState<string | null>(null)
   const [savingPreset, setSavingPreset] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('general')
+  const [salePriceInput, setSalePriceInput] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -264,10 +265,49 @@ export function ProductFormModal({
     } else {
       setProfitPercent('')
     }
+
+    if (initial.is_on_sale && initial.discount_percent && initial.base_price && !Number.isNaN(base) && !Number.isNaN(Number(initial.discount_percent))) {
+      const pct = Number(initial.discount_percent)
+      setSalePriceInput((base * (1 - pct / 100)).toFixed(2))
+    } else {
+      setSalePriceInput('')
+    }
   }, [initial])
 
   const set = <K extends keyof ProductFormValue>(field: K, value: ProductFormValue[K]) =>
     setForm((f) => ({ ...f, [field]: value }))
+
+  const updateSalePriceFromBase = (newBasePrice: string, currentPct: string) => {
+    const base = Number(newBasePrice)
+    const pct = Number(currentPct)
+    if (newBasePrice.trim() && !Number.isNaN(base) && base > 0 && currentPct.trim() && !Number.isNaN(pct) && pct >= 0 && pct <= 100) {
+      setSalePriceInput((Math.round(base * (1 - pct / 100) * 100) / 100).toFixed(2))
+    }
+  }
+
+  const handleDiscountPercentChange = (val: string) => {
+    set('discount_percent', val)
+    const base = Number(form.base_price)
+    const pct = Number(val)
+    if (val.trim() && !Number.isNaN(base) && base > 0 && !Number.isNaN(pct) && pct >= 0 && pct <= 100) {
+      const discounted = Math.round(base * (1 - pct / 100) * 100) / 100
+      setSalePriceInput(discounted.toFixed(2))
+    } else if (!val.trim()) {
+      setSalePriceInput('')
+    }
+  }
+
+  const handleSalePriceChange = (val: string) => {
+    setSalePriceInput(val)
+    const base = Number(form.base_price)
+    const sale = Number(val)
+    if (val.trim() && !Number.isNaN(base) && base > 0 && !Number.isNaN(sale) && sale >= 0 && sale <= base) {
+      const pct = Math.round(((base - sale) / base) * 100)
+      set('discount_percent', String(pct))
+    } else if (!val.trim()) {
+      set('discount_percent', '')
+    }
+  }
 
   // Purchase Price / Profit % / Base Price (selling price) are a three-way calculator:
   // editing any one of the first two recomputes Base Price; editing Base Price recomputes Profit %.
@@ -276,7 +316,9 @@ export function ProductFormModal({
     const purchase = Number(value)
     if (!value.trim() || Number.isNaN(purchase) || purchase <= 0) return
     if (profitPercent.trim() && !Number.isNaN(Number(profitPercent))) {
-      set('base_price', (purchase * (1 + Number(profitPercent) / 100)).toFixed(2))
+      const newBase = (purchase * (1 + Number(profitPercent) / 100)).toFixed(2)
+      set('base_price', newBase)
+      if (form.is_on_sale && form.discount_percent) updateSalePriceFromBase(newBase, form.discount_percent)
     } else if (form.base_price.trim() && !Number.isNaN(Number(form.base_price))) {
       setProfitPercent((((Number(form.base_price) - purchase) / purchase) * 100).toFixed(1))
     }
@@ -287,7 +329,9 @@ export function ProductFormModal({
     const percent = Number(value)
     const purchase = Number(form.purchase_price)
     if (value.trim() && !Number.isNaN(percent) && purchase > 0) {
-      set('base_price', (purchase * (1 + percent / 100)).toFixed(2))
+      const newBase = (purchase * (1 + percent / 100)).toFixed(2)
+      set('base_price', newBase)
+      if (form.is_on_sale && form.discount_percent) updateSalePriceFromBase(newBase, form.discount_percent)
     }
   }
 
@@ -297,6 +341,9 @@ export function ProductFormModal({
     const purchase = Number(form.purchase_price)
     if (value.trim() && !Number.isNaN(base) && purchase > 0) {
       setProfitPercent((((base - purchase) / purchase) * 100).toFixed(1))
+    }
+    if (form.is_on_sale && form.discount_percent) {
+      updateSalePriceFromBase(value, form.discount_percent)
     }
   }
 
@@ -703,7 +750,13 @@ export function ProductFormModal({
                     type="button"
                     role="switch"
                     aria-checked={form.is_on_sale}
-                    onClick={() => set('is_on_sale', !form.is_on_sale)}
+                    onClick={() => {
+                      const next = !form.is_on_sale
+                      set('is_on_sale', next)
+                      if (next && form.discount_percent && form.base_price) {
+                        updateSalePriceFromBase(form.base_price, form.discount_percent)
+                      }
+                    }}
                     className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer shrink-0 ${
                       form.is_on_sale ? 'bg-[#599161]' : 'bg-[#D8DCD9]'
                     }`}
@@ -717,7 +770,19 @@ export function ProductFormModal({
                 </div>
 
                 {form.is_on_sale && (
-                  <div className="grid sm:grid-cols-2 gap-4 items-end">
+                  <div className="grid sm:grid-cols-3 gap-4 items-end pt-2 border-t border-border/40">
+                    <div>
+                      <label className={label}>Sale Price (<strong className="text-foreground">{currency}</strong>)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min={0}
+                        value={salePriceInput}
+                        onChange={(e) => handleSalePriceChange(e.target.value)}
+                        className={adminInput}
+                        placeholder="e.g. 960.00"
+                      />
+                    </div>
                     <div>
                       <label className={label}>Discount (% off)</label>
                       <input
@@ -726,32 +791,37 @@ export function ProductFormModal({
                         max={100}
                         step="1"
                         value={form.discount_percent}
-                        onChange={(e) => set('discount_percent', e.target.value)}
+                        onChange={(e) => handleDiscountPercentChange(e.target.value)}
                         className={adminInput}
-                        placeholder="20"
+                        placeholder="e.g. 20"
                       />
                     </div>
                     {(() => {
                       const base = Number(form.base_price)
                       const pct = Number(form.discount_percent)
-                      const valid = form.base_price.trim() && !Number.isNaN(base) && !Number.isNaN(pct) && pct > 0 && pct <= 100
-                      const discounted = valid ? Math.round(base * (1 - pct / 100) * 100) / 100 : null
+                      const sale = Number(salePriceInput)
+                      const valid = form.base_price.trim() && !Number.isNaN(base) && base > 0 && ((!Number.isNaN(pct) && pct > 0) || (!Number.isNaN(sale) && sale > 0))
+                      const discounted = valid ? (sale > 0 && !Number.isNaN(sale) ? sale : base * (1 - pct / 100)) : null
+                      const displayPct = pct > 0 ? pct : (valid && sale > 0 && base > 0 ? Math.round(((base - sale) / base) * 100) : 0)
+
                       return (
-                        <div className="flex items-baseline gap-2.5 px-1 pb-1.5">
-                          {discounted !== null ? (
+                        <div className="flex flex-wrap items-baseline gap-2 px-1 pb-1.5 sm:col-span-1">
+                          {discounted !== null && discounted < base ? (
                             <>
                               <span className="text-lg font-black text-[#599161]">
                                 {currency} {discounted.toFixed(2)}
                               </span>
-                              <span className="text-sm text-muted-foreground line-through">
+                              <span className="text-xs text-muted-foreground line-through">
                                 {currency} {base.toFixed(2)}
                               </span>
-                              <span className="px-2 py-0.5 rounded-full bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161] font-bold text-[10px]">
-                                {pct}% OFF
-                              </span>
+                              {displayPct > 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161] font-bold text-[10px]">
+                                  {displayPct}% OFF
+                                </span>
+                              )}
                             </>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Enter a valid % to preview pricing.</span>
+                            <span className="text-xs text-muted-foreground">Enter sale price or % to preview.</span>
                           )}
                         </div>
                       )
