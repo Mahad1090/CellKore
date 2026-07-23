@@ -136,8 +136,8 @@ export function Footer() {
 					})}
 				</div>
 
-				{/* Main Footer Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12 text-center md:text-left">
+				{/* Main Footer Grid (Clean 3-Column Layout) */}
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 mb-12 text-center md:text-left">
 
 					{/* Company Info Column */}
 					<div className="flex flex-col items-center md:items-start space-y-3.5">
@@ -158,22 +158,6 @@ export function Footer() {
 						</p>
 					</div>
 
-					{/* Quick Links Column */}
-					<div className="flex flex-col items-center md:items-start">
-						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
-							Explore Catalog
-						</h4>
-						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
-							<li><Link href="/" className="hover:text-[#599063] transition-colors">Home Portal</Link></li>
-							<li><Link href="/products?category=iphones" className="hover:text-[#599063] transition-colors">All Certified Devices</Link></li>
-							<li><Link href="/marketplace" className="hover:text-[#599063] transition-colors">Regional Marketplaces</Link></li>
-							<li><Link href="/wholesale" className="hover:text-[#599063] transition-colors">Wholesale & Bulk Lots</Link></li>
-							<li><Link href="/spare-parts" className="hover:text-[#599063] transition-colors">Spare Parts Catalog</Link></li>
-							<li><Link href="/sell" className="hover:text-[#599063] transition-colors">Sell Your Device</Link></li>
-							<li><Link href="/repair" className="hover:text-[#599063] transition-colors">Repair Portal</Link></li>
-						</ul>
-					</div>
-
 					{/* Customer Support Column */}
 					<div className="flex flex-col items-center md:items-start">
 						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
@@ -181,7 +165,7 @@ export function Footer() {
 						</h4>
 						<ul className="space-y-2 text-xs font-bold text-[#1e3323]">
 							<li><Link href="/about" className="hover:text-[#599063] transition-colors">About CellKore</Link></li>
-							<li><Link href="/faq" className="hover:text-[#599063] transition-colors">Frequently Asked Questions (FAQ)</Link></li>
+							<li><Link href="/faq" className="hover:text-[#599063] transition-colors">FAQ</Link></li>
 							<li><Link href="/contact" className="hover:text-[#599063] transition-colors">Support Center</Link></li>
 							<li><Link href="/sell/track" className="hover:text-[#599063] transition-colors">Track Sell Request</Link></li>
 							<li><Link href="/terms" className="hover:text-[#599063] transition-colors">Terms of Service</Link></li>
@@ -249,11 +233,11 @@ export function Footer() {
 
 						{/* Follow Us / Store Social Platforms */}
 						{socialLinks.length > 0 && (
-							<div className="pt-2 border-t border-[#599063]/25 w-full">
-								<p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#0e1710] mb-2.5">
+							<div className="pt-2 border-t border-[#599063]/25 w-full flex flex-col items-center justify-center text-center">
+								<p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#0e1710] mb-2.5 text-center">
 									Follow Us &amp; Stores
 								</p>
-								<div className="flex flex-wrap items-center gap-2">
+								<div className="flex flex-wrap items-center justify-center gap-2">
 									{socialLinks.map((link) => {
 										const p = link.platform.toLowerCase()
 										let iconSrc = '/facebook.svg'

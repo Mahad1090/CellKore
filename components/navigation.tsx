@@ -257,23 +257,23 @@ export function Navigation() {
 
 						{/* Right Block - Actions */}
 						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
-							{/* Persistent marketplace selector */}
-							<div className="relative md:mr-2 hidden md:block">
+							{/* Persistent marketplace selector (Mobile & Desktop) */}
+							<div className="relative sm:mr-1 md:mr-2">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
-									className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-xs font-bold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer text-foreground"
+									className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer text-foreground bg-background shadow-2xs"
 								>
 									{currentMarket ? (
-										<MarketFlag value={currentMarket.value} className="w-4.5 h-3.5 mr-0.5 rounded-[2px] shadow-sm shrink-0" />
+										<MarketFlag value={currentMarket.value} className="w-4 h-3 sm:w-4.5 sm:h-3.5 mr-0.5 rounded-[2px] shadow-2xs shrink-0" />
 									) : (
-										<Globe className="w-4 h-4 mr-0.5 shrink-0" />
+										<Globe className="w-3.5 h-3.5 mr-0.5 shrink-0 text-primary" />
 									)}
-									<span className="hidden sm:inline whitespace-nowrap">{currentMarket?.label ?? 'Marketplace'}</span>
-									<ChevronDown className="w-3.5 h-3.5 shrink-0" />
+									<span className="inline whitespace-nowrap">{currentMarket?.value ?? 'US'}</span>
+									<ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 opacity-60" />
 								</button>
 								{marketMenuOpen && (
-									<div className="absolute top-full right-0 sm:left-0 sm:right-auto mt-2 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
+									<div className="absolute top-full right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-50 min-w-[190px] animate-in fade-in slide-in-from-top-2 duration-200">
 										{MARKETPLACE_OPTIONS.map((option) => (
 											<button
 												key={option.value}
@@ -281,7 +281,7 @@ export function Navigation() {
 													setMarketplace(option.value)
 													setMarketMenuOpen(false)
 												}}
-												className={`w-full text-left px-5 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer flex items-center gap-2.5 whitespace-nowrap ${marketplace === option.value
+												className={`w-full text-left px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] transition-colors cursor-pointer flex items-center gap-2.5 whitespace-nowrap ${marketplace === option.value
 													? 'bg-secondary text-primary'
 													: 'text-foreground/75 hover:bg-muted'
 													}`}
@@ -387,22 +387,52 @@ export function Navigation() {
 						className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
 						onClick={() => setMobileMenuOpen(false)}
 					/>
-					<div className="fixed inset-y-0 left-0 max-w-sm w-full bg-background border-r border-border/60 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.15)] p-8 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300 overflow-y-auto no-scrollbar">
+					<div className="fixed inset-y-0 left-0 w-[88vw] max-w-[340px] bg-background border-r border-border/60 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.15)] p-6 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300 overflow-y-auto no-scrollbar">
 						<div>
-							<div className="relative flex flex-col items-center justify-center pb-6 border-b border-border/60">
+							<div className="relative flex flex-col items-center justify-center pb-5 border-b border-border/60">
 								<Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
-									<img src="/cellkore_apple_green.webp" alt="CellKore Logo" className="h-24 w-auto object-contain" />
+									<img src="/cellkore_apple_green.webp" alt="CellKore Logo" className="h-20 sm:h-24 w-auto object-contain" />
 								</Link>
 								<button
 									onClick={() => setMobileMenuOpen(false)}
-									className="absolute -top-2 right-0 p-2.5 bg-muted hover:bg-secondary rounded-full transition-all duration-300 text-foreground/70 hover:text-foreground hover:rotate-90 cursor-pointer"
+									className="absolute -top-1 right-0 p-2 bg-muted hover:bg-secondary rounded-full transition-all duration-300 text-foreground/70 hover:text-foreground hover:rotate-90 cursor-pointer"
 									aria-label="Close menu"
 								>
-									<X className="w-4.5 h-4.5" />
+									<X className="w-4 h-4" />
 								</button>
 							</div>
 
-							<nav className="mt-8 space-y-1">
+							{/* Marketplace Selector at TOP of drawer */}
+							<div className="pt-4 pb-2 border-b border-border/60">
+								<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-2 flex items-center justify-between">
+									<span className="flex items-center gap-1.5">
+										<Globe className="w-3.5 h-3.5 text-primary" />
+										Marketplace Region
+									</span>
+									<span className="text-[9px] font-mono text-primary font-bold">{currentMarket?.label}</span>
+								</p>
+								<div className="grid grid-cols-2 gap-2 bg-secondary/80 p-1.5 rounded-2xl border border-border/50">
+									{MARKETPLACE_OPTIONS.map((option) => (
+										<button
+											key={option.value}
+											onClick={() => {
+												setMarketplace(option.value)
+												setMobileMenuOpen(false)
+											}}
+											className={`px-3 py-2 rounded-xl text-[10px] uppercase tracking-[0.12em] font-extrabold transition-all text-center cursor-pointer flex items-center justify-center gap-2 ${
+												marketplace === option.value
+													? 'bg-background text-primary shadow-xs ring-1 ring-border/80'
+													: 'text-foreground/70 hover:text-foreground'
+											}`}
+										>
+											<MarketFlag value={option.value} className="w-4 h-3 rounded-[2px] shadow-2xs shrink-0" />
+											<span>{option.value}</span>
+										</button>
+									))}
+								</div>
+							</div>
+
+							<nav className="mt-4 space-y-1">
 								{/* Home */}
 								<Link
 									href="/"
@@ -523,30 +553,6 @@ export function Navigation() {
 									<span className="group-hover:translate-x-1 transition-transform duration-300">Testimonials</span>
 								</Link>
 							</nav>
-						</div>
-
-						{/* Marketplace Selector inside drawer */}
-						<div className="border-t border-border/60 pt-6 mt-6 shrink-0">
-							<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-3 flex items-center gap-1.5">
-								<Globe className="w-3.5 h-3.5 text-primary" />
-								Marketplace Selection
-							</p>
-							<div className="grid grid-cols-3 gap-1.5 bg-secondary/80 p-1 rounded-2xl border border-border/40">
-								{MARKETPLACE_OPTIONS.map((option) => (
-									<button
-										key={option.value}
-										onClick={() => setMarketplace(option.value)}
-										className={`px-2 py-2 rounded-xl text-[9px] uppercase tracking-[0.12em] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
-											marketplace === option.value
-												? 'bg-background text-primary shadow-sm'
-												: 'text-foreground/60 hover:text-foreground'
-										}`}
-									>
-										<MarketFlag value={option.value} className="w-3.5 h-2.5 rounded-[1px] shadow-sm shrink-0" />
-										<span>{option.value === 'BOTH' ? 'ALL' : option.value}</span>
-									</button>
-								))}
-							</div>
 						</div>
 					</div>
 				</div>
