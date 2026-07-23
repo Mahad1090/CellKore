@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Plus, Trash2, Loader2, Globe, ExternalLink, Copy, Receipt, MapPin } from 'lucide-react'
 import { PageTitle, EmptyState, adminButton, adminInput } from '@/components/admin/ui'
@@ -30,7 +30,7 @@ const TABS = [
 ] as const
 type TabId = (typeof TABS)[number]['id']
 
-export default function AdminSettingsPage() {
+function AdminSettingsContent() {
 	const searchParams = useSearchParams()
 	const tabQuery = searchParams.get('tab') as TabId | null
 	const { toast, confirm } = useToast()
@@ -500,5 +500,13 @@ export default function AdminSettingsPage() {
 				</section>
 			)}
 		</div>
+	)
+}
+
+export default function AdminSettingsPage() {
+	return (
+		<Suspense fallback={<TableShimmer rows={5} />}>
+			<AdminSettingsContent />
+		</Suspense>
 	)
 }
