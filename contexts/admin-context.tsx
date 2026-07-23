@@ -12,8 +12,17 @@ export interface AdminUserSession {
 	role: AdminRole
 }
 
+export interface AdminBadgeCounts {
+	sellRequests: number
+	orders: number
+	inquiries: number
+	repairs: number
+	reviews: number
+}
+
 interface AdminContextType {
 	adminUser: AdminUserSession | null
+	badgeCounts: AdminBadgeCounts
 	loading: boolean
 	signOut: () => Promise<void>
 	refresh: () => Promise<void>
@@ -31,9 +40,28 @@ const AdminContext = createContext<AdminContextType | undefined>(undefined)
 export function AdminProvider({ children }: { children: React.ReactNode }) {
 	const router = useRouter()
 	const [adminUser, setAdminUser] = useState<AdminUserSession | null>(null)
+	const [badgeCounts, setBadgeCounts] = useState<AdminBadgeCounts>({
+		sellRequests: 0,
+		orders: 0,
+		inquiries: 0,
+		repairs: 0,
+		reviews: 0,
+	})
 	const [loading, setLoading] = useState(true)
 	const [sidebarOpen, setSidebarOpen] = useState(false)
 	const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+	const loadBadges = useCallback(async () => {
+		try {
+			const res = await fetch('/api/admin/badges')
+			if (res.ok) {
+				const json = await res.json()
+				if (json.counts) setBadgeCounts(json.counts)
+			}
+		} catch {
+			// ignore fetch errors
+		}
+	}, [])
 
 	const refresh = useCallback(async () => {
 		try {
@@ -41,6 +69,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 			if (res.ok) {
 				const json = await res.json()
 				setAdminUser(json.admin)
+				loadBadges()
 			} else {
 				setAdminUser(null)
 			}
@@ -49,7 +78,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 		} finally {
 			setLoading(false)
 		}
-	}, [])
+	}, [loadBadges])
 
 	useEffect(() => {
 		refresh()
@@ -73,6 +102,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 		<AdminContext.Provider
 			value={{
 				adminUser,
+				badgeCounts,
 				loading,
 				signOut,
 				refresh,

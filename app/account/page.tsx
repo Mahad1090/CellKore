@@ -16,13 +16,12 @@ import { StoreReviewForm } from '@/components/store-review-form'
 import type { OrderRecord, SellPhoneRequest } from '@/lib/types'
 import { formatRequestId } from '@/lib/sell-request-contact'
 
-type AccountTab = 'orders' | 'sell' | 'repair' | 'review'
+type AccountTab = 'orders' | 'sell' | 'repair'
 
 const TAB_ITEMS: { key: AccountTab; label: string; href: string }[] = [
 	{ key: 'orders', label: 'Orders', href: '/account?tab=orders' },
 	{ key: 'sell', label: 'Sell Requests', href: '/account?tab=sell' },
 	{ key: 'repair', label: 'Repair Requests', href: '/account?tab=repair' },
-	{ key: 'review', label: 'Store Review', href: '/account?tab=review' },
 ]
 
 export default function AccountPage() {
@@ -56,9 +55,7 @@ function AccountPageContent() {
 			? 'sell'
 			: searchParams.get('tab') === 'repair'
 				? 'repair'
-				: searchParams.get('tab') === 'review'
-					? 'review'
-					: 'orders'
+				: 'orders'
 
 	const loadOrders = useCallback(async (userId: string) => {
 		const { data } = await supabase
@@ -179,14 +176,13 @@ function AccountPageContent() {
 							{tab.label}
 						</Link>
 					))}
+					<Link
+						href="/wishlist"
+						className="text-center px-4 py-2.5 rounded-2xl text-[11px] font-bold uppercase tracking-[0.14em] transition-all text-foreground/70 hover:bg-muted"
+					>
+						Wishlist
+					</Link>
 				</div>
-
-				{activeTab === 'review' && (
-					<StoreReviewForm
-						title="Leave a Store Review"
-						subtitle="Share your overall shopping, selling, or repair experience with CellKore"
-					/>
-				)}
 
 				{activeTab === 'orders' && (
 					<div className="bg-card border border-border rounded-3xl p-7">
@@ -285,13 +281,13 @@ function AccountPageContent() {
 					</div>
 				)}
 
-				<Link href="/wishlist" className="flex items-center justify-between bg-card border border-border rounded-3xl p-7 hover:border-primary transition-colors group">
-					<div className="flex items-center gap-2.5">
-						<Heart className="w-4.5 h-4.5 text-primary" />
-						<span className="text-sm font-bold uppercase tracking-[0.16em] text-card-foreground">View Wishlist</span>
-					</div>
-					<span className="text-primary group-hover:translate-x-1 transition-transform">→</span>
-				</Link>
+				{/* Leave a Store Review Form at Bottom */}
+				<div className="pt-4">
+					<StoreReviewForm
+						title="Leave a Store Review"
+						subtitle="Share your overall shopping, selling, or repair experience with CellKore"
+					/>
+				</div>
 			</div>
 
 			<Footer />

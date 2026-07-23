@@ -122,9 +122,10 @@ export async function fetchFeaturedTestimonials(): Promise<StoreTestimonial[]> {
 		.from('store_testimonials')
 		.select('*')
 		.eq('status', 'approved')
-		.eq('is_featured', true)
+		.order('is_featured', { ascending: false })
 		.order('created_at', { ascending: false })
-		.limit(6)
+		.limit(12)
+
 	if (error) throw error
 	return (data ?? []) as StoreTestimonial[]
 }

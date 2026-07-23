@@ -60,7 +60,17 @@ const navGroups: NavGroup[] = [
 
 export function AdminSidebar() {
 	const pathname = usePathname()
-	const { can, adminUser, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed } = useAdmin()
+	const { can, adminUser, badgeCounts, sidebarOpen, setSidebarOpen, sidebarCollapsed, setSidebarCollapsed } = useAdmin()
+
+	const getBadgeCount = (href: string): number => {
+		if (!badgeCounts) return 0
+		if (href.includes('/sell-requests')) return badgeCounts.sellRequests
+		if (href.includes('/orders')) return badgeCounts.orders
+		if (href.includes('/inquiries')) return badgeCounts.inquiries
+		if (href.includes('/repair-requests')) return badgeCounts.repairs
+		if (href.includes('/reviews')) return badgeCounts.reviews
+		return 0
+	}
 
 	return (
 		<>
@@ -137,13 +147,15 @@ export function AdminSidebar() {
 								{visibleItems.map((item) => {
 									const Icon = item.icon
 									const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.match ?? item.href))
+									const count = getBadgeCount(item.href)
+
 									return (
 										<Link
 											key={item.href}
 											href={item.href}
 											onClick={() => setSidebarOpen(false)}
 											title={sidebarCollapsed ? item.label : undefined}
-											className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 ${
+											className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all duration-200 relative ${
 												sidebarCollapsed ? 'justify-center' : ''
 											} ${
 												isActive
@@ -152,7 +164,20 @@ export function AdminSidebar() {
 											}`}
 										>
 											<Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#599161]' : 'text-[#111111]/60'}`} />
-											{!sidebarCollapsed && <span className="text-xs tracking-wide">{item.label}</span>}
+											{!sidebarCollapsed ? (
+												<div className="flex items-center justify-between flex-1 min-w-0">
+													<span className="text-xs tracking-wide truncate">{item.label}</span>
+													{count > 0 && (
+														<span className="px-2 py-0.5 rounded-full bg-[#599161] text-white text-[10px] font-extrabold font-mono shrink-0 leading-none shadow-3xs">
+															{count > 99 ? '99+' : count}
+														</span>
+													)}
+												</div>
+											) : (
+												count > 0 && (
+													<span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-[#599161] border-2 border-white" />
+												)
+											)}
 										</Link>
 									)
 								})}

@@ -316,17 +316,6 @@ export default function TestimonialsPage() {
 										</div>
 										<div>
 											<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
-												Headline Title (Optional)
-											</p>
-											<input
-												value={title}
-												onChange={(e) => setTitle(e.target.value)}
-												placeholder="What did you love most about CellKore?"
-												className="w-full px-3.5 py-2.5 border border-border rounded-xl bg-background text-xs text-foreground focus:outline-none focus:border-primary font-medium"
-											/>
-										</div>
-										<div>
-											<p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
 												Your Store Experience
 											</p>
 											<textarea
