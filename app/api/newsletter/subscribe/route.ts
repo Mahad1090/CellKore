@@ -33,9 +33,11 @@ export async function POST(request: NextRequest) {
 		}
 
 		// Send Welcome Newsletter Email with Unsubscribe link
-		sendWelcomeNewsletterEmail(email).catch((err) => {
+		try {
+			await sendWelcomeNewsletterEmail(email)
+		} catch (err) {
 			console.error('[newsletter] welcome email error:', err)
-		})
+		}
 
 		return NextResponse.json({ success: true, alreadySubscribed: false })
 	} catch (err) {
