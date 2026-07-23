@@ -171,7 +171,6 @@ export function Navigation() {
 										{announcements.map((announcement) => (
 											<span key={announcement.id} className="flex gap-16 items-center">
 												<span>{announcement.text}</span>
-												<span className="opacity-40">•</span>
 											</span>
 										))}
 									</span>
