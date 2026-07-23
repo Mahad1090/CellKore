@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck } from 'lucide-react'
+import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck, ShoppingBag, Package, ArrowRight } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { TestimonialsPreview } from '@/components/testimonials-preview'
@@ -55,25 +55,41 @@ export default function Home() {
 					<p className="text-base sm:text-xl md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
 						Your Premium Electronics Hub — buy retail, wholesale bulk, sell devices, and book repairs
 					</p>
-					<div className="flex flex-wrap gap-4 justify-center">
+					{/* Hero Actions: Clear Hierarchy (Primary CTA + Unified Secondary Glass Bar) */}
+					<div className="flex flex-col items-center gap-4 sm:gap-5 pt-2 max-w-full px-2">
+						{/* 1. Dominant Signature Primary Button */}
 						<Link
 							href="/products?category=iphones"
-							className="px-8 py-3.5 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
+							className="inline-flex items-center justify-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-[#599161] hover:bg-[#46754e] text-white font-extrabold text-xs uppercase tracking-[0.2em] shadow-xl hover:shadow-[#599161]/30 hover:scale-105 active:scale-95 transition-all duration-300 group border border-[#599161]/40 cursor-pointer min-w-[160px]"
 						>
-							Shop All Products
+							<ShoppingBag className="w-4 h-4 text-white/90 group-hover:rotate-12 transition-transform duration-300 shrink-0" />
+							<span>Shop</span>
 						</Link>
-						<Link
-							href="/wholesale"
-							className="px-8 py-3.5 border border-white/40 bg-black/40 text-white backdrop-blur-md rounded-full hover:bg-white hover:text-black transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
-						>
-							Wholesale Lots
-						</Link>
-						<Link
-							href="/repair"
-							className="px-8 py-3.5 border border-white/40 bg-black/40 text-white backdrop-blur-md rounded-full hover:bg-white hover:text-black transition font-bold text-xs uppercase tracking-[0.18em] shadow-lg hover:scale-105 active:scale-95 duration-200"
-						>
-							Repair Your Phone
-						</Link>
+
+						{/* 2. Unified Glassmorphism Secondary Bar (Mobile Optimized) */}
+						<div className="flex items-center justify-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-full bg-black/65 backdrop-blur-xl border border-white/20 shadow-2xl max-w-full overflow-x-auto no-scrollbar">
+							<Link
+								href="/sell"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<DollarSign className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:scale-110 transition-transform shrink-0" />
+								<span>Sell</span>
+							</Link>
+							<Link
+								href="/wholesale"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<Package className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:scale-110 transition-transform shrink-0" />
+								<span>Wholesale</span>
+							</Link>
+							<Link
+								href="/repair"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<Wrench className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:-rotate-45 transition-transform shrink-0" />
+								<span>Repair</span>
+							</Link>
+						</div>
 					</div>
 				</div>
 			</section>

@@ -256,8 +256,8 @@ export function Navigation() {
 
 						{/* Right Block - Actions */}
 						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
-							{/* Persistent marketplace selector (Mobile & Desktop) */}
-							<div className="relative sm:mr-1 md:mr-2">
+							{/* Persistent marketplace selector (Desktop view only, mobile uses drawer top) */}
+							<div className="relative md:mr-2 hidden md:block">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
