@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   description: 'Buy new and refurbished cell phones, accessories, and spare parts. Quality products at competitive prices.',
   generator: 'v0.app',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: '/cellkore_apple_green.webp',
+    apple: '/cellkore_apple_green.webp',
   },
 }
 
