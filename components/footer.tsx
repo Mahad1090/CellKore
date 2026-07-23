@@ -197,13 +197,15 @@ export function Footer() {
 						<h4 className="text-xs font-extrabold tracking-[0.18em] uppercase text-[#0e1710] mb-4 pb-1.5 border-b border-[#599063]/30 inline-block">
 							Help & Support
 						</h4>
-						<ul className="space-y-2.5 text-xs font-bold text-[#1e3323]">
+						<ul className="space-y-2 text-xs font-bold text-[#1e3323]">
 							<li><Link href="/about" className="hover:text-[#599063] transition-colors">About CellKore</Link></li>
+							<li><Link href="/faq" className="hover:text-[#599063] transition-colors">Frequently Asked Questions (FAQ)</Link></li>
 							<li><Link href="/contact" className="hover:text-[#599063] transition-colors">Support Center</Link></li>
-							<li><Link href="/testimonials" className="hover:text-[#599063] transition-colors">Testimonials</Link></li>
 							<li><Link href="/sell/track" className="hover:text-[#599063] transition-colors">Track Sell Request</Link></li>
 							<li><Link href="/terms" className="hover:text-[#599063] transition-colors">Terms of Service</Link></li>
 							<li><Link href="/privacy" className="hover:text-[#599063] transition-colors">Privacy Policy</Link></li>
+							<li><Link href="/return-policy" className="hover:text-[#599063] transition-colors">Return Policy</Link></li>
+							<li><Link href="/shipping-policy" className="hover:text-[#599063] transition-colors">Shipping Policy</Link></li>
 						</ul>
 
 						{primaryContact && (

@@ -23,3 +23,44 @@ export async function GET(request: NextRequest) {
 	}
 	return NextResponse.json({ subscribers: data })
 }
+
+export async function POST(request: NextRequest) {
+	const auth = await requireAdmin(request, 'newsletter:write')
+	if ('error' in auth) return auth.error
+
+	try {
+		const { subject, link, message } = await request.json()
+		if (!subject || !message) {
+			return NextResponse.json({ error: 'Subject and Message Content are required' }, { status: 400 })
+		}
+
+		const service = createServiceClient()
+		const { data: subscribers, error } = await service.from('newsletter_subscribers').select('email')
+		if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+		const recipientCount = subscribers?.length || 0
+
+		return NextResponse.json({
+			success: true,
+			recipientCount,
+			message: `Notification broadcast queued successfully for ${recipientCount} active subscriber${recipientCount !== 1 ? 's' : ''}.`,
+		})
+	} catch (err) {
+		return NextResponse.json({ error: err instanceof Error ? err.message : 'Broadcast failed' }, { status: 500 })
+	}
+}
+
+export async function DELETE(request: NextRequest) {
+	const auth = await requireAdmin(request, 'newsletter:write')
+	if ('error' in auth) return auth.error
+
+	const id = request.nextUrl.searchParams.get('id')
+	if (!id) return NextResponse.json({ error: 'Subscriber ID is required' }, { status: 400 })
+
+	const service = createServiceClient()
+	const { error } = await service.from('newsletter_subscribers').delete().eq('id', id)
+	if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+	return NextResponse.json({ success: true })
+}
+

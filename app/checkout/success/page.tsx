@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
+import { StoreReviewForm } from '@/components/store-review-form'
 import { clearLocalCart } from '@/lib/cart'
 
 export default function CheckoutSuccessPage() {
@@ -49,10 +50,17 @@ function SuccessContent() {
 				</p>
 				<Link
 					href="/products?category=iphones"
-					className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
+					className="inline-block px-8 py-3.5 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all mb-12"
 				>
 					Continue Shopping
 				</Link>
+
+				<div className="text-left">
+					<StoreReviewForm
+						title="How was your checkout experience?"
+						subtitle="Leave a store review to help future CellKore customers"
+					/>
+				</div>
 			</div>
 			<Footer />
 		</main>

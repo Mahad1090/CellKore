@@ -39,10 +39,10 @@ export function TestimonialsPreview() {
 				<div>
 					<div className="flex items-center gap-2 mb-2">
 						<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
-						<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">What Customers Say</p>
+						<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">Verified Reviews</p>
 					</div>
 					<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
-						Featured Testimonials
+						What Our Customers Say
 					</h2>
 				</div>
 				<Link href="/testimonials" className="glow-outline-btn glow-outline-primary">

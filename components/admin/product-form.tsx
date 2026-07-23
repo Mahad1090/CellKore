@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye, Sparkles, Pencil } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
@@ -26,6 +26,7 @@ interface VariantRow {
   swatch_hex: string
   storage: string
   ram: string
+  model_name?: string | null
   stock_quantity: number
   price_adjustment: number
 }
@@ -132,9 +133,10 @@ export function productToForm(product: any): ProductFormValue {
 }
 
 export function formToPayload(form: ProductFormValue) {
+  const skuValue = form.sku.trim() || generateSku(form)
   return {
     name: form.name.trim(),
-    sku: form.sku.trim() || null,
+    sku: skuValue,
     brand: form.brand.trim() || null,
     category_id: form.category_id || null,
     product_type_id: form.product_type_id || null,
@@ -177,30 +179,88 @@ export function formToPayload(form: ProductFormValue) {
   }
 }
 
+function escapeRegExp(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 /**
- * Auto-SKU: parses brand, name, first variant color, and storage capacity into
- * a standardized SKU, e.g. CK-IPH15-BL-128.
+ * Standard SKU Generator: CK-BRAND-MODEL-STORAGE-COLOR
+ * Example: CK-APL-IPH15P-256G-BLK
  */
 function generateSku(form: ProductFormValue): string {
-  const compact = (value: string, length: number) =>
-    value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length)
+  // 1. Brand Part (3 chars)
+  const brandClean = form.brand.trim()
+  let brandCode = 'GEN'
+  if (brandClean) {
+    const brandLower = brandClean.toLowerCase()
+    if (brandLower.includes('apple')) brandCode = 'APL'
+    else if (brandLower.includes('samsung')) brandCode = 'SAM'
+    else if (brandLower.includes('google')) brandCode = 'GGL'
+    else if (brandLower.includes('oneplus')) brandCode = '1PL'
+    else if (brandLower.includes('motorola')) brandCode = 'MOT'
+    else if (brandLower.includes('xiaomi')) brandCode = 'XIA'
+    else {
+      brandCode = brandClean.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3) || 'GEN'
+    }
+  }
 
-  const brandPart = compact(form.brand, 3)
-  const namePart = compact(
-    form.name.replace(new RegExp(form.brand, 'ig'), ''),
-    5
-  )
-  const color = form.variants.find((v) => v.color.trim())?.color ?? ''
-  const colorPart = compact(color, 2)
-  const storage =
+  // 2. Model / Name Part (up to 6 chars)
+  let nameClean = form.name.trim()
+  if (brandClean) {
+    nameClean = nameClean.replace(new RegExp(escapeRegExp(brandClean), 'gi'), '').trim()
+  }
+  let modelCode = ''
+  if (nameClean) {
+    const words = nameClean.split(/\s+/).filter(Boolean)
+    if (words.length > 1) {
+      modelCode = words.map((w) => w.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()).join('').slice(0, 6)
+    } else {
+      modelCode = nameClean.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)
+    }
+  }
+  if (!modelCode) modelCode = 'ITEM'
+
+  // 3. Storage Part e.g. "256G", "128G", "1T"
+  const rawStorage =
     form.variants.find((v) => v.storage.trim())?.storage ??
     getCategoryValues(form.mobile_specifications, 'memory').internalStorage ??
     ''
-  const storagePart = storage.replace(/[^0-9]/g, '')
+  let storageCode = ''
+  if (rawStorage) {
+    const digits = rawStorage.replace(/[^0-9]/g, '')
+    if (rawStorage.toLowerCase().includes('tb') || rawStorage.toLowerCase().includes('terabyte')) {
+      storageCode = `${digits || '1'}T`
+    } else if (digits) {
+      storageCode = `${digits}G`
+    }
+  }
 
-  return ['CK', `${brandPart}${namePart}` || 'ITEM', colorPart, storagePart]
-    .filter(Boolean)
-    .join('-')
+  // 4. Color Part e.g. "BLK", "WHT", "SLV", "GRY", "BLU"
+  const rawColor =
+    form.variants.find((v) => v.color.trim())?.color ??
+    getCategoryValues(form.mobile_specifications, 'general').colors ??
+    ''
+  let colorCode = ''
+  if (rawColor) {
+    const colorLower = rawColor.toLowerCase().trim()
+    if (colorLower.includes('black') || colorLower.includes('midnight') || colorLower.includes('dark')) colorCode = 'BLK'
+    else if (colorLower.includes('white') || colorLower.includes('starlight')) colorCode = 'WHT'
+    else if (colorLower.includes('blue')) colorCode = 'BLU'
+    else if (colorLower.includes('titanium')) colorCode = 'TIT'
+    else if (colorLower.includes('gold')) colorCode = 'GLD'
+    else if (colorLower.includes('silver')) colorCode = 'SLV'
+    else if (colorLower.includes('gray') || colorLower.includes('grey')) colorCode = 'GRY'
+    else if (colorLower.includes('green')) colorCode = 'GRN'
+    else if (colorLower.includes('red')) colorCode = 'RED'
+    else if (colorLower.includes('purple')) colorCode = 'PRP'
+    else if (colorLower.includes('pink')) colorCode = 'PNK'
+    else {
+      colorCode = rawColor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3)
+    }
+  }
+
+  const prefix = form.is_wholesale ? 'CK-LOT' : 'CK'
+  return [prefix, brandCode, modelCode, storageCode, colorCode].filter(Boolean).join('-')
 }
 
 function hasAnyMobileSpecs(specs: MobileSpecifications | undefined): boolean {
@@ -215,6 +275,31 @@ function hasAnyMobileSpecs(specs: MobileSpecifications | undefined): boolean {
 		}
 	}
 	return false
+}
+
+function getVariantHeaderDefaults(categoryName?: string, productTypeName?: string) {
+  const cat = (categoryName ?? '').toLowerCase()
+  const type = (productTypeName ?? '').toLowerCase()
+
+  if (cat.includes('phone') || cat.includes('tablet') || cat.includes('ipad') || cat.includes('iphone') || type.includes('phone') || type.includes('tablet')) {
+    return { col1: 'Color', col2: 'Storage', col3: 'RAM', col4: 'Edition / Note', showCol3: true, p1: 'Midnight Blue', p2: '128GB', p3: '8GB', p4: 'US Model' }
+  }
+  if (cat.includes('watch') || type.includes('watch')) {
+    return { col1: 'Color / Style', col2: 'Case Size', col3: 'Connectivity', col4: 'Band Material', showCol3: true, p1: 'Black Titanium', p2: '45mm', p3: 'GPS + Cellular', p4: 'Milanese Loop' }
+  }
+  if (cat.includes('charger') || cat.includes('cable') || type.includes('charger') || type.includes('cable')) {
+    return { col1: 'Color', col2: 'Length / Wattage', col3: 'Connector Type', col4: 'Fast Charge', showCol3: true, p1: 'White', p2: '2 Meter / 65W', p3: 'USB-C', p4: 'GaN 3.0' }
+  }
+  if (cat.includes('case') || type.includes('case') || type.includes('cover') || type.includes('screen')) {
+    return { col1: 'Color / Finish', col2: 'Device Model', col3: 'Material', col4: 'Protection Level', showCol3: true, p1: 'Clear Matte', p2: 'iPhone 15 Pro Max', p3: 'Silicone', p4: 'Drop-Tested 10ft' }
+  }
+  if (cat.includes('audio') || cat.includes('headphone') || cat.includes('speaker') || type.includes('audio')) {
+    return { col1: 'Color / Finish', col2: 'Fit / Style', col3: 'Feature', col4: 'Battery Life', showCol3: false, p1: 'Space Black', p2: 'Over-Ear', p3: 'ANC', p4: '30 Hours' }
+  }
+  if (cat.includes('part') || type.includes('part') || type.includes('screen') || type.includes('battery')) {
+    return { col1: 'Color / Part', col2: 'Quality Grade', col3: 'Compatibility', col4: 'Warranty', showCol3: true, p1: 'Black', p2: 'OEM Original', p3: 'iPhone 15', p4: '1 Year Warranty' }
+  }
+  return { col1: 'Color', col2: 'Storage / Option', col3: 'RAM / Detail', col4: 'Custom Attribute', showCol3: true, p1: 'Black', p2: '128GB / Standard', p3: '8GB', p4: 'Extra Detail' }
 }
 
 export function ProductFormModal({
@@ -250,9 +335,58 @@ export function ProductFormModal({
   const [activeTab, setActiveTab] = useState<Tab>('general')
   const [salePriceInput, setSalePriceInput] = useState('')
 
+  const [customCol1, setCustomCol1] = useState('')
+  const [customCol2, setCustomCol2] = useState('')
+  const [customCol3, setCustomCol3] = useState('')
+  const [customCol4, setCustomCol4] = useState('')
+
+  const [showCol3Override, setShowCol3Override] = useState<boolean | null>(null)
+  const [showCol4Override, setShowCol4Override] = useState<boolean>(false)
+
+  const selectedCatObj = categories.find((c) => c.id === form.category_id)
+  const selectedTypeObj = productTypes.find((t) => t.id === form.product_type_id)
+  const catNameLower = (selectedCatObj?.name ?? '').toLowerCase()
+  const typeNameLower = (selectedTypeObj?.name ?? '').toLowerCase()
+
+  const showMobileSpecs =
+    !form.category_id ||
+    !!selectedTypeObj?.is_phone_type ||
+    catNameLower.includes('phone') ||
+    catNameLower.includes('mobile') ||
+    catNameLower.includes('tablet') ||
+    catNameLower.includes('ipad') ||
+    typeNameLower.includes('phone') ||
+    typeNameLower.includes('tablet')
+
+  const headerDefaults = getVariantHeaderDefaults(selectedCatObj?.name, selectedTypeObj?.name)
+
+  const col1Title = customCol1.trim() || headerDefaults.col1
+  const col2Title = customCol2.trim() || headerDefaults.col2
+  const col3Title = customCol3.trim() || headerDefaults.col3
+  const col4Title = customCol4.trim() || headerDefaults.col4
+
+  const isCol3Active = showCol3Override !== null ? showCol3Override : (showMobileSpecs || headerDefaults.showCol3 || customCol3.trim().length > 0)
+  const isCol4Active = showCol4Override || customCol4.trim().length > 0
+
+  const handleAddAttributeColumn = () => {
+    if (!isCol3Active) {
+      setShowCol3Override(true)
+    } else if (!isCol4Active) {
+      setShowCol4Override(true)
+    } else {
+      toast({ title: 'Maximum columns reached', description: 'Up to 4 custom attribute columns are supported per product.', variant: 'info' })
+    }
+  }
+
   useEffect(() => {
     if (open) {
       setActiveTab('general')
+      setCustomCol1('')
+      setCustomCol2('')
+      setCustomCol3('')
+      setCustomCol4('')
+      setShowCol3Override(null)
+      setShowCol4Override(false)
     }
   }, [open])
 
@@ -411,7 +545,6 @@ export function ProductFormModal({
   const label = 'text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 block'
   const currency = form.marketplaces.includes('CA') ? 'CAD' : 'USD'
   const selectedProductType = productTypes.find((t) => t.id === form.product_type_id)
-  const showMobileSpecs = !form.product_type_id || selectedProductType?.is_phone_type
 
   const handleProductTypeChange = (typeId: string) => {
     set('product_type_id', typeId)
@@ -657,18 +790,12 @@ export function ProductFormModal({
                   <input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Max" />
                 </div>
                 <div>
-                  <label className={label}>SKU</label>
-                  <div className="flex gap-2">
-                    <input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-IPH15-BL-128" />
-                    <button
-                      type="button"
-                      onClick={() => set('sku', generateSku(form))}
-                      className={`${adminButtonGhost} shrink-0 px-3.5`}
-                      title="Auto-generate SKU from brand, name, color and storage"
-                    >
-                      <Wand2 className="w-3.5 h-3.5 text-[#599161]" />
-                      Auto
-                    </button>
+                  <label className={label}>SKU (Auto-Generated)</label>
+                  <div className="px-4 py-3 rounded-xl border border-border bg-muted/40 font-mono text-xs font-bold text-foreground flex items-center justify-between shadow-3xs select-none">
+                    <span>{generateSku(form)}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-[#599161] bg-[#EEF7F0] px-2 py-0.5 rounded-md border border-[#C8E6CE]">
+                      AUTO
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -832,27 +959,101 @@ export function ProductFormModal({
 
               {/* Variants grid */}
               <div className="pt-2">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
                   <label className={label}>Variants — Stock & Price Adjustments</label>
-                  <button
-                    type="button"
-                    onClick={() => set('variants', [...form.variants, { color: '', swatch_hex: '#cccccc', storage: '', ram: '', stock_quantity: 0, price_adjustment: 0 }])}
-                    className={`${adminButtonGhost} px-3.5 py-1.5`}
-                  >
-                    <Plus className="w-3 h-3 text-[#599161]" />
-                    Add Variant
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddAttributeColumn}
+                      className={`${adminButtonGhost} px-3 py-1.5 text-xs`}
+                      title="Add a custom attribute column (e.g. Material, Edition, Plug Type)"
+                    >
+                      <Plus className="w-3 h-3 text-[#599161]" />
+                      Add Column
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => set('variants', [...form.variants, { color: '', swatch_hex: '#cccccc', storage: '', ram: '', model_name: '', stock_quantity: 0, price_adjustment: 0 }])}
+                      className={`${adminButtonGhost} px-3.5 py-1.5`}
+                    >
+                      <Plus className="w-3 h-3 text-[#599161]" />
+                      Add Variant
+                    </button>
+                  </div>
                 </div>
                 {form.variants.length > 0 ? (
                   <div className="border border-border rounded-2xl overflow-hidden overflow-x-auto">
-                    <table className="w-full text-sm min-w-[480px]">
+                    <table className="w-full text-sm min-w-[760px]">
                       <thead>
                         <tr className="bg-secondary text-left">
-                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Color</th>
-                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">RAM</th>
-                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Storage</th>
-                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Stock Qty</th>
-                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70">Price Adj. (± <strong className="text-foreground">{currency}</strong>)</th>
+                          <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 min-w-[120px]">
+                            <div className="flex items-center gap-1 bg-muted/40 hover:bg-white border border-transparent hover:border-border px-1.5 py-0.5 rounded-md transition-all min-w-[110px]">
+                              <input
+                                value={customCol1}
+                                onChange={(e) => setCustomCol1(e.target.value)}
+                                placeholder={headerDefaults.col1}
+                                className="bg-transparent text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground focus:outline-none w-full placeholder:text-foreground/70"
+                                title="Click to rename column header"
+                              />
+                              <Pencil className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+                            </div>
+                          </th>
+                          <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 min-w-[120px]">
+                            <div className="flex items-center gap-1 bg-muted/40 hover:bg-white border border-transparent hover:border-border px-1.5 py-0.5 rounded-md transition-all min-w-[110px]">
+                              <input
+                                value={customCol2}
+                                onChange={(e) => setCustomCol2(e.target.value)}
+                                placeholder={headerDefaults.col2}
+                                className="bg-transparent text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground focus:outline-none w-full placeholder:text-foreground/70"
+                                title="Click to rename column header"
+                              />
+                              <Pencil className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
+                            </div>
+                          </th>
+                          {isCol3Active && (
+                            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 min-w-[120px]">
+                              <div className="flex items-center gap-1 bg-muted/40 hover:bg-white border border-transparent hover:border-border px-1.5 py-0.5 rounded-md transition-all group min-w-[110px]">
+                                <input
+                                  value={customCol3}
+                                  onChange={(e) => setCustomCol3(e.target.value)}
+                                  placeholder={headerDefaults.col3}
+                                  className="bg-transparent text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground focus:outline-none w-full placeholder:text-foreground/70"
+                                  title="Click to rename column header"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCol3Override(false)}
+                                  className="text-muted-foreground/40 hover:text-destructive shrink-0 cursor-pointer p-0.5"
+                                  title="Hide/remove column"
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            </th>
+                          )}
+                          {isCol4Active && (
+                            <th className="px-3 py-2 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 min-w-[120px]">
+                              <div className="flex items-center gap-1 bg-muted/40 hover:bg-white border border-transparent hover:border-border px-1.5 py-0.5 rounded-md transition-all group min-w-[110px]">
+                                <input
+                                  value={customCol4}
+                                  onChange={(e) => setCustomCol4(e.target.value)}
+                                  placeholder={headerDefaults.col4}
+                                  className="bg-transparent text-[10px] font-extrabold uppercase tracking-[0.12em] text-foreground focus:outline-none w-full placeholder:text-foreground/70"
+                                  title="Click to rename column header"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCol4Override(false)}
+                                  className="text-muted-foreground/40 hover:text-destructive shrink-0 cursor-pointer p-0.5"
+                                  title="Hide/remove column"
+                                >
+                                  <Trash2 className="w-2.5 h-2.5" />
+                                </button>
+                              </div>
+                            </th>
+                          )}
+                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 whitespace-nowrap min-w-[90px]">Stock Qty</th>
+                          <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/70 whitespace-nowrap min-w-[120px]">Price Adj. (± <strong className="text-foreground">{currency}</strong>)</th>
                           <th className="w-12" />
                         </tr>
                       </thead>
@@ -885,21 +1086,9 @@ export function ProductFormModal({
                                     set('variants', next)
                                   }}
                                   className={adminInput}
-                                  placeholder="Midnight Blue"
+                                  placeholder={headerDefaults.p1}
                                 />
                               </div>
-                            </td>
-                            <td className="px-3 py-2">
-                              <input
-                                value={variant.ram}
-                                onChange={(e) => {
-                                  const next = [...form.variants]
-                                  next[index] = { ...variant, ram: e.target.value }
-                                  set('variants', next)
-                                }}
-                                className={adminInput}
-                                placeholder="8GB"
-                              />
                             </td>
                             <td className="px-3 py-2">
                               <input
@@ -910,9 +1099,37 @@ export function ProductFormModal({
                                   set('variants', next)
                                 }}
                                 className={adminInput}
-                                placeholder="128GB"
+                                placeholder={headerDefaults.p2}
                               />
                             </td>
+                            {isCol3Active && (
+                              <td className="px-3 py-2">
+                                <input
+                                  value={variant.ram}
+                                  onChange={(e) => {
+                                    const next = [...form.variants]
+                                    next[index] = { ...variant, ram: e.target.value }
+                                    set('variants', next)
+                                  }}
+                                  className={adminInput}
+                                  placeholder={headerDefaults.p3 || 'Extra Info'}
+                                />
+                              </td>
+                            )}
+                            {isCol4Active && (
+                              <td className="px-3 py-2">
+                                <input
+                                  value={variant.model_name ?? ''}
+                                  onChange={(e) => {
+                                    const next = [...form.variants]
+                                    next[index] = { ...variant, model_name: e.target.value }
+                                    set('variants', next)
+                                  }}
+                                  className={adminInput}
+                                  placeholder={headerDefaults.p4 || 'Attribute Value'}
+                                />
+                              </td>
+                            )}
                             <td className="px-3 py-2">
                               <input
                                 type="number"
@@ -1286,7 +1503,7 @@ export function ProductFormModal({
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
                     <span className="text-muted-foreground font-medium">SKU</span>
-                    <span className="font-mono font-bold text-foreground">{form.sku || 'Auto-generated'}</span>
+                    <span className="font-mono font-bold text-foreground">{form.sku || generateSku(form)}</span>
                   </div>
                   <div className="flex justify-between items-center p-3 rounded-xl bg-muted/30 border border-border/50">
                     <span className="text-muted-foreground font-medium">Marketplaces</span>
@@ -1313,9 +1530,10 @@ export function ProductFormModal({
                     <table className="w-full text-center">
                       <thead className="bg-secondary text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         <tr>
-                          <th className="py-2 px-3 text-left">Color</th>
-                          <th className="py-2 px-3">Storage</th>
-                          <th className="py-2 px-3">RAM</th>
+                          <th className="py-2 px-3 text-left">{col1Title}</th>
+                          <th className="py-2 px-3">{col2Title}</th>
+                          {isCol3Active && <th className="py-2 px-3">{col3Title}</th>}
+                          {isCol4Active && <th className="py-2 px-3">{col4Title}</th>}
                           <th className="py-2 px-3">Stock</th>
                           <th className="py-2 px-3">Adjustment</th>
                         </tr>
@@ -1330,7 +1548,8 @@ export function ProductFormModal({
                               <span className="font-medium">{v.color || 'Default'}</span>
                             </td>
                             <td className="py-2 px-3 text-muted-foreground">{v.storage || '—'}</td>
-                            <td className="py-2 px-3 text-muted-foreground">{v.ram || '—'}</td>
+                            {isCol3Active && <td className="py-2 px-3 text-muted-foreground">{v.ram || '—'}</td>}
+                            {isCol4Active && <td className="py-2 px-3 text-muted-foreground">{v.model_name || '—'}</td>}
                             <td className="py-2 px-3 font-bold text-foreground">{v.stock_quantity}</td>
                             <td className="py-2 px-3 font-medium text-[#599161]">{v.price_adjustment ? `+${currency} ${v.price_adjustment}` : '—'}</td>
                           </tr>

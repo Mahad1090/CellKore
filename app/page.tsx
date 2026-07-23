@@ -202,8 +202,6 @@ export default function Home() {
 				)}
 			</section>
 
-			<TestimonialsPreview />
-
 			{/* ========================================================================= */}
 			{/* DEDICATED FEATURE SECTIONS WITH RUNNING VIDEO BANNERS FOR EACH NAVBAR PORTAL */}
 			{/* ========================================================================= */}
@@ -475,6 +473,8 @@ export default function Home() {
 				</div>
 
 			</div>
+
+			<TestimonialsPreview />
 
 			<Footer />
 		</main>

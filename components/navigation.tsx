@@ -126,7 +126,6 @@ export function Navigation() {
 		{ href: '/', label: 'Home', icon: Home },
 		{ href: '/about', label: 'About Us', icon: Info },
 		{ href: '/contact', label: 'Contact Us', icon: Mail },
-		{ href: '/testimonials', label: 'Testimonials', icon: BookOpen },
 	]
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -246,7 +245,7 @@ export function Navigation() {
 								<img
 									src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
-									className="h-15 sm:h-20 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
 								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1 font-medium">
 									Your Premium Electronics Hub

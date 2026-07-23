@@ -134,9 +134,10 @@ function specName(row: SpecRow): string {
 }
 
 export function formToWholesalePayload(form: WholesaleFormValue) {
+	const skuValue = form.sku.trim() || generateSku(form)
 	return {
 		name: form.name.trim(),
-		sku: form.sku.trim() || null,
+		sku: skuValue,
 		brand: form.brand.trim() || null,
 		category_id: form.category_id || null,
 		product_type_id: form.product_type_id || null,
@@ -173,23 +174,73 @@ export function formToWholesalePayload(form: WholesaleFormValue) {
 	}
 }
 
+function escapeRegExp(str: string): string {
+	return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function generateSku(form: WholesaleFormValue): string {
-	const compact = (value: string, length: number) =>
-		value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, length)
+	const brandClean = form.brand.trim()
+	let brandCode = 'GEN'
+	if (brandClean) {
+		const brandLower = brandClean.toLowerCase()
+		if (brandLower.includes('apple')) brandCode = 'APL'
+		else if (brandLower.includes('samsung')) brandCode = 'SAM'
+		else if (brandLower.includes('google')) brandCode = 'GGL'
+		else if (brandLower.includes('oneplus')) brandCode = '1PL'
+		else if (brandLower.includes('motorola')) brandCode = 'MOT'
+		else if (brandLower.includes('xiaomi')) brandCode = 'XIA'
+		else {
+			brandCode = brandClean.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3) || 'GEN'
+		}
+	}
 
-	const brandPart = compact(form.brand, 3)
-	const namePart = compact(
-		form.name.replace(new RegExp(form.brand, 'ig'), ''),
-		5
-	)
-	const color = form.variants.find((v) => v.color.trim())?.color ?? ''
-	const colorPart = compact(color, 2)
-	const storage = form.variants.find((v) => v.storage.trim())?.storage ?? ''
-	const storagePart = storage.replace(/[^0-9]/g, '')
+	let nameClean = form.name.trim()
+	if (brandClean) {
+		nameClean = nameClean.replace(new RegExp(escapeRegExp(brandClean), 'gi'), '').trim()
+	}
+	let modelCode = ''
+	if (nameClean) {
+		const words = nameClean.split(/\s+/).filter(Boolean)
+		if (words.length > 1) {
+			modelCode = words.map((w) => w.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()).join('').slice(0, 6)
+		} else {
+			modelCode = nameClean.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6)
+		}
+	}
+	if (!modelCode) modelCode = 'LOT'
 
-	return ['CK', `LOT-${brandPart}${namePart}` || 'LOT', colorPart, storagePart]
-		.filter(Boolean)
-		.join('-')
+	const rawStorage = form.variants.find((v) => v.storage.trim())?.storage ?? ''
+	let storageCode = ''
+	if (rawStorage) {
+		const digits = rawStorage.replace(/[^0-9]/g, '')
+		if (rawStorage.toLowerCase().includes('tb') || rawStorage.toLowerCase().includes('terabyte')) {
+			storageCode = `${digits || '1'}T`
+		} else if (digits) {
+			storageCode = `${digits}G`
+		}
+	}
+
+	const rawColor = form.variants.find((v) => v.color.trim())?.color ?? ''
+	let colorCode = ''
+	if (rawColor) {
+		const colorLower = rawColor.toLowerCase().trim()
+		if (colorLower.includes('black') || colorLower.includes('midnight') || colorLower.includes('dark')) colorCode = 'BLK'
+		else if (colorLower.includes('white') || colorLower.includes('starlight')) colorCode = 'WHT'
+		else if (colorLower.includes('blue')) colorCode = 'BLU'
+		else if (colorLower.includes('titanium')) colorCode = 'TIT'
+		else if (colorLower.includes('gold')) colorCode = 'GLD'
+		else if (colorLower.includes('silver')) colorCode = 'SLV'
+		else if (colorLower.includes('gray') || colorLower.includes('grey')) colorCode = 'GRY'
+		else if (colorLower.includes('green')) colorCode = 'GRN'
+		else if (colorLower.includes('red')) colorCode = 'RED'
+		else if (colorLower.includes('purple')) colorCode = 'PRP'
+		else if (colorLower.includes('pink')) colorCode = 'PNK'
+		else {
+			colorCode = rawColor.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 3)
+		}
+	}
+
+	return ['CK-LOT', brandCode, modelCode, storageCode, colorCode].filter(Boolean).join('-')
 }
 
 export function WholesaleFormModal({
@@ -314,18 +365,12 @@ export function WholesaleFormModal({
 						<input value={form.name} onChange={(e) => set('name', e.target.value)} className={adminInput} placeholder="iPhone 15 Pro Mixed Grade Lot" />
 					</div>
 					<div>
-						<label className={label}>SKU</label>
-						<div className="flex gap-2">
-							<input value={form.sku} onChange={(e) => set('sku', e.target.value)} className={adminInput} placeholder="CK-LOT-IPH15-25" />
-							<button
-								type="button"
-								onClick={() => set('sku', generateSku(form))}
-								className={`${adminButtonGhost} shrink-0 px-3.5`}
-								title="Auto-generate SKU"
-							>
-								<Wand2 className="w-3.5 h-3.5" />
-								Auto
-							</button>
+						<label className={label}>SKU (Auto-Generated)</label>
+						<div className="px-4 py-3 rounded-xl border border-border bg-muted/40 font-mono text-xs font-bold text-foreground flex items-center justify-between shadow-3xs select-none">
+							<span>{generateSku(form)}</span>
+							<span className="text-[9px] font-bold uppercase tracking-wider text-[#599161] bg-[#EEF7F0] px-2 py-0.5 rounded-md border border-[#C8E6CE]">
+								AUTO
+							</span>
 						</div>
 					</div>
 					<div>

@@ -48,7 +48,7 @@ const navGroups: NavGroup[] = [
 			{ label: 'Announcement Bar', href: '/admin/announcements', icon: Megaphone },
 			{ label: 'Reviews', href: '/admin/reviews', icon: BookOpen, permission: 'reviews:write' },
 			{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },
-			{ label: 'Marketing', href: '/admin/newsletter', icon: MailPlus, permission: 'newsletter:read' },
+			{ label: 'Newsletter', href: '/admin/newsletter', icon: MailPlus, permission: 'newsletter:read' },
 			{ label: 'Admin Users', href: '/admin/admin-users', icon: Shield, permission: 'admin-users:write' },
 			{ label: 'Settings', href: '/admin/settings', icon: Settings },
 		],

@@ -12,15 +12,17 @@ import { ReturnShipmentPayment } from '@/components/return-shipment-payment'
 import { useToast } from '@/components/ui/toast'
 import { useAuth } from '@/contexts/auth-context'
 import { supabase } from '@/lib/supabase'
+import { StoreReviewForm } from '@/components/store-review-form'
 import type { OrderRecord, SellPhoneRequest } from '@/lib/types'
 import { formatRequestId } from '@/lib/sell-request-contact'
 
-type AccountTab = 'orders' | 'sell' | 'repair'
+type AccountTab = 'orders' | 'sell' | 'repair' | 'review'
 
 const TAB_ITEMS: { key: AccountTab; label: string; href: string }[] = [
 	{ key: 'orders', label: 'Orders', href: '/account?tab=orders' },
 	{ key: 'sell', label: 'Sell Requests', href: '/account?tab=sell' },
 	{ key: 'repair', label: 'Repair Requests', href: '/account?tab=repair' },
+	{ key: 'review', label: 'Store Review', href: '/account?tab=review' },
 ]
 
 export default function AccountPage() {
@@ -54,7 +56,9 @@ function AccountPageContent() {
 			? 'sell'
 			: searchParams.get('tab') === 'repair'
 				? 'repair'
-				: 'orders'
+				: searchParams.get('tab') === 'review'
+					? 'review'
+					: 'orders'
 
 	const loadOrders = useCallback(async (userId: string) => {
 		const { data } = await supabase
@@ -163,7 +167,7 @@ function AccountPageContent() {
 					</button>
 				</div>
 
-				<div className="bg-card border border-border rounded-3xl p-2.5 grid grid-cols-3 gap-2">
+				<div className="bg-card border border-border rounded-3xl p-2.5 grid grid-cols-2 sm:grid-cols-4 gap-2">
 					{TAB_ITEMS.map((tab) => (
 						<Link
 							key={tab.key}
@@ -176,6 +180,13 @@ function AccountPageContent() {
 						</Link>
 					))}
 				</div>
+
+				{activeTab === 'review' && (
+					<StoreReviewForm
+						title="Leave a Store Review"
+						subtitle="Share your overall shopping, selling, or repair experience with CellKore"
+					/>
+				)}
 
 				{activeTab === 'orders' && (
 					<div className="bg-card border border-border rounded-3xl p-7">
