@@ -55,7 +55,7 @@ export default function AdminInboxPage() {
 		}
 	}
 
-	const openReply = (inquiry: ContactInquiry) => {
+	const openReply = (inquiry: ContactInquiry, provider: 'gmail' | 'mailto' = 'gmail') => {
 		const subject = encodeURIComponent(`Re: Your Inquiry – CellKore Support`)
 		const body = encodeURIComponent(
 			`Hi ${inquiry.name},\n\nThank you for reaching out to CellKore Support.\n\n` +
@@ -63,7 +63,14 @@ export default function AdminInboxPage() {
 			`---\n\n[Your reply here]\n\n` +
 			`Best regards,\nCellKore Support\n${SUPPORT_EMAIL}`
 		)
-		window.open(`mailto:${inquiry.email}?from=${encodeURIComponent(SUPPORT_EMAIL)}&subject=${subject}&body=${body}`)
+
+		if (provider === 'gmail') {
+			const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(inquiry.email)}&su=${subject}&body=${body}`
+			window.open(gmailUrl, '_blank', 'noopener,noreferrer')
+		} else {
+			window.open(`mailto:${inquiry.email}?from=${encodeURIComponent(SUPPORT_EMAIL)}&subject=${subject}&body=${body}`)
+		}
+
 		if (inquiry.status === 'new') markStatus(inquiry, 'responded')
 	}
 
@@ -164,11 +171,12 @@ export default function AdminInboxPage() {
 										</button>
 									)}
 									<button
-										onClick={() => openReply(selected)}
+										onClick={() => openReply(selected, 'gmail')}
 										className="flex items-center gap-1.5 bg-[#599161] hover:bg-[#4a7a52] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors cursor-pointer shadow-sm"
+										title="Open Gmail compose in new tab with pre-filled message"
 									>
 										<Reply className="w-3.5 h-3.5" />
-										Reply via Email
+										Reply via Gmail
 									</button>
 								</div>
 							</div>
@@ -193,17 +201,19 @@ export default function AdminInboxPage() {
 							{/* Reply CTA */}
 							<div className="border border-dashed border-[#C8E6CE] bg-[#EEF7F0]/50 rounded-2xl p-5">
 								<p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#599161] mb-1">Reply via Email</p>
-								<p className="text-xs text-muted-foreground mb-3">
+								<p className="text-xs text-muted-foreground mb-4">
 									Send a response to <span className="font-semibold text-foreground">{selected.email}</span> from{' '}
-									<span className="font-semibold text-foreground">{SUPPORT_EMAIL}</span> — your email client will open pre-filled with their original message quoted.
+									<span className="font-semibold text-foreground">{SUPPORT_EMAIL}</span> — opens directly in Gmail with pre-filled message and subject.
 								</p>
-								<button
-									onClick={() => openReply(selected)}
-									className="flex items-center gap-2 bg-[#599161] hover:bg-[#4a7a52] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
-								>
-									<Reply className="w-3.5 h-3.5" />
-									Open Reply in Email Client
-								</button>
+								<div>
+									<button
+										onClick={() => openReply(selected, 'gmail')}
+										className="flex items-center gap-2 bg-[#599161] hover:bg-[#4a7a52] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-colors cursor-pointer shadow-sm"
+									>
+										<Reply className="w-3.5 h-3.5" />
+										Reply via Gmail (New Tab)
+									</button>
+								</div>
 							</div>
 						</div>
 					) : (
