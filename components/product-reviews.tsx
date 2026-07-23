@@ -33,7 +33,7 @@ export function ProductReviewsSection({ productId, productName }: { productId: s
 	const { toast } = useToast()
 	const [reviews, setReviews] = useState<ProductReview[] | null>(null)
 	const [myReview, setMyReview] = useState<ProductReview | null>(null)
-	const [rating, setRating] = useState(5)
+	const [rating, setRating] = useState(0)
 	const [title, setTitle] = useState('')
 	const [comment, setComment] = useState('')
 	const [submitting, setSubmitting] = useState(false)
@@ -109,7 +109,7 @@ export function ProductReviewsSection({ productId, productName }: { productId: s
 			toast({ title: 'Review submitted', description: 'It will appear after admin approval.', variant: 'success' })
 			setTitle('')
 			setComment('')
-			setRating(5)
+			setRating(0)
 			fetchMyProductReview(productId, user.id).then(setMyReview).catch(() => undefined)
 		} catch (error) {
 			toast({ title: 'Submission failed', description: error instanceof Error ? error.message : undefined, variant: 'error' })
