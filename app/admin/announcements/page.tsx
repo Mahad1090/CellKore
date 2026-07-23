@@ -1,12 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Plus, Pencil, Trash2, Loader2, GripVertical } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, GripVertical, Palette, Check, Sparkles } from 'lucide-react'
 import { PageTitle, EmptyState, Modal, adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
 import type { Announcement } from '@/lib/types'
+import { ANNOUNCEMENT_THEMES, getAnnouncementTheme, DEFAULT_ANNOUNCEMENT_THEME_ID } from '@/lib/announcement-themes'
 
 interface AnnouncementForm {
 	id?: string
@@ -24,6 +25,23 @@ export default function AdminAnnouncementsPage() {
 	const [editing, setEditing] = useState<AnnouncementForm | null>(null)
 	const [saving, setSaving] = useState(false)
 	const dragIndex = useRef<number | null>(null)
+
+	const [activeThemeId, setActiveThemeId] = useState<string>(DEFAULT_ANNOUNCEMENT_THEME_ID)
+
+	useEffect(() => {
+		try {
+			const saved = localStorage.getItem('cellkore_announcement_theme')
+			if (saved) setActiveThemeId(saved)
+		} catch {}
+	}, [])
+
+	const handleSelectTheme = (themeId: string) => {
+		setActiveThemeId(themeId)
+		try {
+			localStorage.setItem('cellkore_announcement_theme', themeId)
+		} catch {}
+		toast({ title: 'Announcement theme updated!', description: 'Theme preview has been applied live to your store.', variant: 'success' })
+	}
 
 	const load = useCallback(() => {
 		fetch('/api/admin/announcements')
@@ -119,6 +137,46 @@ export default function AdminAnnouncementsPage() {
 					)
 				}
 			/>
+
+			{/* Theme & Color Combo Switcher */}
+			<div className="bg-card border border-border rounded-3xl p-6 mb-8 shadow-3xs">
+				<div className="flex items-center justify-between border-b border-border pb-4 mb-5">
+					<div>
+						<h3 className="text-xs font-extrabold uppercase tracking-wider text-card-foreground flex items-center gap-2">
+							<Palette className="w-4 h-4 text-[#599161]" />
+							Announcement Bar Theme & Color Presets
+						</h3>
+						<p className="text-[11px] text-muted-foreground mt-0.5">
+							Click any gradient or color combo below to change the announcement bar style live across your store.
+						</p>
+					</div>
+					<span className="text-[10px] font-mono font-bold bg-[#EEF7F0] text-[#599161] px-3 py-1 rounded-full uppercase">
+						Active: {getAnnouncementTheme(activeThemeId).name}
+					</span>
+				</div>
+
+				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+					{ANNOUNCEMENT_THEMES.map((t) => {
+						const isSelected = t.id === activeThemeId
+						return (
+							<button
+								key={t.id}
+								type="button"
+								onClick={() => handleSelectTheme(t.id)}
+								className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden group ${
+									isSelected ? 'border-[#599161] ring-2 ring-[#599161]/30 bg-[#EEF7F0]/30' : 'border-border hover:border-foreground/30 bg-muted/20'
+								}`}
+							>
+								<div className="h-6 w-full rounded-lg mb-3 shadow-inner flex items-center justify-end px-2" style={{ background: t.previewCss }}>
+									{isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow" />}
+								</div>
+								<p className="text-xs font-bold text-card-foreground truncate">{t.name}</p>
+								<span className="text-[9px] font-mono text-muted-foreground block mt-0.5">{t.id}</span>
+							</button>
+						)
+					})}
+				</div>
+			</div>
 
 			{announcements === null ? (
 				<TableShimmer />
