@@ -1,4 +1,4 @@
-import nodemailer, { type Transporter } from 'nodemailer'
+import type { Transporter } from 'nodemailer'
 
 let transporter: Transporter | null | undefined
 
@@ -9,6 +9,7 @@ let transporter: Transporter | null | undefined
  * status update, or form submission.
  */
 function getTransporter(): Transporter | null {
+	if (typeof window !== 'undefined') return null
 	if (transporter !== undefined) return transporter
 	const host = process.env.SMTP_HOST
 	const port = Number(process.env.SMTP_PORT ?? 587)
@@ -19,13 +20,20 @@ function getTransporter(): Transporter | null {
 		transporter = null
 		return transporter
 	}
-	transporter = nodemailer.createTransport({
-		host,
-		port,
-		secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465,
-		auth: { user, pass },
-	})
-	return transporter
+	try {
+		// Dynamic require for Node.js server environment compatibility
+		const nodemailer = require('nodemailer')
+		transporter = nodemailer.createTransport({
+			host,
+			port,
+			secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : port === 465,
+			auth: { user, pass },
+		})
+	} catch (err) {
+		console.warn('[email] failed to load nodemailer:', err)
+		transporter = null
+	}
+	return transporter ?? null
 }
 
 export interface SendMailInput {
