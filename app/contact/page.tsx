@@ -242,40 +242,43 @@ export default function ContactPage() {
 					</div>
 
 					{/* Follow Us Social Icons */}
-					<div className="space-y-4">
-						<h3 className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground">
-							FOLLOW US
-						</h3>
-						<div className="flex flex-wrap items-center gap-3">
-							<a
-								href="https://facebook.com/cellkore"
-								target="_blank"
-								rel="noreferrer"
-								className="w-11 h-11 rounded-xl border border-border/80 bg-card hover:bg-muted flex items-center justify-center transition-all cursor-pointer shadow-3xs"
-								title="Facebook"
-							>
-								<img src="/facebook.svg" alt="Facebook" className="w-5 h-5 object-contain" />
-							</a>
-							<a
-								href="https://instagram.com/cellkore"
-								target="_blank"
-								rel="noreferrer"
-								className="w-11 h-11 rounded-xl border border-border/80 bg-card hover:bg-muted flex items-center justify-center transition-all cursor-pointer shadow-3xs"
-								title="Instagram"
-							>
-								<img src="/instagram.svg" alt="Instagram" className="w-5 h-5 object-contain" />
-							</a>
-							<a
-								href="https://tiktok.com/@cellkore"
-								target="_blank"
-								rel="noreferrer"
-								className="w-11 h-11 rounded-xl border border-border/80 bg-card hover:bg-muted flex items-center justify-center transition-all cursor-pointer shadow-3xs"
-								title="TikTok"
-							>
-								<img src="/tiktok.svg" alt="TikTok" className="w-5 h-5 object-contain" />
-							</a>
+					{socialLinks.length > 0 && (
+						<div className="space-y-4">
+							<h3 className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-muted-foreground">
+								FOLLOW US
+							</h3>
+							<div className="flex flex-wrap items-center gap-3">
+								{socialLinks.map((link) => {
+									const p = link.platform.toLowerCase()
+									let iconSrc = '/facebook.svg'
+									if (p.includes('instagram')) iconSrc = '/instagram.svg'
+									if (p.includes('tiktok')) iconSrc = '/tiktok.svg'
+									if (p.includes('whatsapp')) iconSrc = '/whatsapp.svg'
+									if (p.includes('amazon')) iconSrc = '/amazon.svg'
+									if (p.includes('ebay')) iconSrc = '/ebay.svg'
+
+									return (
+										<a
+											key={link.id}
+											href={
+												link.url.startsWith('http')
+													? link.url
+													: p.includes('whatsapp')
+													? `https://wa.me/${link.url.replace(/\D/g, '')}`
+													: `https://${link.url}`
+											}
+											target="_blank"
+											rel="noreferrer"
+											className="w-11 h-11 rounded-xl border border-border/80 bg-card hover:bg-muted flex items-center justify-center transition-all cursor-pointer shadow-3xs"
+											title={link.platform}
+										>
+											<img src={iconSrc} alt={link.platform} className="w-5 h-5 object-contain" />
+										</a>
+									)
+								})}
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			</div>
 
