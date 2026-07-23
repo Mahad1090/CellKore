@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Gift, Loader2, Lock, Tag } from 'lucide-react'
+import { AlertTriangle, Gift, Loader2, Lock, Tag, User, MapPin, ShoppingBag, ShieldCheck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { FormShimmer } from '@/components/shimmer'
@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { loadCartItems, clearLocalCart, type LocalCartItem } from '@/lib/cart'
 import { fetchProductById, fetchTaxRates } from '@/lib/data'
 import { taxRateForCountry, isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
-import type { Product, TaxRate } from '@/lib/types'
+import { primaryImage, type Product, type ProductVariant, type TaxRate } from '@/lib/types'
 
 const DRAFT_KEY = 'cellkore_checkout_draft'
 const FINAL_SALE_NOTICE = 'Returns and Exchanges are not supported. All checkout items are final.'
@@ -388,49 +388,55 @@ export default function CheckoutPage() {
 	}, [paypalClientId, items])
 
 	const inputClass =
-		'w-full px-4 py-3 border border-border rounded-xl bg-background text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring transition-all'
+		'w-full px-4 py-3.5 border border-[#CFD6D0] rounded-2xl bg-white text-sm font-semibold text-[#0f172a] placeholder:text-muted-foreground/70 placeholder:font-normal focus:outline-none focus:border-[#599161] focus:ring-2 focus:ring-[#599161]/25 shadow-2xs transition-all'
 
 	const regions = form.country === 'CA' ? CA_PROVINCE_TAX : form.country === 'US' ? US_STATE_TAX : []
 
 	return (
-		<main className="min-h-screen bg-background">
+		<main className="min-h-screen bg-[#F6F8F6]">
 			<Navigation />
 
-			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-				<h1 className="text-3xl font-bold text-foreground tracking-luxury uppercase mb-4">Checkout</h1>
+			<div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+				<h1 className="text-3xl font-extrabold text-[#0f172a] tracking-luxury uppercase mb-6">Secure Checkout</h1>
 
 				{/* No-returns warning banner */}
-				<div className="flex items-start gap-3 p-4 bg-secondary border border-border rounded-2xl mb-10">
-					<AlertTriangle className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
-					<p className="text-xs text-foreground/75 leading-relaxed">{FINAL_SALE_NOTICE}</p>
+				<div className="flex items-start gap-3 p-4 bg-white border border-[#DDE4DE] rounded-2xl mb-10 shadow-2xs">
+					<AlertTriangle className="w-4.5 h-4.5 text-[#599161] shrink-0 mt-0.5" />
+					<p className="text-xs text-[#0f172a]/80 font-medium leading-relaxed">{FINAL_SALE_NOTICE}</p>
 				</div>
 
 				{items === null ? (
 					<FormShimmer />
 				) : items.length === 0 ? (
-					<div className="text-center py-24 border border-dashed border-border rounded-3xl">
-						<p className="text-muted-foreground text-sm mb-6">There is nothing to check out yet.</p>
+					<div className="text-center py-24 border border-dashed border-[#DDE4DE] rounded-3xl bg-white shadow-xs">
+						<p className="text-muted-foreground text-sm font-medium mb-6">There is nothing to check out yet.</p>
 						<Link
 							href="/products?category=iphones"
-							className="inline-block px-8 py-3 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.18em] hover:opacity-90 transition-all"
+							className="inline-block px-8 py-3.5 bg-[#599161] text-white rounded-full text-xs font-extrabold uppercase tracking-[0.18em] hover:bg-[#46754e] transition-all shadow-md"
 						>
 							Browse Products
 						</Link>
 					</div>
 				) : (
-					<div className="grid lg:grid-cols-5 gap-10">
+					<div className="grid lg:grid-cols-5 gap-8 lg:gap-10">
 						{/* Form */}
 						<div className="lg:col-span-3 space-y-8">
-							<div className="bg-card border border-border rounded-3xl p-7">
-								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Contact</h2>
+							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
+								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
+									<User className="w-4.5 h-4.5 text-[#599161]" />
+									Contact Information
+								</h2>
 								<div className="grid sm:grid-cols-2 gap-4">
 									<input type="email" placeholder="Email address" value={form.email} onChange={(e) => set('email', e.target.value)} className={inputClass} />
 									<input type="tel" placeholder="Phone number" value={form.phone} onChange={(e) => set('phone', e.target.value)} className={inputClass} />
 								</div>
 							</div>
 
-							<div className="bg-card border border-border rounded-3xl p-7">
-								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Shipping Address</h2>
+							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
+								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
+									<MapPin className="w-4.5 h-4.5 text-[#599161]" />
+									Shipping Address
+								</h2>
 								<div className="grid sm:grid-cols-2 gap-4">
 									<input placeholder="First name" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} className={inputClass} />
 									<input placeholder="Last name" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} className={inputClass} />
@@ -483,16 +489,16 @@ export default function CheckoutPage() {
 							</div>
 
 							{/* Gift options */}
-							<div className="bg-card border border-border rounded-3xl p-7">
+							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
 								<label className="flex items-center gap-3 cursor-pointer">
 									<input
 										type="checkbox"
 										checked={form.isGift}
 										onChange={(e) => set('isGift', e.target.checked)}
-										className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
+										className="w-4 h-4 accent-[#599161] cursor-pointer"
 									/>
-									<Gift className="w-4 h-4 text-primary" />
-									<span className="text-sm font-semibold text-card-foreground">This order is a gift</span>
+									<Gift className="w-4.5 h-4.5 text-[#599161]" />
+									<span className="text-sm font-extrabold text-[#0f172a]">This order is a gift</span>
 								</label>
 								{form.isGift && (
 									<div className="mt-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -508,23 +514,23 @@ export default function CheckoutPage() {
 											className={`${inputClass} resize-none`}
 										/>
 										<div className="flex flex-wrap gap-4">
-											<label className="flex items-center gap-2.5 px-4 py-2.5 border border-border rounded-full cursor-pointer hover:border-primary transition-colors">
+											<label className="flex items-center gap-2.5 px-4 py-2.5 border border-[#CFD6D0] rounded-full cursor-pointer hover:border-[#599161] transition-colors font-semibold text-xs text-[#0f172a]">
 												<input
 													type="checkbox"
 													checked={form.giftCard}
 													onChange={(e) => set('giftCard', e.target.checked)}
-													className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
+													className="w-3.5 h-3.5 accent-[#599161] cursor-pointer"
 												/>
-												<span className="text-xs text-foreground">Gift Card (+${GIFT_CARD_FEE})</span>
+												<span>Gift Card (+${GIFT_CARD_FEE})</span>
 											</label>
-											<label className="flex items-center gap-2.5 px-4 py-2.5 border border-border rounded-full cursor-pointer hover:border-primary transition-colors">
+											<label className="flex items-center gap-2.5 px-4 py-2.5 border border-[#CFD6D0] rounded-full cursor-pointer hover:border-[#599161] transition-colors font-semibold text-xs text-[#0f172a]">
 												<input
 													type="checkbox"
 													checked={form.giftWrapping}
 													onChange={(e) => set('giftWrapping', e.target.checked)}
-													className="w-3.5 h-3.5 accent-[var(--primary)] cursor-pointer"
+													className="w-3.5 h-3.5 accent-[#599161] cursor-pointer"
 												/>
-												<span className="text-xs text-foreground">Gift Wrapping (+${GIFT_WRAP_FEE})</span>
+												<span>Gift Wrapping (+${GIFT_WRAP_FEE})</span>
 											</label>
 										</div>
 									</div>
@@ -534,92 +540,110 @@ export default function CheckoutPage() {
 
 						{/* Summary + payment */}
 						<div className="lg:col-span-2">
-							<div className="bg-card border border-border rounded-3xl p-7 sticky top-32">
-								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Order Summary</h2>
+							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-sm">
+								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
+									<ShoppingBag className="w-4.5 h-4.5 text-[#599161]" />
+									Order Summary
+								</h2>
 
-								<div className="space-y-3 max-h-56 overflow-y-auto no-scrollbar mb-5">
-									{items.map((item) => (
-										<div key={`${item.productId}-${item.variantId}`} className="flex justify-between gap-3 text-xs">
-											<span className="text-foreground/75 line-clamp-1">
-												{item.product.name} × {item.quantity}
-											</span>
-											<span className="font-medium text-card-foreground shrink-0">
-												${(unitPrice(item) * item.quantity).toFixed(2)}
-											</span>
-										</div>
-									))}
+								<div className="space-y-3 mb-6">
+									{items.map((item) => {
+										const imgSrc = primaryImage(item.product)
+										const variant = item.product.product_variants?.find((v: ProductVariant) => v.id === item.variantId)
+										const variantLabel = variant ? [variant.storage, variant.color, variant.condition].filter(Boolean).join(' • ') : null
+										return (
+											<div key={`${item.productId}-${item.variantId}`} className="flex items-center gap-3 bg-[#F8FAF8] p-2.5 rounded-2xl border border-[#E0E6E1]/80">
+												<div className="w-12 h-12 rounded-xl bg-white border border-[#E0E6E1] shrink-0 p-1 flex items-center justify-center overflow-hidden shadow-2xs">
+													{imgSrc ? (
+														<img src={imgSrc} alt={item.product.name} className="w-full h-full object-contain" />
+													) : (
+														<ShoppingBag className="w-5 h-5 text-muted-foreground/40" />
+													)}
+												</div>
+												<div className="flex-1 min-w-0">
+													<p className="text-[#0f172a] font-bold truncate text-xs leading-snug">{item.product.name}</p>
+													{variantLabel && (
+														<p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">{variantLabel}</p>
+													)}
+													<p className="text-[11px] text-[#599161] font-extrabold mt-0.5">
+														${unitPrice(item).toFixed(2)} <span className="text-muted-foreground font-semibold">× {item.quantity}</span>
+													</p>
+												</div>
+												<span className="font-black text-[#0f172a] text-xs sm:text-sm shrink-0">
+													${(unitPrice(item) * item.quantity).toFixed(2)}
+												</span>
+											</div>
+										)
+									})}
 								</div>
 
-								{/* Promo code */}
-								<div className="flex gap-2 mb-5">
-									<div className="relative flex-1">
-										<Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-										<input
-											placeholder="Promo code"
-											value={form.promoCode}
-											onChange={(e) => set('promoCode', e.target.value)}
-											className={`${inputClass} pl-9`}
-										/>
-									</div>
-									<button
-										onClick={applyPromo}
-										disabled={checkingPromo}
-										className="px-4 py-2 rounded-xl border border-border text-xs font-semibold uppercase tracking-wider hover:border-primary hover:text-primary transition-all cursor-pointer disabled:opacity-50"
-									>
-										{checkingPromo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Apply'}
-									</button>
-								</div>
-
-								<div className="space-y-2.5 text-sm border-t border-border pt-4">
-									<div className="flex justify-between text-foreground/75">
+								<div className="space-y-3 text-sm border-t border-[#E0E6E1] pt-4">
+									<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 										<span>Subtotal</span>
-										<span className="font-medium text-card-foreground">${subtotal.toFixed(2)}</span>
+										<span className="font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
 									</div>
 									{discount > 0 && (
-										<div className="flex justify-between text-primary">
+										<div className="flex justify-between text-[#599161] font-bold text-xs">
 											<span>Discount ({promo?.code})</span>
 											<span>-${discount.toFixed(2)}</span>
 										</div>
 									)}
-									<div className="flex justify-between text-foreground/75">
+									<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 										<span>Tax {form.country ? `(${form.country})` : ''}</span>
-										<span className="font-medium text-card-foreground">${tax.toFixed(2)}</span>
+										<span className="font-bold text-[#0f172a]">${tax.toFixed(2)}</span>
 									</div>
 									{giftFees > 0 && (
-										<div className="flex justify-between text-foreground/75">
+										<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 											<span>Gift options</span>
-											<span className="font-medium text-card-foreground">${giftFees.toFixed(2)}</span>
+											<span className="font-bold text-[#0f172a]">${giftFees.toFixed(2)}</span>
 										</div>
 									)}
-									<div className="flex justify-between text-base font-bold text-card-foreground border-t border-border pt-3">
+									<div className="flex justify-between text-base font-black text-[#0f172a] border-t border-[#E0E6E1] pt-3.5">
 										<span>Total</span>
-										<span>${total.toFixed(2)}</span>
+										<span className="text-lg text-[#599161]">${total.toFixed(2)}</span>
 									</div>
 								</div>
 
-								<button
-									onClick={handleStripe}
-									disabled={placing}
-									className="mt-6 w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
-								>
-									{placing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
-									{placing ? 'Redirecting...' : 'Pay with Card'}
-								</button>
+								<div className="space-y-3 mt-6">
+									<button
+										onClick={handleStripe}
+										disabled={placing}
+										className="w-full flex items-center justify-center gap-2.5 py-4 bg-[#599161] hover:bg-[#46754e] text-white rounded-full text-xs font-black uppercase tracking-[0.2em] hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+									>
+										{placing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
+										{placing ? 'Redirecting...' : 'Pay with Card'}
+									</button>
 
-								{paypalClientId && (
-									<>
-										<div className="flex items-center gap-3 my-4">
-											<div className="flex-1 h-px bg-border" />
-											<span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">or</span>
-											<div className="flex-1 h-px bg-border" />
+									{paypalClientId ? (
+										<div className="pt-1">
+											<div className="flex items-center gap-3 my-3">
+												<div className="flex-1 h-px bg-[#E0E6E1]" />
+												<span className="text-[10px] uppercase font-bold tracking-[0.2em] text-muted-foreground">or</span>
+												<div className="flex-1 h-px bg-[#E0E6E1]" />
+											</div>
+											<div ref={paypalRef} />
 										</div>
-										<div ref={paypalRef} />
-									</>
-								)}
+									) : (
+										<button
+											type="button"
+											onClick={() =>
+												toast({
+													variant: 'info',
+													title: 'PayPal Option Placed',
+													description: 'PayPal checkout option is configured and ready. Connect your PayPal Client ID in environment settings to process live payments.',
+												})
+											}
+											className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#FFC439] hover:bg-[#F2BA31] text-[#003087] rounded-full text-xs font-black uppercase tracking-[0.14em] transition-all cursor-pointer shadow-md hover:scale-[1.01] active:scale-95 border border-[#E0B130]"
+										>
+											<img src="/paypal.svg?v=3" alt="PayPal Logo" className="h-5 w-auto object-contain" />
+											<span>Pay with PayPal</span>
+										</button>
+									)}
+								</div>
 
-								<p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground mt-5 uppercase tracking-[0.14em]">
-									<Lock className="w-3 h-3" />
-									Secure encrypted payment
+								<p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground mt-5 uppercase font-bold tracking-[0.14em]">
+									<Lock className="w-3 h-3 text-[#599161]" />
+									Secure Encrypted Checkout
 								</p>
 							</div>
 						</div>
