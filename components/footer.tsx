@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
 	Mail, Phone, MessageCircle, Loader2, ArrowRight, ShieldCheck,
-	Truck, Award, RefreshCw, Lock, Sparkles, CreditCard
+	Truck, Award, RefreshCw, Lock, Sparkles, CreditCard, MailCheck, X
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { fetchCountryContacts, fetchSocialLinks, subscribeToNewsletter } from '@/lib/data'
@@ -16,6 +16,7 @@ export function Footer() {
 	const [contacts, setContacts] = useState<CountryContactInfo[]>([])
 	const [email, setEmail] = useState('')
 	const [subscribing, setSubscribing] = useState(false)
+	const [showAlreadySubscribedModal, setShowAlreadySubscribedModal] = useState(false)
 
 	useEffect(() => {
 		fetchSocialLinks().then(setSocialLinks).catch(() => setSocialLinks([]))
@@ -31,13 +32,15 @@ export function Footer() {
 		setSubscribing(true)
 		try {
 			const { alreadySubscribed } = await subscribeToNewsletter(email.trim().toLowerCase())
-			toast({
-				title: alreadySubscribed ? 'Already subscribed' : 'Subscribed',
-				description: alreadySubscribed
-					? 'This email is already on our list.'
-					: 'Welcome aboard — you will hear from us soon.',
-				variant: 'success',
-			})
+			if (alreadySubscribed) {
+				setShowAlreadySubscribedModal(true)
+			} else {
+				toast({
+					title: 'Subscribed!',
+					description: 'Welcome to CellKore Insider — check your inbox for confirmation.',
+					variant: 'success',
+				})
+			}
 			setEmail('')
 		} catch {
 			toast({ title: 'Subscription failed', description: 'Please try again later.', variant: 'error' })
@@ -153,27 +156,6 @@ export function Footer() {
 						<p className="text-xs text-[#253b2a] font-medium leading-relaxed max-w-sm">
 							Your Premium Electronics Hub — buy retail, wholesale bulk, sell pre-owned devices, and book repairs with guaranteed authenticity.
 						</p>
-
-						{socialLinks.length > 0 && (
-							<div className="pt-2">
-								<p className="text-[10px] uppercase font-extrabold tracking-[0.18em] text-[#1e3323] mb-2">
-									Follow Us
-								</p>
-								<div className="flex flex-wrap justify-center md:justify-start gap-2">
-									{socialLinks.map((link) => (
-										<a
-											key={link.id}
-											href={link.url}
-											target="_blank"
-											rel="noreferrer"
-											className="px-3.5 py-1.5 rounded-full border border-[#599063]/30 bg-white text-[#111c13] text-[10px] font-bold uppercase tracking-[0.12em] hover:bg-[#599063] hover:text-white hover:border-[#599063] transition-all shadow-sm"
-										>
-											{link.platform}
-										</a>
-									))}
-								</div>
-							</div>
-						)}
 					</div>
 
 					{/* Quick Links Column */}
@@ -338,6 +320,44 @@ export function Footer() {
 					</div>
 				</div>
 
+				{/* Already Subscribed Customer Modal Popup */}
+				{showAlreadySubscribedModal && (
+					<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+						<div className="bg-card border border-[#C8E6CE] rounded-3xl p-7 sm:p-9 max-w-md w-full text-center space-y-5 shadow-2xl relative font-sans">
+							<button
+								type="button"
+								onClick={() => setShowAlreadySubscribedModal(false)}
+								className="absolute top-4 right-4 text-muted-foreground hover:text-foreground p-1.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+								aria-label="Close dialog"
+							>
+								<X className="w-5 h-5" />
+							</button>
+
+							<div className="w-14 h-14 mx-auto rounded-full bg-[#EEF7F0] border border-[#C8E6CE] flex items-center justify-center text-[#599161]">
+								<MailCheck className="w-7 h-7 text-[#599161]" />
+							</div>
+
+							<div className="space-y-2">
+								<h3 className="text-lg font-serif font-bold text-foreground">
+									Dear Customer, You&apos;re Already Subscribed!
+								</h3>
+								<p className="text-xs text-muted-foreground leading-relaxed">
+									Your email is already registered on our CellKore VIP list. You will continue to receive our latest product drops, wholesale inventory alerts, trade-in bonus offers, and tech updates!
+								</p>
+							</div>
+
+							<div className="pt-2">
+								<button
+									type="button"
+									onClick={() => setShowAlreadySubscribedModal(false)}
+									className="w-full py-3.5 bg-[#599161] hover:bg-[#46754e] text-white font-extrabold text-xs uppercase tracking-[0.16em] rounded-2xl transition-all cursor-pointer shadow-sm"
+								>
+									Got It, Thanks!
+								</button>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</footer>
 	)

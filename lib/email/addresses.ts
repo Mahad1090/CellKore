@@ -14,6 +14,7 @@ export const FROM_INFO = process.env.EMAIL_FROM_INFO || 'CellKore <noreply@cellk
 
 export const REPLY_TO_ORDERS = process.env.EMAIL_REPLY_TO_ORDERS || 'orders@cellkore.com'
 export const REPLY_TO_SUPPORT = process.env.EMAIL_REPLY_TO_SUPPORT || 'support@cellkore.com'
+export const REPLY_TO_SYSTEM = process.env.EMAIL_REPLY_TO_SUPPORT || 'support@cellkore.com'
 
 export const ADMIN_ORDERS_EMAIL = process.env.ADMIN_ORDERS_EMAIL || 'orders@cellkore.com'
 export const ADMIN_SUPPORT_EMAIL = process.env.ADMIN_SUPPORT_EMAIL || 'support@cellkore.com'

@@ -19,9 +19,7 @@ interface EmailAction {
 }
 
 /**
- * Shared branded wrapper for every outgoing email — matches the user's reference email layout
- * with top shipping bar, logo header, pill eyebrow, banner picture container, catchy CTA box without arrow,
- * fixed non-stretchy gift icon, CellKore logo green branding (#5a9263), and multi-column footer.
+ * Render exact pixel-perfect email layout matching the user's reference mockup.
  */
 export function renderEmailLayout(opts: {
 	eyebrow?: string
@@ -29,10 +27,22 @@ export function renderEmailLayout(opts: {
 	bodyHtml: string
 	imageUrl?: string
 	action?: EmailAction
+	recipientEmail?: string
+	unsubscribeUrl?: string
+	socialLinks?: { platform: string; url: string }[]
 }): string {
-	const { eyebrow = 'NEWSLETTER & NEW ARRIVALS', heading, bodyHtml, imageUrl, action } = opts
+	const { eyebrow = 'SUBSCRIPTION CONFIRMED', heading, bodyHtml, imageUrl, action, recipientEmail, unsubscribeUrl } = opts
 
-	const actionLabel = action?.label?.trim() || 'EXPLORE COLLECTION'
+	const unsubLink = unsubscribeUrl
+		? unsubscribeUrl
+		: recipientEmail
+		? `${siteUrl()}/newsletter/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
+		: `${siteUrl()}/newsletter/unsubscribe`
+
+	// Format heading: if heading includes CellKore, style it in logo green
+	const formattedHeading = heading.includes('CellKore')
+		? heading.replace('CellKore', '<span style="color:#5a9263;">CellKore</span>')
+		: heading
 
 	return `<!doctype html>
 <html lang="en">
@@ -40,136 +50,245 @@ export function renderEmailLayout(opts: {
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<style>
-		body { margin: 0; padding: 0; background-color: #f4f6f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+		body { margin: 0; padding: 0; background-color: #f5f6f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
 		a { color: #5a9263; text-decoration: none; }
 		a:hover { text-decoration: underline; }
 		h1 a { color: #111827 !important; text-decoration: none !important; }
 	</style>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f6f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
-	<!-- Main Wrapper -->
-	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f4;padding:32px 16px 48px;">
+	<!-- Main Wrapper Table -->
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f6f5;padding:36px 16px 48px;">
 		<tr>
 			<td align="center">
-				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;">
+				<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:620px;">
 					
-					<!-- Brand Logo Header -->
+					<!-- Top Brand Logo Header -->
 					<tr>
 						<td style="padding:0 0 28px;text-align:center;">
 							<a href="${siteUrl()}" target="_blank" style="display:inline-block;text-decoration:none;">
-								<img src="${logoUrl()}" width="110" height="110" alt="CellKore" style="display:inline-block;border-radius:24px;" />
+								<img src="${logoUrl()}" width="120" height="120" alt="CellKore" style="display:inline-block;border-radius:24px;" />
 							</a>
-							<p style="margin:6px 0 0;font-size:12px;color:#6b7280;font-weight:600;letter-spacing:0.02em;">
+							<p style="margin:8px 0 0;font-size:12px;color:#6b7280;font-weight:600;letter-spacing:0.02em;">
 								Premium Devices. Trusted Worldwide.
 							</p>
 						</td>
 					</tr>
 
-					<!-- Main Email Card -->
+					<!-- Main White Email Card -->
 					<tr>
-						<td style="background-color:#ffffff;border-radius:28px;overflow:hidden;border:1px solid #e5e8e5;box-shadow:0 4px 20px rgba(0,0,0,0.03);">
+						<td style="background-color:#ffffff;border-radius:24px;overflow:hidden;border:1px solid #e5e8e5;box-shadow:0 4px 20px rgba(0,0,0,0.03);">
 							<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 								
 								<!-- Content Body Area -->
 								<tr>
-									<td style="padding:40px 40px 24px;">
+									<td style="padding:40px 40px 32px;">
 										
-										<!-- Eyebrow Badge -->
+										<!-- Eyebrow Pill Badge -->
 										${
 											eyebrow
 												? `<div style="margin-bottom:18px;">
-														<span style="display:inline-block;padding:6px 16px;background:#eef7f0;color:#5a9263;font-size:10px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;border-radius:999px;border:1px solid #c8e6ce;">
-															&bull; ${eyebrow}
-														</span>
+														<table role="presentation" cellpadding="0" cellspacing="0">
+															<tr>
+																<td style="padding:6px 14px;background:#eef7f0;border:1px solid #c8e6ce;border-radius:999px;">
+																	<table role="presentation" cellpadding="0" cellspacing="0">
+																		<tr>
+																			<td style="vertical-align:middle;padding-right:6px;">
+																				<div style="width:16px;height:16px;border-radius:50%;background:#5a9263;text-align:center;line-height:16px;">
+																					<span style="color:#ffffff;font-size:10px;font-weight:900;line-height:16px;display:block;">&#10003;</span>
+																				</div>
+																			</td>
+																			<td style="vertical-align:middle;font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#5a9263;">
+																				${eyebrow}
+																			</td>
+																		</tr>
+																	</table>
+																</td>
+															</tr>
+														</table>
 													</div>`
 												: ''
 										}
 										
 										<!-- Main Heading -->
-										<h1 style="margin:0 0 10px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:30px;line-height:1.25;color:#111827;font-weight:800;letter-spacing:-0.02em;">
-											${heading}
+										<h1 style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:32px;line-height:1.2;color:#111827;font-weight:800;letter-spacing:-0.02em;">
+											${formattedHeading}
 										</h1>
 
-										<!-- Banner Image Attachment -->
+										<!-- Heading Accent Bar -->
+										<div style="width:40px;height:3px;background:#5a9263;border-radius:99px;margin:12px 0 24px;"></div>
+
+										<!-- Banner Image -->
 										${
 											imageUrl
-												? `<div style="margin:24px 0;border-radius:20px;overflow:hidden;border:1px solid #e5e8e5;">
-														<img src="${imageUrl}" alt="Newsletter preview" style="display:block;width:100%;height:auto;border-radius:20px;" />
+												? `<div style="margin:0 0 28px;border-radius:18px;overflow:hidden;border:1px solid #e5e8e5;">
+														<img src="${imageUrl}" alt="CellKore Showcase" style="display:block;width:100%;height:auto;border-radius:18px;" />
 													</div>`
 												: ''
 										}
 
 										<!-- Body Message Content -->
-										<div style="font-size:15px;line-height:1.75;color:#374151;font-weight:400;margin-top:16px;">
+										<div style="font-size:14px;line-height:1.75;color:#374151;font-weight:400;">
 											${bodyHtml}
 										</div>
 
-										<!-- Catchy CTA Announcement Box (Fixed Non-Stretchy Icon & Brand Green Button) -->
-										${
-											action
-												? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:36px;background:#f2f8f4;border:1px solid #c8e6ce;border-radius:22px;padding:20px 22px;">
-														<tr>
-															<td>
-																<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-																	<tr>
-																		<td style="vertical-align:middle;">
-																			<table role="presentation" cellpadding="0" cellspacing="0">
-																				<tr>
-																					<td style="width:44px;min-width:44px;vertical-align:middle;">
-																						<div style="width:44px;height:44px;min-width:44px;min-height:44px;max-width:44px;max-height:44px;border-radius:50%;background:#5a9263;text-align:center;line-height:44px;">
-																							<span style="font-size:20px;line-height:44px;">&#127873;</span>
-																						</div>
-																					</td>
-																					<td style="padding-left:14px;vertical-align:middle;">
-																						<p style="margin:0;font-size:13px;font-weight:800;color:#111827;letter-spacing:-0.01em;">
-																							Exclusive New Arrival Collection
-																						</p>
-																						<p style="margin:2px 0 0;font-size:11px;color:#6b7280;font-weight:500;">
-																							Tap below to discover new inventory &amp; exclusive deals.
-																						</p>
-																					</td>
-																				</tr>
-																			</table>
-																		</td>
-																		<td align="right" style="vertical-align:middle;padding-left:16px;">
-																			<a href="${action.url}" target="_blank" style="display:inline-block;padding:12px 24px;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#5a9263;text-decoration:none;border-radius:999px;background:#ffffff;border:2px solid #5a9263;white-space:nowrap;">
-																				${actionLabel}
-																			</a>
-																		</td>
-																	</tr>
-																</table>
-															</td>
-														</tr>
-													</table>`
-												: ''
-										}
+										<!-- 3-Column Feature Pillars Bar -->
+										<div style="margin:32px 0 28px;padding:24px 8px;border-top:1px solid #e5e8e5;border-bottom:1px solid #e5e8e5;">
+											<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+												<tr>
+													<td width="33%" align="center" style="vertical-align:top;padding:0 6px;">
+														<div style="width:38px;height:38px;border-radius:50%;background:#ffffff;border:1.5px solid #5a9263;margin:0 auto 10px;line-height:38px;text-align:center;font-size:16px;">
+															<span style="display:inline-block;line-height:38px;">&#128230;</span>
+														</div>
+														<p style="margin:0 0 4px;font-size:12px;font-weight:800;color:#111827;letter-spacing:-0.01em;">Premium Devices</p>
+														<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.4;font-weight:400;">Carefully selected high-quality devices.</p>
+													</td>
+													<td width="1%" style="border-right:1px solid #e5e8e5;"></td>
+													<td width="32%" align="center" style="vertical-align:top;padding:0 6px;">
+														<div style="width:38px;height:38px;border-radius:50%;background:#ffffff;border:1.5px solid #5a9263;margin:0 auto 10px;line-height:38px;text-align:center;font-size:16px;">
+															<span style="display:inline-block;line-height:38px;">&#128737;</span>
+														</div>
+														<p style="margin:0 0 4px;font-size:12px;font-weight:800;color:#111827;letter-spacing:-0.01em;">Trusted Worldwide</p>
+														<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.4;font-weight:400;">Thousands of happy customers globally.</p>
+													</td>
+													<td width="1%" style="border-right:1px solid #e5e8e5;"></td>
+													<td width="33%" align="center" style="vertical-align:top;padding:0 6px;">
+														<div style="width:38px;height:38px;border-radius:50%;background:#ffffff;border:1.5px solid #5a9263;margin:0 auto 10px;line-height:38px;text-align:center;font-size:16px;">
+															<span style="display:inline-block;line-height:38px;">&#127911;</span>
+														</div>
+														<p style="margin:0 0 4px;font-size:12px;font-weight:800;color:#111827;letter-spacing:-0.01em;">Here to Help</p>
+														<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.4;font-weight:400;">Dedicated support when you need it.</p>
+													</td>
+												</tr>
+											</table>
+										</div>
+
+										<!-- Bottom Action Container (2 Columns: Store & Unsubscribe, NO ARROWS) -->
+										<div style="margin-top:32px;background:#f4f9f5;border:1.5px solid #c8e6ce;border-radius:20px;padding:18px 24px;">
+											<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+												<tr>
+													<td width="48%" style="vertical-align:middle;padding:4px 4px;">
+														<a href="${action?.url || siteUrl() + '/products'}" target="_blank" style="display:block;text-decoration:none;">
+															<table role="presentation" cellpadding="0" cellspacing="0">
+																<tr>
+																	<td style="vertical-align:middle;padding-right:12px;">
+																		<div style="width:42px;height:42px;border-radius:50%;background:#ffffff;border:1.5px solid #5a9263;text-align:center;line-height:42px;">
+																			<img src="https://img.icons8.com/ios/50/5a9263/shopping-bag.png" width="20" height="20" alt="Store" style="display:inline-block;vertical-align:middle;margin-top:-2px;" />
+																		</div>
+																	</td>
+																	<td style="vertical-align:middle;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#111827;">
+																		VISIT CELLKORE STORE
+																	</td>
+																</tr>
+															</table>
+														</a>
+													</td>
+													<td width="4%" align="center" style="color:#c8e6ce;font-size:20px;font-weight:300;">|</td>
+													<td width="48%" style="vertical-align:middle;padding:4px 4px 4px 16px;">
+														<a href="${unsubLink}" target="_blank" style="display:block;text-decoration:none;">
+															<table role="presentation" cellpadding="0" cellspacing="0">
+																<tr>
+																	<td style="vertical-align:middle;padding-right:12px;">
+																		<div style="width:42px;height:42px;border-radius:50%;background:#ffffff;border:1.5px solid #5a9263;text-align:center;line-height:42px;">
+																			<img src="https://img.icons8.com/ios/50/5a9263/mail.png" width="20" height="20" alt="Unsubscribe" style="display:inline-block;vertical-align:middle;margin-top:-2px;" />
+																		</div>
+																	</td>
+																	<td style="vertical-align:middle;font-size:11px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#111827;">
+																		UNSUBSCRIBE FROM NEWSLETTER
+																	</td>
+																</tr>
+															</table>
+														</a>
+													</td>
+												</tr>
+											</table>
+										</div>
+
 									</td>
 								</tr>
 
-								<!-- Multi-column Footer Card Section -->
+								<!-- Multi-column Footer Section -->
 								<tr>
-									<td style="padding:32px 40px;background:#f8faf8;border-top:1px solid #eaf0eb;">
+									<td style="padding:32px 40px;background:#fafafa;border-top:1px solid #eeeeee;">
 										<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 											<tr>
-												<td width="60%" style="vertical-align:top;padding-right:20px;">
-													<img src="${logoUrl()}" width="70" height="70" alt="CellKore" style="display:block;border-radius:14px;margin-bottom:12px;" />
-													<p style="margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#111827;">ABOUT CELLKORE</p>
-													<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.6;font-weight:500;">
-														CellKore is your trusted store for premium electronics. We bring you top-quality devices, unbeatable prices, and exceptional service.
+												<td width="55%" style="vertical-align:top;padding-right:24px;">
+													<img src="${logoUrl()}" width="60" height="60" alt="CellKore" style="display:block;border-radius:14px;margin-bottom:12px;" />
+													<p style="margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#111827;">ABOUT CELLKORE</p>
+													<p style="margin:0;font-size:11px;color:#6b7280;line-height:1.6;font-weight:400;">
+														CellKore is your trusted store for premium electronics. We bring you top quality devices, unbeatable prices, and exceptional service.
 													</p>
 												</td>
-												<td width="40%" style="vertical-align:top;">
-													<p style="margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#111827;">NEED HELP?</p>
-													<p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#5a9263;">
-														<a href="mailto:support@cellkore.com" style="color:#5a9263;text-decoration:none;">support@cellkore.com</a>
-													</p>
-													<p style="margin:0 0 4px;font-size:11px;color:#6b7280;font-weight:500;">
-														+1 (234) 567-8900
-													</p>
-													<p style="margin:0;font-size:11px;color:#6b7280;font-weight:500;">
-														<a href="${siteUrl()}" style="color:#6b7280;text-decoration:none;">www.cellkore.com</a>
-													</p>
+												<td width="45%" style="vertical-align:top;padding-left:16px;border-left:1px solid #eeeeee;">
+													<p style="margin:0 0 10px;font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#111827;">NEED HELP?</p>
+													
+													<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:6px;">
+														<tr>
+															<td style="padding-right:8px;vertical-align:middle;">
+																<img src="https://img.icons8.com/ios/50/5a9263/mail.png" width="14" height="14" alt="Email" style="display:block;" />
+															</td>
+															<td style="font-size:11px;font-weight:600;vertical-align:middle;">
+																<a href="mailto:support@cellkore.com" style="color:#5a9263;text-decoration:none;">support@cellkore.com</a>
+															</td>
+														</tr>
+													</table>
+
+													<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:6px;">
+														<tr>
+															<td style="padding-right:8px;vertical-align:middle;">
+																<img src="https://img.icons8.com/ios/50/5a9263/phone.png" width="14" height="14" alt="Phone" style="display:block;" />
+															</td>
+															<td style="font-size:11px;color:#4b5563;font-weight:500;vertical-align:middle;">
+																+1 (234) 567 8900
+															</td>
+														</tr>
+													</table>
+
+													<table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
+														<tr>
+															<td style="padding-right:8px;vertical-align:middle;">
+																<img src="https://img.icons8.com/ios/50/5a9263/domain.png" width="14" height="14" alt="Website" style="display:block;" />
+															</td>
+															<td style="font-size:11px;color:#4b5563;font-weight:500;vertical-align:middle;">
+																<a href="${siteUrl()}" style="color:#4b5563;text-decoration:none;">www.cellkore.com</a>
+															</td>
+														</tr>
+													</table>
+
+													<!-- Official Social Media Logos (Dynamic from Store Links, Twitter removed) -->
+													<table role="presentation" cellpadding="0" cellspacing="0">
+														<tr>
+															${
+																(opts.socialLinks && opts.socialLinks.length > 0
+																	? opts.socialLinks
+																	: [
+																			{ platform: 'facebook', url: 'https://facebook.com' },
+																			{ platform: 'instagram', url: 'https://instagram.com' },
+																			{ platform: 'whatsapp', url: 'https://wa.me/1234567890' }
+																	  ]
+																)
+																	.filter((item) => item.platform?.toLowerCase() !== 'twitter' && item.platform?.toLowerCase() !== 'x')
+																	.map((item) => {
+																		const p = item.platform.toLowerCase()
+																		let icon = 'https://img.icons8.com/color/48/domain.png'
+																		if (p.includes('facebook')) icon = 'https://img.icons8.com/color/48/facebook-new.png'
+																		else if (p.includes('instagram')) icon = 'https://img.icons8.com/color/48/instagram-new.png'
+																		else if (p.includes('whatsapp')) icon = 'https://img.icons8.com/color/48/whatsapp.png'
+																		else if (p.includes('youtube')) icon = 'https://img.icons8.com/color/48/youtube-play.png'
+																		else if (p.includes('tiktok')) icon = 'https://img.icons8.com/color/48/tiktok.png'
+																		else if (p.includes('linkedin')) icon = 'https://img.icons8.com/color/48/linkedin.png'
+
+																		return `<td style="padding-right:10px;">
+																			<a href="${item.url}" target="_blank" style="display:inline-block;text-decoration:none;">
+																				<img src="${icon}" width="24" height="24" alt="${item.platform}" style="display:block;border:0;" />
+																			</a>
+																		</td>`
+																	})
+																	.join('')
+															}
+														</tr>
+													</table>
 												</td>
 											</tr>
 										</table>
@@ -179,20 +298,6 @@ export function renderEmailLayout(opts: {
 						</td>
 					</tr>
 
-					<!-- Bottom Copyright Footnote -->
-					<tr>
-						<td style="padding:24px 0 0;text-align:center;">
-							<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-								<tr>
-									<td align="center" style="font-size:11px;color:#9ca3af;font-weight:500;">
-										&copy; ${new Date().getFullYear()} CellKore. All rights reserved. &nbsp;&middot;&nbsp; 
-										<a href="${siteUrl()}/privacy-policy" style="color:#6b7280;text-decoration:none;">Unsubscribe</a> &nbsp;|&nbsp; 
-										<a href="${siteUrl()}/terms" style="color:#6b7280;text-decoration:none;">Manage Preferences</a>
-									</td>
-								</tr>
-							</table>
-						</td>
-					</tr>
 				</table>
 			</td>
 		</tr>

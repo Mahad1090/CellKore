@@ -237,10 +237,12 @@ export async function fetchSocialLinks(): Promise<SocialLink[]> {
 }
 
 export async function subscribeToNewsletter(email: string): Promise<{ alreadySubscribed: boolean }> {
-	const { error } = await supabase.from('newsletter_subscribers').insert({ email })
-	if (error) {
-		if (error.code === '23505') return { alreadySubscribed: true }
-		throw error
-	}
-	return { alreadySubscribed: false }
+	const res = await fetch('/api/newsletter/subscribe', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email }),
+	})
+	const json = await res.json()
+	if (!res.ok) throw new Error(json.error || 'Subscription failed')
+	return { alreadySubscribed: !!json.alreadySubscribed }
 }

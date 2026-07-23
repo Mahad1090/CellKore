@@ -1,14 +1,15 @@
-import type { Transporter } from 'nodemailer'
+export interface SendMailInput {
+	to: string
+	from: string
+	subject: string
+	html: string
+	text?: string
+	replyTo?: string
+}
 
-let transporter: Transporter | null | undefined
+let transporter: any = undefined
 
-/**
- * Single shared SMTP transporter built from env vars. Returns null (instead
- * of throwing) when SMTP isn't configured yet, so every call site can stay
- * fire-and-forget — a missing mail config should never break a checkout,
- * status update, or form submission.
- */
-function getTransporter(): Transporter | null {
+function getTransporter(): any {
 	if (typeof window !== 'undefined') return null
 	if (transporter !== undefined) return transporter
 	const host = process.env.SMTP_HOST
@@ -21,8 +22,8 @@ function getTransporter(): Transporter | null {
 		return transporter
 	}
 	try {
-		// Dynamic require for Node.js server environment compatibility
-		const nodemailer = require('nodemailer')
+		// Safe dynamic require for Node.js server environment compatibility without bundling issues
+		const nodemailer = eval("require('nodemailer')")
 		transporter = nodemailer.createTransport({
 			host,
 			port,
@@ -36,20 +37,6 @@ function getTransporter(): Transporter | null {
 	return transporter ?? null
 }
 
-export interface SendMailInput {
-	to: string
-	from: string
-	subject: string
-	html: string
-	text?: string
-	replyTo?: string
-}
-
-/**
- * Fire-and-forget email send: logs and swallows failures rather than
- * throwing, so a bounced/misconfigured mailbox never breaks the order,
- * repair, sell-request, or inquiry flow that triggered it.
- */
 export async function sendMail(input: SendMailInput): Promise<void> {
 	const t = getTransporter()
 	if (!t) return
