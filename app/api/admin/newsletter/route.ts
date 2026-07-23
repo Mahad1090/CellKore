@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
+import { renderEmailLayout } from '@/lib/email/template'
+import { sendMail } from '@/lib/email/mailer'
+import { FROM_INFO, REPLY_TO_SUPPORT } from '@/lib/email/addresses'
 
 export async function GET(request: NextRequest) {
 	const auth = await requireAdmin(request, 'newsletter:read')
@@ -40,10 +43,37 @@ export async function POST(request: NextRequest) {
 
 		const recipientCount = subscribers?.length || 0
 
+		const formattedParagraphs = message
+			.split('\n\n')
+			.map((p: string) => `<p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.7; color: #44403c;">${p.replace(/\n/g, '<br/>')}</p>`)
+			.join('')
+
+		const html = renderEmailLayout({
+			eyebrow: 'NEWSLETTER & NEW ARRIVALS',
+			heading: subject,
+			bodyHtml: formattedParagraphs,
+			action: link?.trim() ? { label: 'View Arrival / Collection', url: link.trim() } : undefined,
+		})
+
+		// Send email using the shared CellKore branded template to all active subscribers
+		if (subscribers && subscribers.length > 0) {
+			for (const sub of subscribers) {
+				if (sub.email) {
+					await sendMail({
+						to: sub.email,
+						from: FROM_INFO,
+						replyTo: REPLY_TO_SUPPORT,
+						subject,
+						html,
+					})
+				}
+			}
+		}
+
 		return NextResponse.json({
 			success: true,
 			recipientCount,
-			message: `Notification broadcast queued successfully for ${recipientCount} active subscriber${recipientCount !== 1 ? 's' : ''}.`,
+			message: `Notification broadcast sent successfully to ${recipientCount} active subscriber${recipientCount !== 1 ? 's' : ''}.`,
 		})
 	} catch (err) {
 		return NextResponse.json({ error: err instanceof Error ? err.message : 'Broadcast failed' }, { status: 500 })

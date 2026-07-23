@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Download, Send, Loader2, Trash2, Mail, Users, CheckCircle2, ChevronRight, Home } from 'lucide-react'
+import { Send, Loader2, Trash2, Mail, Users, CheckCircle2, ChevronRight, Home } from 'lucide-react'
 import { adminButton, adminButtonGhost, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
@@ -99,10 +99,6 @@ export default function AdminNewsletterPage() {
 		} catch (err) {
 			toast({ title: 'Delete failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		}
-	}
-
-	const exportCsv = () => {
-		window.location.href = '/api/admin/newsletter?format=csv'
 	}
 
 	const filteredSubscribers = (subscribers ?? []).filter((s) =>
@@ -203,16 +199,8 @@ export default function AdminNewsletterPage() {
 								placeholder="Search subscribers..."
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
-								className={`${adminInput} max-w-[200px] text-xs py-1.5`}
+								className={`${adminInput} max-w-[220px] text-xs py-1.5`}
 							/>
-							<button
-								onClick={exportCsv}
-								disabled={!subscribers || subscribers.length === 0}
-								className={`${adminButtonGhost} text-xs px-3.5 py-2`}
-							>
-								<Download className="w-3.5 h-3.5" />
-								Export CSV
-							</button>
 						</div>
 					</div>
 
