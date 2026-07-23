@@ -23,6 +23,8 @@ const GIFT_CARD_FEE = 5
 const GIFT_WRAP_FEE = 10
 
 interface CheckoutForm {
+	firstName: string
+	lastName: string
 	email: string
 	phone: string
 	line1: string
@@ -31,6 +33,7 @@ interface CheckoutForm {
 	stateProvince: string
 	postalCode: string
 	country: string
+	deliveryNotes: string
 	isGift: boolean
 	giftRecipientName: string
 	giftRecipientPhone: string
@@ -41,6 +44,8 @@ interface CheckoutForm {
 }
 
 const EMPTY_FORM: CheckoutForm = {
+	firstName: '',
+	lastName: '',
 	email: '',
 	phone: '',
 	line1: '',
@@ -49,6 +54,7 @@ const EMPTY_FORM: CheckoutForm = {
 	stateProvince: '',
 	postalCode: '',
 	country: 'US',
+	deliveryNotes: '',
 	isGift: false,
 	giftRecipientName: '',
 	giftRecipientPhone: '',
@@ -103,6 +109,10 @@ export default function CheckoutPage() {
 		if (authLoading || prefillStage.current >= 2) return
 		if (user) {
 			prefillStage.current = 2
+			const nameParts = (user.full_name || '').split(' ')
+			const userFirst = nameParts[0] || ''
+			const userLast = nameParts.slice(1).join(' ') || ''
+
 			supabase
 				.from('addresses')
 				.select('*')
@@ -113,8 +123,14 @@ export default function CheckoutPage() {
 				.maybeSingle()
 				.then(({ data }) => {
 					if (data) {
+						const addrName = (data.full_name || data.name || '').split(' ')
+						const fn = addrName[0] || userFirst
+						const ln = addrName.slice(1).join(' ') || userLast
+
 						setForm((f) => ({
 							...f,
+							firstName: f.firstName || fn,
+							lastName: f.lastName || ln,
 							email: f.email || user.email || '',
 							line1: f.line1 || data.line1,
 							line2: f.line2 || data.line2 || '',
@@ -124,7 +140,12 @@ export default function CheckoutPage() {
 							country: data.country || 'US',
 						}))
 					} else {
-						setForm((f) => ({ ...f, email: f.email || user.email || '' }))
+						setForm((f) => ({
+							...f,
+							firstName: f.firstName || userFirst,
+							lastName: f.lastName || userLast,
+							email: f.email || user.email || '',
+						}))
 					}
 				})
 		}
@@ -198,6 +219,8 @@ export default function CheckoutPage() {
 	const total = Math.max(0, subtotal - discount) + tax + giftFees
 
 	const validate = (): string | null => {
+		if (!form.firstName.trim()) return 'First name is required.'
+		if (!form.lastName.trim()) return 'Last name is required.'
 		if (!form.email.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) return 'A valid email address is required.'
 		if (!form.phone.trim() || !isValidPhone(form.phone)) return 'A valid phone number (10–15 digits) is required.'
 		if (!form.line1.trim()) return 'Street address is required.'
@@ -246,6 +269,7 @@ export default function CheckoutPage() {
 	const checkoutPayload = () => ({
 		cartItems: (items ?? []).map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
 		shippingAddress: {
+			fullName: `${form.firstName} ${form.lastName}`.trim(),
 			line1: form.line1,
 			line2: form.line2 || undefined,
 			city: form.city,
@@ -407,6 +431,8 @@ export default function CheckoutPage() {
 							<div className="bg-card border border-border rounded-3xl p-7">
 								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6">Shipping Address</h2>
 								<div className="grid sm:grid-cols-2 gap-4">
+									<input placeholder="First name" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} className={inputClass} />
+									<input placeholder="Last name" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} className={inputClass} />
 									<CountrySelect
 										value={form.country}
 										onChange={(code) => {
@@ -444,6 +470,13 @@ export default function CheckoutPage() {
 										value={form.postalCode}
 										onChange={(e) => set('postalCode', e.target.value)}
 										className={inputClass}
+									/>
+									<textarea
+										placeholder="Special delivery instructions (optional - e.g. gate code, leave at porch, ring doorbell)"
+										value={form.deliveryNotes}
+										onChange={(e) => set('deliveryNotes', e.target.value)}
+										rows={2}
+										className={`${inputClass} sm:col-span-2 resize-none`}
 									/>
 								</div>
 							</div>

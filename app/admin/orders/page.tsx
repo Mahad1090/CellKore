@@ -253,7 +253,7 @@ function OrderRow({
 		setCustomName(name)
 		setCustomPhone(phone)
 		setCustomAddress(addr)
-		setOrderNote(order.gift_message || '')
+		setOrderNote(order.shipping_address?.delivery_notes || order.notes || order.gift_message || '')
 		setCarrier(order.marketplace === 'CA' ? 'Canada Post' : 'USPS')
 	}, [order])
 
@@ -554,6 +554,17 @@ function OrderRow({
 												placeholder="Address details"
 											/>
 										</div>
+
+										{(order.shipping_address?.delivery_notes || order.notes || orderNote) && (
+											<div className="p-3 bg-[#EEF7F0] border border-[#599161]/30 rounded-xl text-xs text-[#111111] space-y-1">
+												<span className="font-extrabold uppercase text-[9px] text-[#599161] tracking-wider block">
+													🚚 Special Delivery Instructions:
+												</span>
+												<p className="font-medium leading-relaxed font-sans text-xs text-[#111111]">
+													&quot;{order.shipping_address?.delivery_notes || order.notes || orderNote}&quot;
+												</p>
+											</div>
+										)}
 									</div>
 								</div>
 
