@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye } from 'lucide-react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye, Sparkles } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
@@ -203,6 +203,20 @@ function generateSku(form: ProductFormValue): string {
     .join('-')
 }
 
+function hasAnyMobileSpecs(specs: MobileSpecifications | undefined): boolean {
+	if (!specs) return false
+	if (specs.custom && specs.custom.length > 0) return true
+	for (const [key, val] of Object.entries(specs)) {
+		if (key === 'custom') continue
+		if (val && typeof val === 'object' && !Array.isArray(val)) {
+			if (Object.values(val).some((v) => (v ?? '').toString().trim() !== '')) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 export function ProductFormModal({
   open,
   initial,
@@ -392,10 +406,21 @@ export function ProductFormModal({
       return matches(a) - matches(b)
     })
 
-  const loadPreset = () => {
-    const preset = mobileSpecPresets.find((p) => p.id === selectedPresetId)
-    if (preset) set('mobile_specifications', preset.mobile_specifications)
-  }
+	const loadPreset = () => {
+		const preset = mobileSpecPresets.find((p) => p.id === selectedPresetId)
+		if (preset)
+      { 
+        // set('mobile_specifications', preset.mobile_specifications)
+        const existingCustom = form.mobile_specifications?.custom ?? []
+			  const presetCustom = preset.mobile_specifications?.custom ?? []
+			  const mergedCustom = existingCustom.length > 0 ? existingCustom : presetCustom
+			  set('mobile_specifications', {
+				    ...preset.mobile_specifications,
+				    custom: mergedCustom,
+			  })
+      }
+
+	}
 
   const saveAsPreset = async () => {
     if (!presetNameInput?.trim()) return
@@ -894,65 +919,66 @@ export function ProductFormModal({
                       Load Preset
                     </button>
 
-                    {presetNameInput === null ? (
-                      <button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
-                        Save as Preset
-                      </button>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <input
-                          autoFocus
-                          value={presetNameInput}
-                          onChange={(e) => setPresetNameInput(e.target.value)}
-                          placeholder="Preset name, e.g. iPhone 15 Pro"
-                          className={`${adminInput} w-auto min-w-[200px]`}
-                        />
-                        <button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
-                          {savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                          Save
-                        </button>
-                        <button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground -mt-2 mb-4">
-                    Loading a preset replaces the fields below with its saved values.
-                  </p>
+		                    {presetNameInput === null ? (
+		                      <button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
+		                        Save as Preset
+		                      </button>
+		                    ) : (
+		                      <div className="flex items-center gap-2">
+		                        <input
+		                          autoFocus
+		                          value={presetNameInput}
+		                          onChange={(e) => setPresetNameInput(e.target.value)}
+		                          placeholder="Preset name, e.g. iPhone 15 Pro"
+		                          className={`${adminInput} w-auto min-w-[200px]`}
+		                        />
+		                        <button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
+		                          {savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+		                          Save
+		                        </button>
+		                        <button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
+		                          Cancel
+		                        </button>
+		                      </div>
+		                    )}
+		                  </div>
+		                  <p className="text-xs text-muted-foreground -mt-2 mb-4">
+		                    Loading a preset replaces the fields below with its saved values.
+		                  </p>
 
-                  <MobileSpecsForm
-                    value={form.mobile_specifications}
-                    brand={form.brand}
-                    onChange={(next) => set('mobile_specifications', next)}
-                  />
+		                  <MobileSpecsForm
+		                    value={form.mobile_specifications}
+		                    brand={form.brand}
+		                    onChange={(next) => set('mobile_specifications', next)}
+		                  />
+										</div>
+									)}
                 </div>
               )}
 
-              {/* Spec Template editor — only for non-phone-type products */}
-              {!showMobileSpecs && (
-                <div>
-                  {templatesForType.length > 0 ? (
-                    <div>
-                      <label className={`${label} mb-3`}>Specifications</label>
-                      <SpecTemplateSection
-                        templates={templatesForType}
-                        selectedTemplateId={form.spec_template_id}
-                        onSelectTemplate={handleSpecTemplateChange}
-                        onImport={importTemplateFields}
-                        entries={form.template_spec_entries}
-                        onEntriesChange={(next) => set('template_spec_entries', next)}
-                        custom={form.template_custom_specs}
-                        onCustomChange={(next) => set('template_custom_specs', next)}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground py-4">No specification templates match this product type.</p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
+							{/* Spec Template editor — only for non-phone-type products */}
+							{!showMobileSpecs && (
+								<div>
+									{templatesForType.length > 0 ? (
+										<div>
+											<SpecTemplateSection
+												templates={templatesForType}
+												selectedTemplateId={form.spec_template_id}
+												onSelectTemplate={handleSpecTemplateChange}
+												onImport={importTemplateFields}
+												entries={form.template_spec_entries}
+												onEntriesChange={(next) => set('template_spec_entries', next)}
+												custom={form.template_custom_specs}
+												onCustomChange={(next) => set('template_custom_specs', next)}
+											/>
+										</div>
+									) : (
+										<p className="text-xs text-muted-foreground py-4">No specification templates match this product type.</p>
+									)}
+								</div>
+							)}
+						</div>
+					)}
 
           {/* MEDIA & IMAGES TAB */}
           {activeTab === 'media' && (
