@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye } from 'lucide-react'
+import { Plus, Trash2, Wand2, Upload, Loader2, Star, ChevronRight, ChevronLeft, Eye, Sparkles } from 'lucide-react'
 import { adminInput, adminButton, adminButtonGhost, Modal } from '@/components/admin/ui'
 import { useToast } from '@/components/ui/toast'
 import { productImagePath, uploadViaAdminApi } from '@/lib/storage'
@@ -195,6 +195,20 @@ function generateSku(form: ProductFormValue): string {
 		.join('-')
 }
 
+function hasAnyMobileSpecs(specs: MobileSpecifications | undefined): boolean {
+	if (!specs) return false
+	if (specs.custom && specs.custom.length > 0) return true
+	for (const [key, val] of Object.entries(specs)) {
+		if (key === 'custom') continue
+		if (val && typeof val === 'object' && !Array.isArray(val)) {
+			if (Object.values(val).some((v) => (v ?? '').toString().trim() !== '')) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 export function ProductFormModal({
 	open,
 	initial,
@@ -378,7 +392,15 @@ export function ProductFormModal({
 
 	const loadPreset = () => {
 		const preset = mobileSpecPresets.find((p) => p.id === selectedPresetId)
-		if (preset) set('mobile_specifications', preset.mobile_specifications)
+		if (preset) {
+			const existingCustom = form.mobile_specifications?.custom ?? []
+			const presetCustom = preset.mobile_specifications?.custom ?? []
+			const mergedCustom = existingCustom.length > 0 ? existingCustom : presetCustom
+			set('mobile_specifications', {
+				...preset.mobile_specifications,
+				custom: mergedCustom,
+			})
+		}
 	}
 
 	const saveAsPreset = async () => {
@@ -786,60 +808,100 @@ export function ProductFormModal({
 							{/* Mobile specifications editor — only for phone-type products */}
 							{showMobileSpecs && (
 								<div>
-									<label className={`${label} mb-3`}>Mobile Specifications</label>
-
-									<div className="flex flex-wrap items-center gap-2.5 mb-4">
-										<select
-											value={selectedPresetId}
-											onChange={(e) => setSelectedPresetId(e.target.value)}
-											className={`${adminInput} w-auto min-w-[220px] cursor-pointer`}
-										>
-											<option value="">Load a preset...</option>
-											{sortedPresets.map((p) => (
-												<option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>
-											))}
-										</select>
-										<button
-											type="button"
-											onClick={loadPreset}
-											disabled={!selectedPresetId}
-											className={`${adminButtonGhost} px-3.5 py-2 disabled:opacity-50 disabled:cursor-not-allowed`}
-										>
-											Load Preset
-										</button>
-
-										{presetNameInput === null ? (
-											<button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
-												Save as Preset
-											</button>
-										) : (
-											<div className="flex items-center gap-2">
-												<input
-													autoFocus
-													value={presetNameInput}
-													onChange={(e) => setPresetNameInput(e.target.value)}
-													placeholder="Preset name, e.g. iPhone 15 Pro"
-													className={`${adminInput} w-auto min-w-[200px]`}
-												/>
-												<button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
-													{savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-													Save
-												</button>
-												<button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
-													Cancel
-												</button>
+									{!hasAnyMobileSpecs(form.mobile_specifications) ? (
+										/* Initial Preset Starter Card */
+										<div className="p-8 rounded-2xl border border-dashed border-[#C8E6CE] bg-[#F4F9F5]/70 text-center space-y-5">
+											<div className="max-w-md mx-auto space-y-1.5">
+												<div className="w-10 h-10 rounded-full bg-[#EEF7F0] border border-[#C8E6CE] text-[#599161] flex items-center justify-center mx-auto mb-3 shadow-3xs">
+													<Sparkles className="w-5 h-5" />
+												</div>
+												<h3 className="text-sm font-bold text-foreground">Mobile Specifications</h3>
+												<p className="text-xs text-muted-foreground leading-relaxed">
+													Select a pre-configured spec preset to auto-fill technical details and add custom specs.
+												</p>
 											</div>
-										)}
-									</div>
-									<p className="text-xs text-muted-foreground -mt-2 mb-4">
-										Loading a preset replaces the fields below with its saved values.
-									</p>
 
-									<MobileSpecsForm
-										value={form.mobile_specifications}
-										brand={form.brand}
-										onChange={(next) => set('mobile_specifications', next)}
-									/>
+											<div className="flex items-center justify-center pt-2 max-w-md mx-auto">
+												{/* Preset Loader */}
+												<div className="flex items-center gap-2 w-full sm:w-auto bg-white p-1.5 rounded-xl border border-[#C8E6CE] shadow-3xs">
+													<select
+														value={selectedPresetId}
+														onChange={(e) => setSelectedPresetId(e.target.value)}
+														className="text-xs font-semibold text-foreground/80 bg-transparent px-2.5 py-1.5 focus:outline-none cursor-pointer w-full sm:w-auto"
+													>
+														<option value="">Select a Preset to Load...</option>
+														{sortedPresets.map((p) => (
+															<option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>
+														))}
+													</select>
+													<button
+														type="button"
+														onClick={loadPreset}
+														disabled={!selectedPresetId}
+														className={`${adminButton} text-xs px-3.5 py-2 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed`}
+													>
+														Load Preset
+													</button>
+												</div>
+											</div>
+										</div>
+									) : (
+										/* Full Spec Editor */
+										<div>
+											<div className="flex flex-wrap items-center gap-2.5 mb-4">
+												<select
+													value={selectedPresetId}
+													onChange={(e) => setSelectedPresetId(e.target.value)}
+													className={`${adminInput} w-auto min-w-[220px] cursor-pointer`}
+												>
+													<option value="">Load a preset...</option>
+													{sortedPresets.map((p) => (
+														<option key={p.id} value={p.id}>{p.name}{p.brand ? ` (${p.brand})` : ''}</option>
+													))}
+												</select>
+												<button
+													type="button"
+													onClick={loadPreset}
+													disabled={!selectedPresetId}
+													className={`${adminButtonGhost} px-3.5 py-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+												>
+													Load Preset
+												</button>
+
+												{presetNameInput === null ? (
+													<button type="button" onClick={() => setPresetNameInput('')} className={`${adminButtonGhost} px-3.5 py-2`}>
+														Save as Preset
+													</button>
+												) : (
+													<div className="flex items-center gap-2">
+														<input
+															autoFocus
+															value={presetNameInput}
+															onChange={(e) => setPresetNameInput(e.target.value)}
+															placeholder="Preset name, e.g. iPhone 15 Pro"
+															className={`${adminInput} w-auto min-w-[200px]`}
+														/>
+														<button type="button" onClick={saveAsPreset} disabled={savingPreset} className={`${adminButtonGhost} px-3.5 py-2`}>
+															{savingPreset && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+															Save
+														</button>
+														<button type="button" onClick={() => setPresetNameInput(null)} className={`${adminButtonGhost} px-3.5 py-2`}>
+															Cancel
+														</button>
+													</div>
+												)}
+											</div>
+											<p className="text-xs text-muted-foreground -mt-2 mb-4">
+												Loading a preset replaces the fields below with its saved values.
+											</p>
+
+											<MobileSpecsForm
+												value={form.mobile_specifications}
+												brand={form.brand}
+												onChange={(next) => set('mobile_specifications', next)}
+											/>
+										</div>
+									)}
 								</div>
 							)}
 
@@ -848,7 +910,6 @@ export function ProductFormModal({
 								<div>
 									{templatesForType.length > 0 ? (
 										<div>
-											<label className={`${label} mb-3`}>Specifications</label>
 											<SpecTemplateSection
 												templates={templatesForType}
 												selectedTemplateId={form.spec_template_id}
