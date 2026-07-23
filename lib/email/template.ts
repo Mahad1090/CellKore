@@ -320,3 +320,105 @@ export function renderSectionCard(html: string): string {
 export function renderDivider(): string {
 	return `<div style="height:1px;background:#f0efed;margin:16px 0;"></div>`
 }
+
+export interface EmailOrderItem {
+	name: string
+	sku?: string
+	qty: number
+	price: number
+	image_url?: string
+}
+
+export function renderOrderItemsTable(items: EmailOrderItem[], currency: 'USD' | 'CAD' = 'USD'): string {
+	if (!items || items.length === 0) return ''
+	const rows = items
+		.map(
+			(item) => `
+		<tr>
+			<td style="padding:10px 0;border-bottom:1px solid #f0efed;">
+				<p style="margin:0;font-weight:600;color:#111111;font-size:14px;">${item.name}</p>
+				${item.sku ? `<p style="margin:2px 0 0;font-size:11px;color:#78716c;">SKU: ${item.sku}</p>` : ''}
+			</td>
+			<td align="center" style="padding:10px 0;border-bottom:1px solid #f0efed;font-size:13px;color:#444444;">
+				${item.qty}
+			</td>
+			<td align="right" style="padding:10px 0;border-bottom:1px solid #f0efed;font-weight:600;font-size:14px;color:#111111;">
+				${formatCurrency(item.price * item.qty, currency)}
+			</td>
+		</tr>`
+		)
+		.join('')
+
+	return `
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;">
+		<thead>
+			<tr style="border-bottom:1.5px solid #e7e5e4;">
+				<th align="left" style="padding:6px 0;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#78716c;">Item</th>
+				<th align="center" style="padding:6px 0;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#78716c;">Qty</th>
+				<th align="right" style="padding:6px 0;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:#78716c;">Total</th>
+			</tr>
+		</thead>
+		<tbody>${rows}</tbody>
+	</table>`
+}
+
+export function renderOrderSummary(opts: {
+	subtotal: number
+	discount?: number
+	tax?: number
+	extras?: number
+	total: number
+	currency?: 'USD' | 'CAD'
+}): string {
+	const currency = opts.currency || 'USD'
+	return `
+	<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;font-size:13px;color:#444444;">
+		<tr>
+			<td style="padding:4px 0;">Subtotal</td>
+			<td align="right" style="padding:4px 0;font-weight:500;">${formatCurrency(opts.subtotal, currency)}</td>
+		</tr>
+		${
+			opts.discount
+				? `<tr>
+			<td style="padding:4px 0;color:#dc2626;">Discount</td>
+			<td align="right" style="padding:4px 0;color:#dc2626;font-weight:500;">-${formatCurrency(opts.discount, currency)}</td>
+		</tr>`
+				: ''
+		}
+		${
+			opts.tax
+				? `<tr>
+			<td style="padding:4px 0;">Tax</td>
+			<td align="right" style="padding:4px 0;font-weight:500;">${formatCurrency(opts.tax, currency)}</td>
+		</tr>`
+				: ''
+		}
+		${
+			opts.extras
+				? `<tr>
+			<td style="padding:4px 0;">Shipping / Fees</td>
+			<td align="right" style="padding:4px 0;font-weight:500;">${formatCurrency(opts.extras, currency)}</td>
+		</tr>`
+				: ''
+		}
+		<tr style="border-top:1.5px solid #111111;">
+			<td style="padding:8px 0;font-size:15px;font-weight:800;color:#111111;">Total</td>
+			<td align="right" style="padding:8px 0;font-size:15px;font-weight:800;color:#5a9263;">${formatCurrency(opts.total, currency)}</td>
+		</tr>
+	</table>`
+}
+
+export function renderAddress(addr?: any): string {
+	if (!addr) return '<p style="margin:0;color:#78716c;">No shipping address provided.</p>'
+	const lines = [
+		addr.fullName || addr.full_name || addr.name,
+		addr.company,
+		addr.addressLine1 || addr.address_line_1 || addr.street,
+		addr.addressLine2 || addr.address_line_2,
+		[addr.city, addr.state || addr.province, addr.postalCode || addr.postal_code || addr.zip].filter(Boolean).join(', '),
+		addr.country,
+		addr.phone ? `Phone: ${addr.phone}` : null,
+	].filter(Boolean)
+
+	return lines.map((l) => `<p style="margin:0 0 2px;color:#444444;font-size:13px;">${l}</p>`).join('')
+}
