@@ -71,16 +71,19 @@ export async function POST(request: NextRequest) {
 				})),
 				total: Number(meta.total || (session.amount_total ?? 0) / 100),
 				shippingAddress: {
+					fullName: meta.full_name || undefined,
 					line1: meta.shipping_address_line1 || '',
 					line2: meta.shipping_address_line2 || undefined,
 					city: meta.city || '',
 					stateProvince: meta.state_province || undefined,
 					postalCode: meta.postal_code || undefined,
 					country: meta.country || 'US',
+					deliveryNotes: meta.delivery_notes || undefined,
 				},
 				gift: JSON.parse(meta.gift || 'null'),
 				paymentProvider: 'stripe-webhook',
 				customerEmail: session.customer_details?.email ?? session.customer_email ?? null,
+				notes: meta.delivery_notes || null,
 			})
 		} catch {
 			// finalizePaidOrder already flagged the incident to admin_logs.

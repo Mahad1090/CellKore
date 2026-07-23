@@ -181,6 +181,8 @@ export interface ShippingAddressInput {
 	stateProvince?: string
 	postalCode?: string
 	country: string
+	fullName?: string
+	deliveryNotes?: string
 }
 
 export async function getTaxRateForAddress(service: SupabaseClient, address: ShippingAddressInput): Promise<number> {
@@ -212,6 +214,7 @@ export interface FinalizeOrderParams {
 	gift?: GiftOptions | null
 	paymentProvider: string
 	customerEmail?: string | null
+	notes?: string | null
 }
 
 /**
@@ -270,6 +273,7 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 				gift_message: params.gift?.message ?? null,
 				gift_card: params.gift?.giftCard ?? false,
 				gift_wrapping: params.gift?.giftWrapping ?? false,
+				notes: params.notes ?? params.shippingAddress.deliveryNotes ?? null,
 			})
 			.select('id')
 			.single()

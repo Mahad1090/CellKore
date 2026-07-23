@@ -555,16 +555,16 @@ function OrderRow({
 											/>
 										</div>
 
-										{(order.shipping_address?.delivery_notes || order.notes || orderNote) && (
-											<div className="p-3 bg-[#EEF7F0] border border-[#599161]/30 rounded-xl text-xs text-[#111111] space-y-1">
-												<span className="font-extrabold uppercase text-[9px] text-[#599161] tracking-wider block">
-													🚚 Special Delivery Instructions:
-												</span>
-												<p className="font-medium leading-relaxed font-sans text-xs text-[#111111]">
-													&quot;{order.shipping_address?.delivery_notes || order.notes || orderNote}&quot;
-												</p>
+										<div>
+											<label className="text-[9px] font-bold text-muted-foreground uppercase">🚚 Special Delivery Instructions</label>
+											<div className={`mt-1 px-3 py-2 rounded-lg border text-xs leading-relaxed ${
+												order.notes
+													? 'bg-[#EEF7F0] border-[#599161]/30 text-[#111111] font-semibold'
+													: 'bg-[#F7F7F5] border-[#E9ECEA] text-muted-foreground italic'
+											}`}>
+												{order.notes || 'None provided'}
 											</div>
-										)}
+										</div>
 									</div>
 								</div>
 

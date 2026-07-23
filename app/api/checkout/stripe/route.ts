@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
 				state_province: shippingAddress.stateProvince ?? '',
 				postal_code: shippingAddress.postalCode ?? '',
 				country: shippingAddress.country,
+				full_name: shippingAddress.fullName ?? '',
+				delivery_notes: shippingAddress.deliveryNotes ?? '',
 				total: String(total),
 				gift: JSON.stringify(gift ?? { isGift: false }),
 				items: JSON.stringify(
