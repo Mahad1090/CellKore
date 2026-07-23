@@ -139,6 +139,18 @@ export async function fetchApprovedTestimonials(): Promise<StoreTestimonial[]> {
 	return (data ?? []) as StoreTestimonial[]
 }
 
+export async function fetchMyStoreTestimonial(userId: string): Promise<StoreTestimonial | null> {
+	const { data, error } = await supabase
+		.from('store_testimonials')
+		.select('*')
+		.eq('user_id', userId)
+		.order('created_at', { ascending: false })
+		.limit(1)
+		.maybeSingle()
+	if (error) return null
+	return (data as StoreTestimonial) ?? null
+}
+
 export async function fetchWholesaleLots(marketplace?: Marketplace): Promise<Product[]> {
 	const { data, error } = await supabase
 		.from('products')
