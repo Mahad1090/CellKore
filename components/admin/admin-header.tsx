@@ -64,7 +64,21 @@ export function AdminHeader() {
 			.then((res) => res.json())
 			.then((json) => {
 				if (json.notifications) {
-					setNotifications(json.notifications)
+					let dismissed: string[] = []
+					let readIDs: string[] = []
+					try {
+						dismissed = JSON.parse(localStorage.getItem('cellkore_dismissed_notifs') || '[]')
+						readIDs = JSON.parse(localStorage.getItem('cellkore_read_notifs') || '[]')
+					} catch {
+						dismissed = []
+						readIDs = []
+					}
+
+					const filtered = (json.notifications as NotificationItem[])
+						.filter((n) => !dismissed.includes(n.id))
+						.map((n) => (readIDs.includes(n.id) ? { ...n, read: true } : n))
+
+					setNotifications(filtered)
 				}
 			})
 			.catch(() => undefined)
@@ -95,16 +109,35 @@ export function AdminHeader() {
 	const hasUnread = notifications.some((n) => !n.read)
 
 	const markAllRead = () => {
+		try {
+			const readIDs: string[] = JSON.parse(localStorage.getItem('cellkore_read_notifs') || '[]')
+			const newIDs = Array.from(new Set([...readIDs, ...notifications.map((n) => n.id)]))
+			localStorage.setItem('cellkore_read_notifs', JSON.stringify(newIDs))
+		} catch {}
 		setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
 	}
 
 	const markSingleRead = (id: string) => {
+		try {
+			const readIDs: string[] = JSON.parse(localStorage.getItem('cellkore_read_notifs') || '[]')
+			if (!readIDs.includes(id)) {
+				readIDs.push(id)
+				localStorage.setItem('cellkore_read_notifs', JSON.stringify(readIDs))
+			}
+		} catch {}
 		setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
 	}
 
 	const deleteNotification = (id: string, e: React.MouseEvent) => {
 		e.stopPropagation()
 		e.preventDefault()
+		try {
+			const dismissed: string[] = JSON.parse(localStorage.getItem('cellkore_dismissed_notifs') || '[]')
+			if (!dismissed.includes(id)) {
+				dismissed.push(id)
+				localStorage.setItem('cellkore_dismissed_notifs', JSON.stringify(dismissed))
+			}
+		} catch {}
 		setNotifications((prev) => prev.filter((n) => n.id !== id))
 	}
 

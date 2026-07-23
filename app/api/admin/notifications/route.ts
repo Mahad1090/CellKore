@@ -60,17 +60,18 @@ export async function GET(request: NextRequest) {
 		// 2. Fetch recent orders
 		const { data: orders } = await service
 			.from('orders')
-			.select('id, total_amount, created_at, status, user_id')
+			.select('id, reference, total_amount, created_at, status, payment_status, user_id')
 			.order('created_at', { ascending: false })
-			.limit(4)
+			.limit(6)
 
 		if (orders) {
 			orders.forEach((o) => {
-				const isPaid = o.status?.toLowerCase() === 'paid'
+				const isPaid = o.status?.toLowerCase() === 'paid' || o.payment_status?.toLowerCase() === 'paid'
+				const orderRef = o.reference ? o.reference : o.id.slice(0, 8)
 				items.push({
 					id: `order-${o.id}`,
 					title: isPaid ? 'Order Payment Confirmed' : 'New Order Placed',
-					desc: `Order #${o.id.slice(0, 8)} (${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(o.total_amount || 0)}).`,
+					desc: `Order #${orderRef} (${new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(o.total_amount || 0)}).`,
 					time: timeAgo(o.created_at),
 					link: '/admin/orders',
 					type: 'order',
@@ -102,7 +103,52 @@ export async function GET(request: NextRequest) {
 			})
 		}
 
-		// 4. Fetch low stock items
+		// 5. Fetch recent repair requests
+		const { data: repairs } = await service
+			.from('repair_requests')
+			.select('id, brand, model_name, issue_description, created_at, status')
+			.order('created_at', { ascending: false })
+			.limit(3)
+
+		if (repairs) {
+			repairs.forEach((rep) => {
+				items.push({
+					id: `repair-${rep.id}`,
+					title: 'New Repair Booking',
+					desc: `Repair request for ${rep.brand || ''} ${rep.model_name || 'Device'}.`,
+					time: timeAgo(rep.created_at),
+					link: '/admin/repairs',
+					type: 'tradein',
+					read: rep.status !== 'pending',
+					timestamp: rep.created_at,
+				})
+			})
+		}
+
+		// 6. Fetch pending customer reviews
+		const { data: reviews } = await service
+			.from('testimonials')
+			.select('id, author_name, rating, created_at, status')
+			.eq('status', 'pending')
+			.order('created_at', { ascending: false })
+			.limit(3)
+
+		if (reviews) {
+			reviews.forEach((rev) => {
+				items.push({
+					id: `review-${rev.id}`,
+					title: 'New Customer Review',
+					desc: `${rev.rating}-star store review by ${rev.author_name || 'Customer'} awaiting approval.`,
+					time: timeAgo(rev.created_at),
+					link: '/admin/testimonials',
+					type: 'alert',
+					read: false,
+					timestamp: rev.created_at,
+				})
+			})
+		}
+
+		// 7. Fetch low stock items
 		const { data: lowStockProducts } = await service
 			.from('products')
 			.select('id, title, inventory_quantity, updated_at')
@@ -128,7 +174,7 @@ export async function GET(request: NextRequest) {
 		// Sort all real notifications by timestamp descending
 		items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
 
-		return NextResponse.json({ notifications: items.slice(0, 10) })
+		return NextResponse.json({ notifications: items.slice(0, 12) })
 	} catch (err) {
 		return NextResponse.json(
 			{ error: err instanceof Error ? err.message : 'Failed to fetch notifications' },
