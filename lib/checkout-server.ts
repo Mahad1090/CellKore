@@ -290,19 +290,33 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 		)
 		if (itemsError) throw itemsError
 
-		// Decrement variant stock
+		// Decrement variant stock (for products with variants)
 		for (const item of params.items) {
-			if (!item.variantId) continue
-			const { data: variant } = await service
-				.from('product_variants')
-				.select('stock_quantity')
-				.eq('id', item.variantId)
-				.maybeSingle()
-			if (variant) {
-				await service
+			if (item.variantId) {
+				const { data: variant } = await service
 					.from('product_variants')
-					.update({ stock_quantity: Math.max(0, variant.stock_quantity - item.quantity) })
+					.select('stock_quantity')
 					.eq('id', item.variantId)
+					.maybeSingle()
+				if (variant) {
+					await service
+						.from('product_variants')
+						.update({ stock_quantity: Math.max(0, variant.stock_quantity - item.quantity) })
+						.eq('id', item.variantId)
+				}
+			} else {
+				// For products without variants, decrement the product-level inventory_quantity
+				const { data: product } = await service
+					.from('products')
+					.select('inventory_quantity')
+					.eq('id', item.productId)
+					.maybeSingle()
+				if (product && product.inventory_quantity != null) {
+					await service
+						.from('products')
+						.update({ inventory_quantity: Math.max(0, (product.inventory_quantity ?? 0) - item.quantity) })
+						.eq('id', item.productId)
+				}
 			}
 		}
 
