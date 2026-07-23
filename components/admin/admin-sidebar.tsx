@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen, Megaphone
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, Globe, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen, Megaphone
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
@@ -21,7 +21,7 @@ const navGroups: NavGroup[] = [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 			{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
-		{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },
+			{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },
 			{ label: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'analytics:read' },
 		],
 	},
@@ -38,19 +38,21 @@ const navGroups: NavGroup[] = [
 	{
 		title: 'REPAIR SERVICES',
 		items: [
-			{ label: 'Repair Services', href: '/admin/repair-requests', icon: Wrench, match: '/admin/repair-', permission: 'repair-requests:read' },
+			{ label: 'Repair Requests', href: '/admin/repair-requests', icon: Wrench, match: '/admin/repair-requests', permission: 'repair-requests:read' },
 		],
 	},
 	{
-		title: 'MANAGEMENT',
+		title: 'STORE & SETTINGS',
 		items: [
+			{ label: 'Tax Rates', href: '/admin/tax-rates', icon: Receipt },
+			{ label: 'Store Links', href: '/admin/social-links', icon: Globe },
+			{ label: 'Addresses', href: '/admin/repair-settings', icon: MapPin },
 			{ label: 'CMS Content', href: '/admin/content', icon: FileText },
 			{ label: 'Announcement Bar', href: '/admin/announcements', icon: Megaphone },
 			{ label: 'Reviews', href: '/admin/reviews', icon: BookOpen, permission: 'reviews:write' },
 			{ label: 'Marketplaces', href: '/admin/marketplaces', icon: MapPin },
 			{ label: 'Newsletter', href: '/admin/newsletter', icon: MailPlus, permission: 'newsletter:read' },
 			{ label: 'Admin Users', href: '/admin/admin-users', icon: Shield, permission: 'admin-users:write' },
-			{ label: 'Settings', href: '/admin/settings', icon: Settings },
 		],
 	},
 ]
