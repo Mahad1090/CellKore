@@ -30,7 +30,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	const service = createServiceClient()
 	const { data: existing, error: fetchError } = await service
 		.from('repair_requests')
-		.select('id, contact_email, contact_phone, device_brand, device_model, address_line1, address_line2, city, state_province, postal_code, country')
+		.select('id, contact_name, contact_email, contact_phone, device_brand, device_model, address_line1, address_line2, city, state_province, postal_code, country')
 		.eq('id', id)
 		.maybeSingle()
 	if (fetchError || !existing) return NextResponse.json({ error: 'Request not found' }, { status: 404 })
@@ -57,6 +57,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 			const quoteTotal = cleanItems.reduce((sum, i) => sum + i.amount, 0)
 			const quoteCurrency = body.quote_currency === 'CAD' ? 'CAD' : 'USD'
 			const shippingOptions = await getRepairShippingRateOptions({
+				name: existing.contact_name || 'Customer',
+				phone: existing.contact_phone || '',
 				line1: existing.address_line1 ?? '',
 				line2: existing.address_line2,
 				city: existing.city ?? '',

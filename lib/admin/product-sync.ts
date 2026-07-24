@@ -18,6 +18,10 @@ export interface ProductPayload {
 	is_wholesale?: boolean
 	lot_quantity?: number | null
 	is_active?: boolean
+	weight_kg?: number | null
+	length_cm?: number | null
+	width_cm?: number | null
+	height_cm?: number | null
 	mobile_specifications?: MobileSpecifications
 	template_specifications?: TemplateSpecifications
 	variants?: {

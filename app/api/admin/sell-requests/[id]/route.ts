@@ -53,33 +53,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 	if (body.payout_confirmed_at !== undefined) {
 		update.payout_confirmed_at = body.payout_confirmed_at || null
 	}
-	const returnShippingFee = body.return_shipping_fee !== undefined && body.return_shipping_fee !== null && body.return_shipping_fee !== ''
-		? Number(body.return_shipping_fee)
-		: null
-	if (returnShippingFee !== null && (Number.isNaN(returnShippingFee) || returnShippingFee <= 0)) {
-		return NextResponse.json({ error: 'Return shipping fee must be a positive number' }, { status: 400 })
-	}
 
-	if (Object.keys(update).length === 0 && returnShippingFee === null) {
+	if (Object.keys(update).length === 0) {
 		return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
 	}
 
 	const service = createServiceClient()
 
-	if (Object.keys(update).length > 0) {
-		update.updated_at = new Date().toISOString()
-		const { error } = await service.from('sell_phone_requests').update(update).eq('id', id)
-		if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-	}
-
-	// A return shipping fee only makes sense once we're rejecting a device
-	// we already physically received (inspection stage or later).
-	if (returnShippingFee !== null) {
-		const { error: shipmentError } = await service
-			.from('sell_phone_return_shipments')
-			.upsert({ request_id: id, fee_amount: returnShippingFee }, { onConflict: 'request_id' })
-		if (shipmentError) return NextResponse.json({ error: shipmentError.message }, { status: 500 })
-	}
+	update.updated_at = new Date().toISOString()
+	const { error } = await service.from('sell_phone_requests').update(update).eq('id', id)
+	if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
 	if (statusChanged) {
 		const note =

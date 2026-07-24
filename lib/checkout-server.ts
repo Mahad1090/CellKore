@@ -2,6 +2,9 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient, generateOrderReference } from '@/lib/supabase-server'
 import { taxRateForCountry } from '@/lib/tax'
 import { sendOrderConfirmationEmail, sendNewOrderAdminAlert } from '@/lib/email/orders'
+import { getShippingRates } from '@/lib/shipping/aggregator'
+import { computePackageForItems } from '@/lib/shipping/package'
+import type { ShippingCarrier } from '@/lib/types'
 
 export interface CheckoutItemInput {
 	productId: string
@@ -17,6 +20,10 @@ export interface ResolvedItem {
 	unitPrice: number
 	imageUrl: string | null
 	isWholesale: boolean
+	weightKg: number | null
+	lengthCm: number | null
+	widthCm: number | null
+	heightCm: number | null
 }
 
 export const GIFT_CARD_FEE = 5
@@ -64,7 +71,9 @@ export async function resolveAndValidateItems(
 
 		const { data: product, error } = await service
 			.from('products')
-			.select('id, name, base_price, discount_percent, is_on_sale, is_active, is_wholesale, product_images ( image_url, is_primary, sort_order )')
+			.select(
+				'id, name, base_price, discount_percent, is_on_sale, is_active, is_wholesale, weight_kg, length_cm, width_cm, height_cm, product_images ( image_url, is_primary, sort_order )'
+			)
 			.eq('id', item.productId)
 			.maybeSingle()
 		if (error) throw error
@@ -121,6 +130,10 @@ export async function resolveAndValidateItems(
 			unitPrice: Math.round(unitPrice * 100) / 100,
 			imageUrl: primary?.image_url ?? null,
 			isWholesale: product.is_wholesale,
+			weightKg: product.weight_kg != null ? Number(product.weight_kg) : null,
+			lengthCm: product.length_cm != null ? Number(product.length_cm) : null,
+			widthCm: product.width_cm != null ? Number(product.width_cm) : null,
+			heightCm: product.height_cm != null ? Number(product.height_cm) : null,
 		})
 	}
 	return resolved
@@ -182,6 +195,7 @@ export interface ShippingAddressInput {
 	postalCode?: string
 	country: string
 	fullName?: string
+	phone?: string
 	deliveryNotes?: string
 }
 
@@ -204,6 +218,71 @@ export async function computeTax(
 	return Math.round(subtotalAfterDiscount * rate * 100) / 100
 }
 
+export class ShippingRateError extends Error {}
+
+export interface ShippingRateInput {
+	carrier: ShippingCarrier
+	serviceCode: string
+	serviceName: string
+	cost: number
+	currency: string
+}
+
+export interface PricedShipping extends ShippingRateInput {
+	snapshot: Record<string, unknown>
+}
+
+/**
+ * Re-quotes shipping server-side and matches it against what the client
+ * submitted — the client's price is never trusted, mirroring how
+ * resolveAndValidateItems re-prices cart items instead of trusting the
+ * client's cart totals. Throws ShippingRateError if the submitted
+ * carrier/serviceCode no longer appears in a fresh quote (rate expired,
+ * address changed, or the request was tampered with).
+ */
+export async function validateAndPriceShipping(
+	items: ResolvedItem[],
+	destination: ShippingAddressInput,
+	selected: ShippingRateInput
+): Promise<PricedShipping> {
+	if (!destination.phone) throw new ShippingRateError('A phone number is required for shipping')
+
+	const pkg = computePackageForItems(
+		items.map((i) => ({
+			quantity: i.quantity,
+			weightKg: i.weightKg,
+			lengthCm: i.lengthCm,
+			widthCm: i.widthCm,
+			heightCm: i.heightCm,
+		}))
+	)
+
+	const { rates } = await getShippingRates(pkg, {
+		name: destination.fullName || 'Customer',
+		phone: destination.phone,
+		line1: destination.line1,
+		line2: destination.line2,
+		city: destination.city,
+		stateProvince: destination.stateProvince ?? '',
+		postalCode: destination.postalCode ?? '',
+		country: destination.country,
+	})
+
+	const match = rates.find((r) => r.carrier === selected.carrier && r.serviceCode === selected.serviceCode)
+	if (!match) {
+		throw new ShippingRateError('The selected shipping rate is no longer available. Please choose again.')
+	}
+
+	return {
+		carrier: match.carrier,
+		serviceCode: match.serviceCode,
+		serviceName: match.serviceName,
+		cost: match.cost,
+		currency: match.currency,
+		snapshot: match as unknown as Record<string, unknown>,
+	}
+}
+
 export interface FinalizeOrderParams {
 	reference: string
 	userId: string | null
@@ -211,6 +290,7 @@ export interface FinalizeOrderParams {
 	items: ResolvedItem[]
 	total: number
 	shippingAddress: ShippingAddressInput
+	shipping: PricedShipping
 	gift?: GiftOptions | null
 	paymentProvider: string
 	customerEmail?: string | null
@@ -249,6 +329,7 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 						state_province: params.shippingAddress.stateProvince ?? null,
 						postal_code: params.shippingAddress.postalCode ?? null,
 						country: params.shippingAddress.country,
+						phone: params.shippingAddress.phone ?? null,
 					})
 					.select('id')
 					.single()
@@ -267,6 +348,12 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 				status: 'paid',
 				payment_status: 'paid',
 				total_amount: params.total,
+				shipping_carrier: params.shipping.carrier,
+				shipping_service_code: params.shipping.serviceCode,
+				shipping_service_name: params.shipping.serviceName,
+				shipping_cost: params.shipping.cost,
+				shipping_currency: params.shipping.currency,
+				shipping_rate_snapshot: params.shipping.snapshot,
 				is_gift: params.gift?.isGift ?? false,
 				gift_recipient_name: params.gift?.recipientName ?? null,
 				gift_recipient_phone: params.gift?.recipientPhone ?? null,
@@ -334,8 +421,10 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 		// promo-code discount amount isn't available this far downstream, but
 		// it's fully derivable: tax was applied to (subtotal - discount), so
 		// working backwards from the known charged total recovers both.
+		// Shipping is untaxed (like gift fees), so both are excluded from the
+		// taxed base the same way.
 		const subtotal = params.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
-		const extras = giftFees(params.gift)
+		const extras = giftFees(params.gift) + params.shipping.cost
 		const rate = await getTaxRateForAddress(service, params.shippingAddress)
 		const discountedSubtotal = Math.round(((params.total - extras) / (1 + rate)) * 100) / 100
 		const discount = Math.max(0, Math.round((subtotal - discountedSubtotal) * 100) / 100)

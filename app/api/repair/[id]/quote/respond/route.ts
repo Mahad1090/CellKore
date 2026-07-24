@@ -45,7 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 	const selected: RepairShippingOption = body.selected_shipping_option ?? {}
 	const options: RepairShippingOption[] = existing.shipping_options ?? []
-	const match = options.find((o) => o.label === selected.label && Number(o.cost) === Number(selected.cost))
+	const match = options.find((o) => o.carrier === selected.carrier && o.serviceCode === selected.serviceCode)
 	if (!match) {
 		return NextResponse.json({ error: 'Select one of the offered shipping options' }, { status: 400 })
 	}

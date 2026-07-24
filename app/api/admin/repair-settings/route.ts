@@ -27,6 +27,21 @@ export async function PUT(request: NextRequest) {
 		payload.warehouse_address = body.warehouse_address ?? null
 	}
 
+	const shipFromFields = [
+		'ship_from_name',
+		'ship_from_company',
+		'ship_from_phone',
+		'ship_from_line1',
+		'ship_from_line2',
+		'ship_from_city',
+		'ship_from_state_province',
+		'ship_from_postal_code',
+		'ship_from_country',
+	] as const
+	for (const field of shipFromFields) {
+		if (body[field] !== undefined) payload[field] = body[field] || null
+	}
+
 	if (!existing) {
 		const { error } = await service.from('repair_settings').insert(payload)
 		if (error) {

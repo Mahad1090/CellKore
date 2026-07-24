@@ -166,6 +166,10 @@ export interface Product {
 	is_active: boolean
 	mobile_specifications?: MobileSpecifications | null
 	template_specifications?: TemplateSpecifications | null
+	weight_kg?: number | null
+	length_cm?: number | null
+	width_cm?: number | null
+	height_cm?: number | null
 	created_at: string
 	updated_at: string
 	categories?: Category | null
@@ -282,7 +286,10 @@ export type ReturnLabelStatus = 'pending' | 'generated' | 'failed'
 export interface SellPhoneReturnShipment {
 	id: string
 	request_id: string
-	fee_amount: number
+	fee_amount: number | null
+	service_code: string | null
+	service_name: string | null
+	currency: string | null
 	address_line1: string | null
 	address_line2: string | null
 	city: string | null
@@ -309,6 +316,9 @@ export interface RepairQuoteItem {
 export interface RepairShippingOption {
 	label: string
 	cost: number
+	carrier: ShippingCarrier
+	serviceCode: string
+	currency: string
 }
 
 export interface RepairStatusHistoryEntry {
@@ -395,6 +405,9 @@ export interface ContactInquiry {
 	submitted_at: string
 }
 
+export type ShippingCarrier = 'canada_post' | 'ups'
+export type ShippingLabelStatus = 'not_generated' | 'generated' | 'failed'
+
 export interface OrderRecord {
 	id: string
 	reference: string | null
@@ -403,6 +416,17 @@ export interface OrderRecord {
 	status: OrderStatus
 	payment_status: PaymentStatus
 	total_amount: number
+	shipping_carrier: ShippingCarrier | null
+	shipping_service_code: string | null
+	shipping_service_name: string | null
+	shipping_cost: number
+	shipping_currency: string | null
+	shipping_rate_snapshot: Record<string, unknown> | null
+	shipping_tracking_number: string | null
+	shipping_label_url: string | null
+	shipping_carrier_shipment_id: string | null
+	shipping_label_status: ShippingLabelStatus
+	shipping_label_generated_at: string | null
 	created_at: string
 	updated_at: string
 	order_items?: OrderItemRecord[]

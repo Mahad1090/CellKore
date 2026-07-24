@@ -3,6 +3,9 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase-server'
 import { authorizeSellRequestCustomer } from '@/lib/sell-request-auth'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
+import { getShippingRates } from '@/lib/shipping/aggregator'
+import { computePackageForItems } from '@/lib/shipping/package'
+import type { ShippingCarrier } from '@/lib/types'
 
 interface ReturnAddressInput {
 	line1: string
@@ -14,16 +17,28 @@ interface ReturnAddressInput {
 	phone?: string
 }
 
+interface ShippingRateInput {
+	carrier: ShippingCarrier
+	serviceCode: string
+}
+
 // Customer-facing: pays the return shipping fee for a rejected, already-
-// received device. Saves the shipping address and starts a Stripe
-// Checkout session or PayPal order for the fee amount admin set.
+// received device. Saves the shipping address, re-validates the live
+// carrier rate the customer selected on the /rates endpoint (never
+// trusts the client's submitted price — same posture as
+// lib/checkout-server.ts's validateAndPriceShipping), and starts a
+// Stripe Checkout session or PayPal order for that cost.
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params
 	const body = await request.json()
 	const provider = body.provider === 'paypal' ? 'paypal' : 'stripe'
 	const address: ReturnAddressInput = body.address ?? {}
-	if (!address.line1?.trim() || !address.city?.trim() || !address.country?.trim()) {
-		return NextResponse.json({ error: 'A complete shipping address is required' }, { status: 400 })
+	const shippingRate: ShippingRateInput = body.shippingRate
+	if (!address.line1?.trim() || !address.city?.trim() || !address.country?.trim() || !address.phone?.trim()) {
+		return NextResponse.json({ error: 'A complete shipping address and phone number are required' }, { status: 400 })
+	}
+	if (!shippingRate?.carrier || !shippingRate?.serviceCode) {
+		return NextResponse.json({ error: 'A shipping method must be selected' }, { status: 400 })
 	}
 
 	const service = createServiceClient()
@@ -41,34 +56,56 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 		return NextResponse.json({ error: 'This request does not have a return shipment to pay for' }, { status: 400 })
 	}
 
-	const { data: shipment, error: shipmentFetchError } = await service
+	const { data: existingShipment } = await service
 		.from('sell_phone_return_shipments')
-		.select('id, fee_amount, paid_at')
+		.select('id, paid_at')
 		.eq('request_id', id)
 		.maybeSingle()
-	if (shipmentFetchError || !shipment) {
-		return NextResponse.json({ error: 'No return shipping fee has been set for this request' }, { status: 400 })
-	}
-	if (shipment.paid_at) {
+	if (existingShipment?.paid_at) {
 		return NextResponse.json({ error: 'The return shipping fee has already been paid' }, { status: 400 })
 	}
 
-	const { error: addressError } = await service
-		.from('sell_phone_return_shipments')
-		.update({
+	const pkg = computePackageForItems([{ quantity: 1 }])
+	const { rates } = await getShippingRates(pkg, {
+		name: 'Customer',
+		phone: address.phone,
+		line1: address.line1,
+		line2: address.line2,
+		city: address.city,
+		stateProvince: address.stateProvince ?? '',
+		postalCode: address.postalCode ?? '',
+		country: address.country,
+	})
+	const match = rates.find((r) => r.carrier === shippingRate.carrier && r.serviceCode === shippingRate.serviceCode)
+	if (!match) {
+		return NextResponse.json(
+			{ error: 'The selected shipping rate is no longer available. Please choose again.' },
+			{ status: 400 }
+		)
+	}
+	const fee = match.cost
+	const currency = match.currency
+
+	const { error: upsertError } = await service.from('sell_phone_return_shipments').upsert(
+		{
+			request_id: id,
 			address_line1: address.line1.trim(),
 			address_line2: address.line2?.trim() || null,
 			city: address.city.trim(),
 			state_province: address.stateProvince?.trim() || null,
 			postal_code: address.postalCode?.trim() || null,
 			country: address.country.trim(),
-			phone: address.phone?.trim() || null,
+			phone: address.phone.trim(),
+			carrier: match.carrier,
+			service_code: match.serviceCode,
+			service_name: match.serviceName,
+			fee_amount: fee,
+			currency,
 			updated_at: new Date().toISOString(),
-		})
-		.eq('request_id', id)
-	if (addressError) return NextResponse.json({ error: addressError.message }, { status: 500 })
-
-	const fee = Number(shipment.fee_amount)
+		},
+		{ onConflict: 'request_id' }
+	)
+	if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 })
 
 	try {
 		if (provider === 'stripe') {
@@ -85,9 +122,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 					{
 						quantity: 1,
 						price_data: {
-							currency: 'usd',
+							currency: currency.toLowerCase(),
 							unit_amount: Math.round(fee * 100),
-							product_data: { name: 'Return Shipping Fee' },
+							product_data: { name: `Return Shipping — ${match.serviceName}` },
 						},
 					},
 				],
@@ -108,7 +145,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 					{
 						reference_id: id,
 						custom_id: JSON.stringify({ type: 'sell_return_shipping', request_id: id }),
-						amount: { currency_code: 'USD', value: fee.toFixed(2) },
+						amount: { currency_code: currency, value: fee.toFixed(2) },
 					},
 				],
 			}),

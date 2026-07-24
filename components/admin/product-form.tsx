@@ -48,6 +48,10 @@ export interface ProductFormValue {
   condition: ProductCondition
   base_price: string
   purchase_price: string
+  weight_kg: string
+  length_cm: string
+  width_cm: string
+  height_cm: string
   discount_percent: string
   is_on_sale: boolean
   description: string
@@ -73,6 +77,10 @@ export const EMPTY_PRODUCT: ProductFormValue = {
   condition: 'new',
   base_price: '',
   purchase_price: '',
+  weight_kg: '',
+  length_cm: '',
+  width_cm: '',
+  height_cm: '',
   discount_percent: '',
   is_on_sale: false,
   description: '',
@@ -100,6 +108,10 @@ export function productToForm(product: any): ProductFormValue {
     condition: product.condition ?? 'new',
     base_price: String(product.base_price ?? ''),
     purchase_price: product.purchase_price != null ? String(product.purchase_price) : '',
+    weight_kg: product.weight_kg != null ? String(product.weight_kg) : '',
+    length_cm: product.length_cm != null ? String(product.length_cm) : '',
+    width_cm: product.width_cm != null ? String(product.width_cm) : '',
+    height_cm: product.height_cm != null ? String(product.height_cm) : '',
     discount_percent: product.discount_percent ? String(product.discount_percent) : '',
     is_on_sale: product.is_on_sale ?? false,
     description: product.description ?? '',
@@ -144,6 +156,10 @@ export function formToPayload(form: ProductFormValue) {
     condition: form.condition,
     base_price: Number(form.base_price),
     purchase_price: form.purchase_price.trim() ? Number(form.purchase_price) : null,
+    weight_kg: form.weight_kg.trim() ? Number(form.weight_kg) : null,
+    length_cm: form.length_cm.trim() ? Number(form.length_cm) : null,
+    width_cm: form.width_cm.trim() ? Number(form.width_cm) : null,
+    height_cm: form.height_cm.trim() ? Number(form.height_cm) : null,
     discount_percent: Number(form.discount_percent) || 0,
     is_on_sale: form.is_on_sale,
     description: form.description.trim() || null,
@@ -856,6 +872,60 @@ export function ProductFormModal({
                     className={adminInput}
                     placeholder="999.00"
                   />
+                </div>
+              </div>
+
+              {/* Package weight/dimensions — used to quote real Canada Post / UPS shipping rates at checkout */}
+              <div className="p-4 rounded-2xl border border-[#E9ECEA] bg-[#F7F7F5] space-y-3">
+                <label className={label}>Package Weight & Dimensions (for shipping rates)</label>
+                <p className="text-[11px] text-muted-foreground -mt-1">
+                  Optional — leave blank to fall back to a default package size when quoting shipping rates.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className={label}>Weight (kg)</label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={form.weight_kg}
+                      onChange={(e) => set('weight_kg', e.target.value)}
+                      className={adminInput}
+                      placeholder="0.5"
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>Length (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.length_cm}
+                      onChange={(e) => set('length_cm', e.target.value)}
+                      className={adminInput}
+                      placeholder="20"
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>Width (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.width_cm}
+                      onChange={(e) => set('width_cm', e.target.value)}
+                      className={adminInput}
+                      placeholder="15"
+                    />
+                  </div>
+                  <div>
+                    <label className={label}>Height (cm)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.height_cm}
+                      onChange={(e) => set('height_cm', e.target.value)}
+                      className={adminInput}
+                      placeholder="8"
+                    />
+                  </div>
                 </div>
               </div>
 

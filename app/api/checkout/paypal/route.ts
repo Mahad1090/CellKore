@@ -6,10 +6,13 @@ import {
 	computeTax,
 	giftFees,
 	generateOrderReference,
+	validateAndPriceShipping,
 	StockError,
+	ShippingRateError,
 	type CheckoutItemInput,
 	type ShippingAddressInput,
 	type GiftOptions,
+	type ShippingRateInput,
 } from '@/lib/checkout-server'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
 
@@ -21,6 +24,11 @@ export async function POST(request: NextRequest) {
 		const shippingAddress: ShippingAddressInput = body.shippingAddress
 		const gift: GiftOptions | null = body.gift ?? null
 		const marketplace: 'US' | 'CA' = body.marketplace === 'CA' ? 'CA' : 'US'
+		const shippingRate: ShippingRateInput = body.shippingRate
+
+		if (!shippingRate?.carrier || !shippingRate?.serviceCode) {
+			return NextResponse.json({ error: 'A shipping method must be selected' }, { status: 400 })
+		}
 
 		const service = createServiceClient()
 		const items = await resolveAndValidateItems(service, cartItems)
@@ -28,7 +36,8 @@ export async function POST(request: NextRequest) {
 		const promo = await applyPromotion(service, body.promoCode, subtotal, shippingAddress?.country, body.userEmail)
 		const discounted = subtotal - promo.discountAmount
 		const tax = await computeTax(service, discounted, shippingAddress)
-		const total = Math.round((discounted + tax + giftFees(gift)) * 100) / 100
+		const shipping = await validateAndPriceShipping(items, shippingAddress, shippingRate)
+		const total = Math.round((discounted + tax + giftFees(gift) + shipping.cost) * 100) / 100
 
 		const orderReference = generateOrderReference()
 		const accessToken = await paypalAccessToken()
@@ -70,6 +79,7 @@ export async function POST(request: NextRequest) {
 			checkout: {
 				items: items.map((i) => ({ p: i.productId, v: i.variantId, q: i.quantity, u: i.unitPrice, n: i.name })),
 				shippingAddress,
+				shipping,
 				gift,
 				marketplace,
 				userId: body.userId ?? null,
@@ -78,6 +88,9 @@ export async function POST(request: NextRequest) {
 	} catch (err) {
 		if (err instanceof StockError) {
 			return NextResponse.json({ error: err.message, variantId: err.variantId }, { status: 400 })
+		}
+		if (err instanceof ShippingRateError) {
+			return NextResponse.json({ error: err.message }, { status: 400 })
 		}
 		return NextResponse.json(
 			{ error: err instanceof Error ? err.message : 'PayPal checkout failed' },

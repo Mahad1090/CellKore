@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle, Gift, Loader2, Lock, Tag } from 'lucide-react'
+import { AlertTriangle, Gift, Loader2, Lock, Tag, Truck } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { FormShimmer } from '@/components/shimmer'
@@ -16,6 +16,7 @@ import { loadCartItems, clearLocalCart, type LocalCartItem } from '@/lib/cart'
 import { fetchProductById, fetchTaxRates } from '@/lib/data'
 import { taxRateForCountry, isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
 import type { Product, TaxRate } from '@/lib/types'
+import type { NormalizedRate } from '@/lib/shipping/types'
 
 const DRAFT_KEY = 'cellkore_checkout_draft'
 const FINAL_SALE_NOTICE = 'Returns and Exchanges are not supported. All checkout items are final.'
@@ -86,6 +87,11 @@ export default function CheckoutPage() {
 	const [promo, setPromo] = useState<{ code: string; discountAmount: number } | null>(null)
 	const [checkingPromo, setCheckingPromo] = useState(false)
 	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
+	const [shippingRates, setShippingRates] = useState<NormalizedRate[]>([])
+	const [selectedShippingRate, setSelectedShippingRate] = useState<NormalizedRate | null>(null)
+	const [loadingRates, setLoadingRates] = useState(false)
+	const [shippingRateErrors, setShippingRateErrors] = useState<Record<string, string>>({})
+	const [ratesRequested, setRatesRequested] = useState(false)
 	const prefillStage = useRef(0)
 	const paypalRendered = useRef(false)
 	const paypalRef = useRef<HTMLDivElement>(null)
@@ -201,6 +207,67 @@ export default function CheckoutPage() {
 		}
 	}, [user, authLoading])
 
+	// ---- Live shipping rate quoting (Canada Post + UPS), re-triggered on address changes ----
+	useEffect(() => {
+		if (!items || items.length === 0) return
+		const addressReady =
+			form.line1.trim() &&
+			form.city.trim() &&
+			form.phone.trim() &&
+			isValidPhone(form.phone) &&
+			isValidPostalCode(form.country, form.postalCode)
+		if (!addressReady) return
+
+		const timer = setTimeout(async () => {
+			setLoadingRates(true)
+			try {
+				const res = await fetch('/api/checkout/shipping-rates', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						cartItems: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+						shippingAddress: {
+							fullName: `${form.firstName} ${form.lastName}`.trim(),
+							phone: form.phone,
+							line1: form.line1,
+							line2: form.line2 || undefined,
+							city: form.city,
+							stateProvince: form.stateProvince,
+							postalCode: form.postalCode,
+							country: form.country,
+						},
+					}),
+				})
+				const json = await res.json()
+				if (!res.ok) {
+					setShippingRates([])
+					setSelectedShippingRate(null)
+					setShippingRateErrors({ general: json.error ?? 'Unable to fetch shipping rates' })
+					return
+				}
+				const rates: NormalizedRate[] = json.rates ?? []
+				setShippingRates(rates)
+				setShippingRateErrors(json.errors ?? {})
+				setSelectedShippingRate((current) => {
+					if (current) {
+						const stillAvailable = rates.find((r) => r.carrier === current.carrier && r.serviceCode === current.serviceCode)
+						if (stillAvailable) return stillAvailable
+					}
+					return rates[0] ?? null
+				})
+			} catch {
+				setShippingRates([])
+				setSelectedShippingRate(null)
+				setShippingRateErrors({ general: 'Unable to fetch shipping rates' })
+			} finally {
+				setLoadingRates(false)
+				setRatesRequested(true)
+			}
+		}, 500)
+		return () => clearTimeout(timer)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [items, form.line1, form.line2, form.city, form.stateProvince, form.postalCode, form.country, form.phone, form.firstName, form.lastName])
+
 	const set = <K extends keyof CheckoutForm>(field: K, value: CheckoutForm[K]) =>
 		setForm((f) => ({ ...f, [field]: value }))
 
@@ -217,7 +284,8 @@ export default function CheckoutPage() {
 	const taxRate = taxRateForCountry(taxRates, form.country)
 	const tax = Math.max(0, (subtotal - discount) * taxRate)
 	const giftFees = form.isGift ? (form.giftCard ? GIFT_CARD_FEE : 0) + (form.giftWrapping ? GIFT_WRAP_FEE : 0) : 0
-	const total = Math.max(0, subtotal - discount) + tax + giftFees
+	const shippingCost = selectedShippingRate?.cost ?? 0
+	const total = Math.max(0, subtotal - discount) + tax + giftFees + shippingCost
 
 	const validate = (): string | null => {
 		if (!form.firstName.trim()) return 'First name is required.'
@@ -234,6 +302,7 @@ export default function CheckoutPage() {
 				: form.country === 'US'
 				? 'Enter a valid US ZIP code (e.g. 90210).'
 				: 'Enter a valid postal code.'
+		if (!selectedShippingRate) return 'Please select a shipping method.'
 		return null
 	}
 
@@ -271,13 +340,24 @@ export default function CheckoutPage() {
 		cartItems: (items ?? []).map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
 		shippingAddress: {
 			fullName: `${form.firstName} ${form.lastName}`.trim(),
+			phone: form.phone,
 			line1: form.line1,
 			line2: form.line2 || undefined,
 			city: form.city,
 			stateProvince: form.stateProvince,
 			postalCode: form.postalCode,
 			country: form.country,
+			deliveryNotes: form.deliveryNotes || undefined,
 		},
+		shippingRate: selectedShippingRate
+			? {
+					carrier: selectedShippingRate.carrier,
+					serviceCode: selectedShippingRate.serviceCode,
+					serviceName: selectedShippingRate.serviceName,
+					cost: selectedShippingRate.cost,
+					currency: selectedShippingRate.currency,
+			  }
+			: null,
 		gift: form.isGift
 			? {
 					isGift: true,
@@ -482,6 +562,70 @@ export default function CheckoutPage() {
 								</div>
 							</div>
 
+							{/* Shipping method */}
+							<div className="bg-card border border-border rounded-3xl p-7">
+								<h2 className="text-sm font-bold uppercase tracking-[0.18em] text-card-foreground mb-6 flex items-center gap-2">
+									<Truck className="w-4 h-4 text-primary" />
+									Shipping Method
+								</h2>
+
+								{!ratesRequested && !loadingRates ? (
+									<p className="text-xs text-muted-foreground">Enter your full shipping address and phone number to see live rates.</p>
+								) : loadingRates ? (
+									<div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+										<Loader2 className="w-3.5 h-3.5 animate-spin" />
+										Fetching live rates from Canada Post &amp; UPS...
+									</div>
+								) : shippingRates.length === 0 ? (
+									<div className="p-4 bg-secondary border border-border rounded-2xl text-xs text-foreground/75">
+										{shippingRateErrors.canada_post || shippingRateErrors.ups || shippingRateErrors.general
+											? `Unable to fetch shipping rates: ${shippingRateErrors.canada_post ?? shippingRateErrors.ups ?? shippingRateErrors.general}`
+											: 'No shipping rates are available for this address yet.'}
+									</div>
+								) : (
+									<div className="space-y-2.5">
+										{(shippingRateErrors.canada_post || shippingRateErrors.ups) && (
+											<div className="p-3 bg-secondary border border-border rounded-xl text-[11px] text-foreground/70">
+												{shippingRateErrors.canada_post && `Canada Post rates unavailable — showing other carriers only. `}
+												{shippingRateErrors.ups && `UPS rates unavailable — showing other carriers only.`}
+											</div>
+										)}
+										{shippingRates.map((rate) => (
+											<label
+												key={`${rate.carrier}-${rate.serviceCode}`}
+												className={`flex items-center justify-between gap-3 px-4 py-3 border rounded-2xl cursor-pointer transition-all ${
+													selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
+														? 'border-primary bg-primary/5'
+														: 'border-border hover:border-primary/50'
+												}`}
+											>
+												<div className="flex items-center gap-3">
+													<input
+														type="radio"
+														name="shippingRate"
+														checked={
+															selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
+														}
+														onChange={() => setSelectedShippingRate(rate)}
+														className="w-4 h-4 accent-[var(--primary)] cursor-pointer"
+													/>
+													<div>
+														<p className="text-xs font-semibold text-card-foreground">{rate.serviceName}</p>
+														<p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+															{rate.carrier === 'canada_post' ? 'Canada Post' : 'UPS'}
+															{rate.transitDays ? ` · ${rate.transitDays} business day${rate.transitDays === 1 ? '' : 's'}` : ''}
+														</p>
+													</div>
+												</div>
+												<span className="text-xs font-bold text-card-foreground shrink-0">
+													${rate.cost.toFixed(2)} {rate.currency}
+												</span>
+											</label>
+										))}
+									</div>
+								)}
+							</div>
+
 							{/* Gift options */}
 							<div className="bg-card border border-border rounded-3xl p-7">
 								<label className="flex items-center gap-3 cursor-pointer">
@@ -591,6 +735,12 @@ export default function CheckoutPage() {
 											<span className="font-medium text-card-foreground">${giftFees.toFixed(2)}</span>
 										</div>
 									)}
+									<div className="flex justify-between text-foreground/75">
+										<span>Shipping{selectedShippingRate ? ` (${selectedShippingRate.serviceName})` : ''}</span>
+										<span className="font-medium text-card-foreground">
+											{selectedShippingRate ? `$${shippingCost.toFixed(2)}` : '—'}
+										</span>
+									</div>
 									<div className="flex justify-between text-base font-bold text-card-foreground border-t border-border pt-3">
 										<span>Total</span>
 										<span>${total.toFixed(2)}</span>
@@ -599,11 +749,11 @@ export default function CheckoutPage() {
 
 								<button
 									onClick={handleStripe}
-									disabled={placing}
+									disabled={placing || !selectedShippingRate}
 									className="mt-6 w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:opacity-90 hover:scale-[1.01] active:scale-95 transition-all cursor-pointer shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
 								>
 									{placing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-3.5 h-3.5" />}
-									{placing ? 'Redirecting...' : 'Pay with Card'}
+									{placing ? 'Redirecting...' : !selectedShippingRate ? 'Select a shipping method' : 'Pay with Card'}
 								</button>
 
 								{paypalClientId && (

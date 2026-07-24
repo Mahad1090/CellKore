@@ -1,10 +1,19 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { generateReturnShippingLabel } from '@/lib/shipping-label'
+import { createCanadaPostShipment } from '@/lib/shipping/canada-post'
+import { createUpsShipment } from '@/lib/shipping/ups'
+import { uploadShippingLabel } from '@/lib/shipping/label-storage'
+import { computePackageForItems } from '@/lib/shipping/package'
+import { getShipFromAddress } from '@/lib/shipping/ship-from'
 
 /**
- * Marks a return shipment as paid and attempts label generation. Called
+ * Marks a return shipment as paid and attempts real label generation via
+ * the carrier + service the customer selected at payment time. Called
  * from both the Stripe webhook and the PayPal capture route once payment
- * is confirmed, so the two payment paths stay in sync.
+ * is confirmed, so the two payment paths stay in sync. The device is
+ * already physically at CellKore's warehouse by this point, so — unlike
+ * the repair flow's outbound leg — label generation is attempted
+ * immediately rather than waiting for a separate admin action; admin can
+ * still retry or enter a label manually if this fails.
  */
 export async function markReturnShipmentPaid(
 	service: SupabaseClient,
@@ -14,7 +23,7 @@ export async function markReturnShipmentPaid(
 ): Promise<void> {
 	const { data: shipment } = await service
 		.from('sell_phone_return_shipments')
-		.select('address_line1, address_line2, city, state_province, postal_code, country, phone')
+		.select('address_line1, address_line2, city, state_province, postal_code, country, phone, carrier, service_code')
 		.eq('request_id', requestId)
 		.maybeSingle()
 
@@ -28,28 +37,54 @@ export async function markReturnShipmentPaid(
 		})
 		.eq('request_id', requestId)
 
-	if (!shipment?.address_line1 || !shipment.city || !shipment.country) return
+	if (!shipment?.address_line1 || !shipment.city || !shipment.country || !shipment.carrier || !shipment.service_code) {
+		return
+	}
 
-	const label = await generateReturnShippingLabel({
-		line1: shipment.address_line1,
-		line2: shipment.address_line2,
-		city: shipment.city,
-		stateProvince: shipment.state_province,
-		postalCode: shipment.postal_code,
-		country: shipment.country,
-		phone: shipment.phone,
-	}).catch(() => null)
+	try {
+		const origin = await getShipFromAddress()
+		const pkg = computePackageForItems([{ quantity: 1 }])
+		const shipmentRequest = {
+			serviceCode: shipment.service_code,
+			reference: requestId,
+			pkg,
+			shipFrom: origin,
+			shipTo: {
+				name: 'Customer',
+				phone: shipment.phone || origin.phone,
+				line1: shipment.address_line1,
+				line2: shipment.address_line2 ?? undefined,
+				city: shipment.city,
+				stateProvince: shipment.state_province ?? '',
+				postalCode: shipment.postal_code ?? '',
+				country: shipment.country,
+			},
+		}
+		const result =
+			shipment.carrier === 'ups' ? await createUpsShipment(shipmentRequest) : await createCanadaPostShipment(shipmentRequest)
+		const labelUrl = await uploadShippingLabel(`sell-returns/${requestId}`, result.labelBytes, result.labelContentType)
 
-	if (label) {
 		await service
 			.from('sell_phone_return_shipments')
 			.update({
 				label_status: 'generated',
-				carrier: label.carrier,
-				tracking_number: label.trackingNumber,
-				label_url: label.labelUrl,
+				tracking_number: result.trackingNumber,
+				label_url: labelUrl,
 				updated_at: new Date().toISOString(),
 			})
 			.eq('request_id', requestId)
+	} catch (err) {
+		await service
+			.from('sell_phone_return_shipments')
+			.update({ label_status: 'failed', updated_at: new Date().toISOString() })
+			.eq('request_id', requestId)
+		await service
+			.from('admin_logs')
+			.insert({
+				level: 'error',
+				source: shipment.carrier,
+				message: `Return label generation failed for sell request ${requestId}: ${err instanceof Error ? err.message : String(err)}`,
+			})
+			.then(undefined, () => undefined)
 	}
 }

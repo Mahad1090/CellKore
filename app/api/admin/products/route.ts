@@ -58,6 +58,10 @@ export async function POST(request: NextRequest) {
 			is_wholesale: payload.is_wholesale ?? false,
 			is_active: payload.is_active ?? true,
 			lot_quantity: payload.lot_quantity ?? null,
+			weight_kg: payload.weight_kg ?? null,
+			length_cm: payload.length_cm ?? null,
+			width_cm: payload.width_cm ?? null,
+			height_cm: payload.height_cm ?? null,
 			mobile_specifications: payload.mobile_specifications ?? {},
 			template_specifications: payload.template_specifications ?? {},
 		})

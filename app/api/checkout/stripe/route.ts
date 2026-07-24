@@ -7,10 +7,13 @@ import {
 	computeTax,
 	giftFees,
 	generateOrderReference,
+	validateAndPriceShipping,
 	StockError,
+	ShippingRateError,
 	type CheckoutItemInput,
 	type ShippingAddressInput,
 	type GiftOptions,
+	type ShippingRateInput,
 } from '@/lib/checkout-server'
 
 export async function POST(request: NextRequest) {
@@ -29,9 +32,13 @@ export async function POST(request: NextRequest) {
 		const userId: string | null = body.userId ?? null
 		const userEmail: string | undefined = body.userEmail
 		const marketplace: 'US' | 'CA' = body.marketplace === 'CA' ? 'CA' : 'US'
+		const shippingRate: ShippingRateInput = body.shippingRate
 
 		if (!shippingAddress?.line1 || !shippingAddress?.city || !shippingAddress?.country) {
 			return NextResponse.json({ error: 'A complete shipping address is required' }, { status: 400 })
+		}
+		if (!shippingRate?.carrier || !shippingRate?.serviceCode) {
+			return NextResponse.json({ error: 'A shipping method must be selected' }, { status: 400 })
 		}
 
 		const service = createServiceClient()
@@ -47,7 +54,8 @@ export async function POST(request: NextRequest) {
 		const discounted = subtotal - promo.discountAmount
 		const tax = await computeTax(service, discounted, shippingAddress)
 		const extras = giftFees(gift)
-		const total = Math.round((discounted + tax + extras) * 100) / 100
+		const shipping = await validateAndPriceShipping(items, shippingAddress, shippingRate)
+		const total = Math.round((discounted + tax + extras + shipping.cost) * 100) / 100
 
 		const orderReference = generateOrderReference()
 		const origin =
@@ -85,6 +93,14 @@ export async function POST(request: NextRequest) {
 				},
 			})
 		}
+		lineItems.push({
+			quantity: 1,
+			price_data: {
+				currency: marketplace === 'CA' ? 'cad' : 'usd',
+				unit_amount: Math.round(shipping.cost * 100),
+				product_data: { name: `Shipping — ${shipping.serviceName}` },
+			},
+		})
 		if (promo.discountAmount > 0) {
 			// Stripe line items cannot be negative; carry the discount via a coupon
 		}
@@ -118,7 +134,13 @@ export async function POST(request: NextRequest) {
 				postal_code: shippingAddress.postalCode ?? '',
 				country: shippingAddress.country,
 				full_name: shippingAddress.fullName ?? '',
+				phone: shippingAddress.phone ?? '',
 				delivery_notes: shippingAddress.deliveryNotes ?? '',
+				shipping_carrier: shipping.carrier,
+				shipping_service_code: shipping.serviceCode,
+				shipping_service_name: shipping.serviceName,
+				shipping_cost: String(shipping.cost),
+				shipping_currency: shipping.currency,
 				total: String(total),
 				gift: JSON.stringify(gift ?? { isGift: false }),
 				items: JSON.stringify(
@@ -131,6 +153,9 @@ export async function POST(request: NextRequest) {
 	} catch (err) {
 		if (err instanceof StockError) {
 			return NextResponse.json({ error: err.message, variantId: err.variantId }, { status: 400 })
+		}
+		if (err instanceof ShippingRateError) {
+			return NextResponse.json({ error: err.message }, { status: 400 })
 		}
 		const message = err instanceof Error ? err.message : 'Checkout failed'
 		return NextResponse.json({ error: message }, { status: 500 })

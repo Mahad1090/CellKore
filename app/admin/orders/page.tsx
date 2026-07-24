@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronDown, ChevronUp, X, MapPin, Users, ShoppingBag, CreditCard, Ship, FileText, Printer, Download, Plus, Check, CheckCircle, Truck, TrendingUp, Search } from 'lucide-react'
+import { ChevronDown, ChevronUp, X, MapPin, Users, ShoppingBag, CreditCard, Ship, FileText, Plus, Check, CheckCircle, Truck, TrendingUp, Search } from 'lucide-react'
 import { PageTitle, StatusBadge, EmptyState, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
@@ -209,6 +209,7 @@ export default function AdminOrdersPage() {
 									onToggle={() => setExpanded(expanded === order.id ? null : order.id)}
 									writable={writable}
 									onPatch={patch}
+									onReload={load}
 								/>
 							))}
 						</tbody>
@@ -225,12 +226,14 @@ function OrderRow({
 	onToggle,
 	writable,
 	onPatch,
+	onReload,
 }: {
 	order: any
 	expanded: boolean
 	onToggle: () => void
 	writable: boolean
 	onPatch: (id: string, body: Record<string, string>) => void
+	onReload: () => void
 }) {
 	const { toast } = useToast()
 
@@ -239,174 +242,72 @@ function OrderRow({
 	const [customAddress, setCustomAddress] = useState<string>('')
 	const [customName, setCustomName] = useState<string>('')
 	const [customPhone, setCustomPhone] = useState<string>('')
-	const [orderNote, setOrderNote] = useState<string>('')
-	const [carrier, setCarrier] = useState<string>('Canada Post')
-	const [trackingNum, setTrackingNum] = useState<string>('7023210159049755')
+	const [generatingLabel, setGeneratingLabel] = useState(false)
+	const [manualEntry, setManualEntry] = useState(false)
+	const [manualTracking, setManualTracking] = useState('')
+	const [manualLabelUrl, setManualLabelUrl] = useState('')
 
 	useEffect(() => {
-		const name = order.users?.full_name || order.gift_recipient_name || 'Areeba Waqar'
-		const phone = order.users?.phone || order.gift_recipient_phone || '+92 3141812453'
+		const name = order.users?.full_name || order.gift_recipient_name || '—'
+		const phone = order.users?.phone || order.gift_recipient_phone || order.shipping_address?.phone || '—'
 		const addr = order.shipping_address
 			? `${order.shipping_address.line1} ${order.shipping_address.line2 || ''}\n${order.shipping_address.city}, ${order.shipping_address.state_province || ''} ${order.shipping_address.postal_code || ''}\n${order.shipping_address.country.toUpperCase()}`
-			: 'abc\nWAH CANTT, Punjab 47000\nPAKISTAN'
+			: 'No shipping address on file'
 
 		setCustomName(name)
 		setCustomPhone(phone)
 		setCustomAddress(addr)
-		setOrderNote(order.shipping_address?.delivery_notes || order.notes || order.gift_message || '')
-		setCarrier(order.marketplace === 'CA' ? 'Canada Post' : 'USPS')
 	}, [order])
 
-	const handlePrintLabel = () => {
-		const printWindow = window.open('', '_blank')
-		if (!printWindow) return
-
-		const itemsDesc = (order.order_items || []).map((i: any) => `${i.products?.name ?? 'Product'} x ${i.quantity}`).join(', ') || 'iPhone 15 Pro Max x 1'
-		const ref = order.reference || `CK-${new Date().getFullYear()}-14395`
-
-		printWindow.document.write(`
-			<html>
-			<head>
-				<title>Shipping Label - ${ref}</title>
-				<style>
-					@page {
-						size: 4in 6in;
-						margin: 0;
-					}
-					body {
-						font-family: Arial, sans-serif;
-						margin: 0;
-						padding: 12px;
-						width: 3.8in;
-						height: 5.8in;
-						box-sizing: border-box;
-						background-color: #ffffff;
-						color: #000000;
-					}
-					.label-border {
-						border: 3px solid #000000;
-						height: 100%;
-						padding: 10px;
-						display: flex;
-						flex-direction: column;
-						justify-content: space-between;
-						box-sizing: border-box;
-					}
-					.header {
-						border-bottom: 2px solid #000000;
-						padding-bottom: 6px;
-						text-align: center;
-						font-size: 15px;
-						font-weight: 800;
-						letter-spacing: 1px;
-						text-transform: uppercase;
-					}
-					.section {
-						border-bottom: 1px solid #000000;
-						padding: 6px 0;
-						font-size: 10px;
-						line-height: 1.25;
-					}
-					.address-title {
-						font-weight: bold;
-						text-transform: uppercase;
-						font-size: 8px;
-						margin-bottom: 2px;
-						letter-spacing: 0.5px;
-					}
-					.bold {
-						font-weight: bold;
-					}
-					.barcode-container {
-						text-align: center;
-						padding: 8px 0;
-					}
-					.barcode-lines {
-						display: flex;
-						justify-content: center;
-						align-items: stretch;
-						height: 48px;
-						margin-bottom: 4px;
-					}
-					.barcode-lines div {
-						background-color: #000000;
-						margin-right: 1px;
-					}
-					.tracking-text {
-						font-size: 10px;
-						font-weight: bold;
-						letter-spacing: 1px;
-					}
-					.footer-info {
-						font-size: 8px;
-						text-align: center;
-						font-weight: bold;
-						text-transform: uppercase;
-						letter-spacing: 0.5px;
-					}
-				</style>
-			</head>
-			<body>
-				<div class="label-border">
-					<div class="header">
-						${carrier.toUpperCase()} POSTAGE PAID
-					</div>
-					
-					<div class="section">
-						<div class="address-title">FROM:</div>
-						<div class="bold">CELLKORE LOGISTICS</div>
-						<div>123 Logistics Way, Suite A</div>
-						<div>Toronto, ON, M5V 2N2, Canada</div>
-					</div>
-
-					<div class="section" style="flex: 1;">
-						<div class="address-title">SHIP TO:</div>
-						<div class="bold" style="font-size: 13px; text-transform: uppercase;">${customName}</div>
-						<div style="white-space: pre-line; font-size: 10.5px; margin-top: 2px;">${customAddress}</div>
-						<div style="margin-top: 4px;">Phone: ${customPhone}</div>
-					</div>
-
-					<div class="section">
-						<div class="bold">REF: ${ref}</div>
-						<div style="margin-top: 2px; font-weight: 500;">ITEMS: ${itemsDesc}</div>
-						${orderNote ? `<div style="margin-top: 4px; font-style: italic; font-weight: bold;">Note: "${orderNote}"</div>` : ''}
-					</div>
-
-					<div class="barcode-container">
-						<div class="barcode-lines">
-							<div style="width: 2px;"></div><div style="width: 4px;"></div><div style="width: 1px;"></div>
-							<div style="width: 3px;"></div><div style="width: 2px;"></div><div style="width: 5px;"></div>
-							<div style="width: 1px;"></div><div style="width: 4px;"></div><div style="width: 2px;"></div>
-							<div style="width: 3px;"></div><div style="width: 1px;"></div><div style="width: 5px;"></div>
-							<div style="width: 2px;"></div><div style="width: 4px;"></div><div style="width: 1px;"></div>
-							<div style="width: 3px;"></div><div style="width: 2px;"></div><div style="width: 5px;"></div>
-							<div style="width: 1px;"></div><div style="width: 4px;"></div><div style="width: 2px;"></div>
-							<div style="width: 3px;"></div><div style="width: 2px;"></div><div style="width: 4px;"></div>
-						</div>
-						<div class="tracking-text">TRACKING #: ${trackingNum}</div>
-					</div>
-
-					<div class="footer-info">
-						CellKore Fulfillment Hub - Internal Dispatch Copy
-					</div>
-				</div>
-				<script>
-					window.onload = function() {
-						window.print();
-						window.onafterprint = function() {
-							window.close();
-						}
-					}
-				</script>
-			</body>
-			</html>
-		`)
-		printWindow.document.close()
+	const generateLabel = async () => {
+		setGeneratingLabel(true)
+		try {
+			const res = await fetch(`/api/admin/orders/${order.id}/shipment`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			})
+			const json = await res.json()
+			if (!res.ok) {
+				toast({ title: 'Label generation failed', description: json.error, variant: 'error' })
+				return
+			}
+			toast({ title: 'Label generated', description: `Tracking #: ${json.trackingNumber}`, variant: 'success' })
+			onReload()
+		} catch {
+			toast({ title: 'Label generation failed', description: 'Please try again.', variant: 'error' })
+		} finally {
+			setGeneratingLabel(false)
+		}
 	}
 
-	const handleDownloadPDF = () => {
-		toast({ title: 'Downloading label PDF', description: 'Generating layout copy...', variant: 'success' })
-		handlePrintLabel()
+	const submitManualLabel = async () => {
+		if (!manualTracking.trim() || !manualLabelUrl.trim()) {
+			toast({ title: 'Missing details', description: 'Tracking number and label URL are both required.', variant: 'error' })
+			return
+		}
+		setGeneratingLabel(true)
+		try {
+			const res = await fetch(`/api/admin/orders/${order.id}/shipment`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ tracking_number: manualTracking.trim(), label_url: manualLabelUrl.trim() }),
+			})
+			const json = await res.json()
+			if (!res.ok) {
+				toast({ title: 'Update failed', description: json.error, variant: 'error' })
+				return
+			}
+			toast({ title: 'Label saved', description: 'Manual tracking/label recorded.', variant: 'success' })
+			setManualEntry(false)
+			setManualTracking('')
+			setManualLabelUrl('')
+			onReload()
+		} catch {
+			toast({ title: 'Update failed', description: 'Please try again.', variant: 'error' })
+		} finally {
+			setGeneratingLabel(false)
+		}
 	}
 
 	return (
@@ -668,82 +569,136 @@ function OrderRow({
 
 						{activeSubTab === 'shipping' && (
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* Fulfillment config */}
+								{/* Fulfillment: read-only — carrier/service was the customer's choice at checkout */}
 								<div className="p-5 rounded-2xl bg-white border border-[#E9ECEA] space-y-4 shadow-3xs">
 									<h3 className="text-xs font-bold uppercase tracking-wider text-[#111111] flex items-center gap-1.5 border-b border-[#E9ECEA] pb-2">
 										<Ship className="w-4 h-4 text-[#599161]" />
 										Fulfillment & Dispatch
 									</h3>
-									<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-										<div>
-											<label className="text-[9px] font-bold text-muted-foreground uppercase">Carrier</label>
-											<select
-												value={carrier}
-												onChange={(e) => setCarrier(e.target.value)}
-												className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-[#E9ECEA] text-xs focus:outline-none focus:border-[#599161] bg-white cursor-pointer"
-											>
-												<option value="Canada Post">Canada Post</option>
-												<option value="USPS">USPS</option>
-												<option value="FedEx">FedEx</option>
-												<option value="DHL Express">DHL Express</option>
-											</select>
+									{order.shipping_carrier ? (
+										<div className="space-y-3 text-xs">
+											<div className="flex justify-between items-center">
+												<span className="text-muted-foreground">Carrier</span>
+												<span className="font-extrabold text-[#111111] uppercase">
+													{order.shipping_carrier === 'ups' ? 'UPS' : 'Canada Post'}
+												</span>
+											</div>
+											<div className="flex justify-between items-center">
+												<span className="text-muted-foreground">Service</span>
+												<span className="font-bold text-[#111111]">{order.shipping_service_name || '—'}</span>
+											</div>
+											<div className="flex justify-between items-center">
+												<span className="text-muted-foreground">Shipping Paid</span>
+												<span className="font-extrabold text-[#599161] font-mono">
+													${Number(order.shipping_cost ?? 0).toFixed(2)} {order.shipping_currency ?? ''}
+												</span>
+											</div>
 										</div>
-										<div className="sm:col-span-2">
-											<label className="text-[9px] font-bold text-[#111111] uppercase">Tracking Number</label>
-											<input
-												type="text"
-												value={trackingNum}
-												onChange={(e) => setTrackingNum(e.target.value)}
-												className="w-full mt-1 px-3 py-1.5 rounded-lg border border-[#E9ECEA] font-mono text-xs focus:outline-none focus:border-[#599161]"
-												placeholder="Tracking Number"
-											/>
-										</div>
-									</div>
-									<div className="text-xs">
-										<label className="text-[9px] font-bold text-muted-foreground uppercase">Custom Label Note</label>
-										<input
-											type="text"
-											value={orderNote}
-											onChange={(e) => setOrderNote(e.target.value)}
-											className="w-full mt-1 px-3 py-1.5 rounded-lg border border-[#E9ECEA] text-xs focus:outline-none focus:border-[#599161]"
-											placeholder="e.g. Leave at front porch"
-										/>
+									) : (
+										<p className="text-xs text-muted-foreground italic">
+											No shipping method on file for this order (it may predate live carrier checkout).
+										</p>
+									)}
+									<div className="text-xs pt-2 border-t border-[#E9ECEA]">
+										<label className="text-[9px] font-bold text-muted-foreground uppercase">Ship-To Address</label>
+										<p className="mt-1 whitespace-pre-line text-[#111111]">{customAddress}</p>
+										<p className="mt-1 text-muted-foreground">Phone: {customPhone}</p>
 									</div>
 								</div>
 
-								{/* Shipping Label block */}
+								{/* Shipping Label */}
 								<div className="p-5 rounded-2xl bg-white border border-[#E9ECEA] space-y-4 shadow-3xs flex flex-col justify-between">
 									<div className="flex items-center justify-between border-b border-[#E9ECEA] pb-2">
 										<h3 className="text-xs font-bold uppercase tracking-wider text-[#111111] flex items-center gap-1.5">
 											<FileText className="w-4 h-4 text-[#599161]" />
 											Shipping Label
 										</h3>
-										<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#EEF7F0] text-[#599161] border border-[#599161]/10 uppercase font-mono">
-											Generated
+										<span
+											className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase font-mono border ${
+												order.shipping_label_status === 'generated'
+													? 'bg-[#EEF7F0] text-[#599161] border-[#599161]/10'
+													: order.shipping_label_status === 'failed'
+													? 'bg-red-50 text-red-600 border-red-200'
+													: 'bg-[#F7F7F5] text-muted-foreground border-[#E9ECEA]'
+											}`}
+										>
+											{order.shipping_label_status === 'generated'
+												? 'Generated'
+												: order.shipping_label_status === 'failed'
+												? 'Failed'
+												: 'Not Generated'}
 										</span>
 									</div>
 
-									<p className="text-xs text-muted-foreground leading-relaxed font-sans">
-										Confirm customer address shipping coordinates and custom notes before printing the thermal barcode label.
-									</p>
+									{order.shipping_tracking_number && (
+										<p className="text-xs font-mono">
+											<span className="text-muted-foreground">Tracking #: </span>
+											<span className="font-bold text-[#111111]">{order.shipping_tracking_number}</span>
+										</p>
+									)}
 
-									{/* Action Buttons */}
-									<div className="grid grid-cols-2 gap-3 pt-3">
-										<button
-											onClick={handlePrintLabel}
-											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E9ECEA] hover:bg-[#EEF7F0] text-xs font-bold uppercase tracking-wider text-[#111111] transition-all cursor-pointer shadow-3xs"
+									{order.shipping_label_url && (
+										<a
+											href={order.shipping_label_url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#EEF7F0] border border-[#599161]/20 text-xs font-bold uppercase tracking-wider text-[#599161] hover:bg-[#dcefe0] transition-all"
 										>
-											<Printer className="w-4 h-4 text-[#599161]" />
-											Print Label
-										</button>
+											<FileText className="w-4 h-4" />
+											View / Download Label
+										</a>
+									)}
+
+									{writable && (
 										<button
-											onClick={handleDownloadPDF}
-											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E9ECEA] hover:bg-[#EEF7F0] text-xs font-bold uppercase tracking-wider text-[#111111] transition-all cursor-pointer shadow-3xs"
+											onClick={generateLabel}
+											disabled={generatingLabel || !order.shipping_carrier}
+											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E9ECEA] hover:bg-[#EEF7F0] text-xs font-bold uppercase tracking-wider text-[#111111] transition-all cursor-pointer shadow-3xs disabled:opacity-50 disabled:cursor-not-allowed"
 										>
-											<Download className="w-4 h-4 text-[#599161]" />
-											Download PDF
+											<CheckCircle className="w-4 h-4 text-[#599161]" />
+											{generatingLabel
+												? 'Generating…'
+												: order.shipping_label_status === 'generated'
+												? 'Regenerate Label'
+												: 'Generate Label'}
 										</button>
-									</div>
+									)}
+
+									{writable && (
+										<div className="pt-2 border-t border-[#E9ECEA]">
+											<button
+												onClick={() => setManualEntry((v) => !v)}
+												className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-[#599161] cursor-pointer"
+											>
+												{manualEntry ? 'Cancel manual entry' : 'Enter label manually'}
+											</button>
+											{manualEntry && (
+												<div className="mt-3 space-y-2">
+													<input
+														type="text"
+														value={manualTracking}
+														onChange={(e) => setManualTracking(e.target.value)}
+														placeholder="Tracking number"
+														className="w-full px-3 py-1.5 rounded-lg border border-[#E9ECEA] font-mono text-xs focus:outline-none focus:border-[#599161]"
+													/>
+													<input
+														type="text"
+														value={manualLabelUrl}
+														onChange={(e) => setManualLabelUrl(e.target.value)}
+														placeholder="Label URL"
+														className="w-full px-3 py-1.5 rounded-lg border border-[#E9ECEA] text-xs focus:outline-none focus:border-[#599161]"
+													/>
+													<button
+														onClick={submitManualLabel}
+														disabled={generatingLabel}
+														className="w-full px-4 py-2 rounded-xl bg-[#599161] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#48784f] transition-all cursor-pointer disabled:opacity-50"
+													>
+														Save
+													</button>
+												</div>
+											)}
+										</div>
+									)}
 								</div>
 							</div>
 						)}

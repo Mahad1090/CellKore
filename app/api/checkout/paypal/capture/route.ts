@@ -6,6 +6,7 @@ import {
 	StockError,
 	type ShippingAddressInput,
 	type GiftOptions,
+	type PricedShipping,
 } from '@/lib/checkout-server'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
 
@@ -19,6 +20,7 @@ export async function POST(request: NextRequest) {
 		const checkout = body.checkout as {
 			items: { p: string; v: string | null; q: number; u: number; n: string }[]
 			shippingAddress: ShippingAddressInput
+			shipping: PricedShipping
 			gift: GiftOptions | null
 			marketplace: 'US' | 'CA'
 			userId: string | null
@@ -65,9 +67,14 @@ export async function POST(request: NextRequest) {
 				name: i.n,
 				imageUrl: null,
 				isWholesale: false,
+				weightKg: null,
+				lengthCm: null,
+				widthCm: null,
+				heightCm: null,
 			})),
 			total: capturedTotal,
 			shippingAddress: checkout.shippingAddress,
+			shipping: checkout.shipping,
 			gift: checkout.gift,
 			paymentProvider: 'paypal-capture',
 			customerEmail: capture.payer?.email_address ?? null,

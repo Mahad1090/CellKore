@@ -1,6 +1,10 @@
+import { getShippingRates } from '@/lib/shipping/aggregator'
+import { computePackageForItems } from '@/lib/shipping/package'
 import type { RepairShippingOption } from '@/lib/types'
 
 export interface ShippingRateAddress {
+	name: string
+	phone: string
 	line1: string
 	line2?: string | null
 	city: string
@@ -10,19 +14,29 @@ export interface ShippingRateAddress {
 }
 
 /**
- * Returns the shipping-back options offered on a repair quote. Not yet
- * wired to a real carrier rates API — swap this function's body for a
- * call to EasyPost / Shippo / ShipEngine (or whichever provider is
- * chosen) using the customer's address once an account and API key
- * exist. Callers already treat the result as "the options to present",
- * so no other code changes are needed when this becomes a real
- * integration.
+ * Live Canada Post + UPS rates for a repair's shipping-back options,
+ * shown on the quote for the customer to pick from. Repairs don't carry
+ * per-device weight/dimensions (unlike catalog products), so package
+ * sizing falls back to the default box (lib/shipping/package.ts).
  */
-export async function getRepairShippingRateOptions(
-	_address: ShippingRateAddress
-): Promise<RepairShippingOption[]> {
-	return [
-		{ label: 'Standard Shipping (5-7 business days)', cost: 9.99 },
-		{ label: 'Express Shipping (2-3 business days)', cost: 24.99 },
-	]
+export async function getRepairShippingRateOptions(address: ShippingRateAddress): Promise<RepairShippingOption[]> {
+	const pkg = computePackageForItems([{ quantity: 1 }])
+	const { rates } = await getShippingRates(pkg, {
+		name: address.name,
+		phone: address.phone,
+		line1: address.line1,
+		line2: address.line2 ?? undefined,
+		city: address.city,
+		stateProvince: address.stateProvince ?? '',
+		postalCode: address.postalCode ?? '',
+		country: address.country,
+	})
+
+	return rates.map((r) => ({
+		label: `${r.carrier === 'ups' ? 'UPS' : 'Canada Post'} — ${r.serviceName}`,
+		cost: r.cost,
+		carrier: r.carrier,
+		serviceCode: r.serviceCode,
+		currency: r.currency,
+	}))
 }

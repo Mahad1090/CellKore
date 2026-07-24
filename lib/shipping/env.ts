@@ -1,0 +1,55 @@
+// Test/live credential switching for Canada Post + UPS, mirroring the
+// PAYPAL_ENV pattern in lib/paypal-server.ts: one env var picks the mode,
+// every credential/base-URL is read as an explicit *_TEST / *_LIVE pair
+// so either carrier can differ by host, by credentials, or both without
+// any code change.
+
+function isLive(envVar: string | undefined): boolean {
+	return envVar === 'live'
+}
+
+export type CanadaPostMode = 'test' | 'live'
+
+function resolveCanadaPostMode(override?: CanadaPostMode): CanadaPostMode {
+	return override ?? (isLive(process.env.CANADA_POST_ENV) ? 'live' : 'test')
+}
+
+// Canada Post's test/production split is by host (CT gateway vs
+// production gateway), not by separate credentials — the same API
+// key/secret/customer number issued by the developer portal work
+// against whichever host you point at. `mode` lets a caller force
+// test/live independent of CANADA_POST_ENV (used to run rating on live
+// while shipment/label creation stays on test, for now).
+export function canadaPostApiBase(mode?: CanadaPostMode): string {
+	return resolveCanadaPostMode(mode) === 'live' ? 'https://soa-gw.canadapost.ca' : 'https://ct.soa-gw.canadapost.ca'
+}
+
+export function canadaPostCredentials(mode?: CanadaPostMode): { apiKey: string; secretKey: string; customerNumber: string } {
+	const live = resolveCanadaPostMode(mode) === 'live'
+	const apiKey = live ? process.env.CANADA_POST_API_KEY_LIVE : process.env.CANADA_POST_API_KEY_TEST
+	const secretKey = live ? process.env.CANADA_POST_SECRET_KEY_LIVE : process.env.CANADA_POST_SECRET_KEY_TEST
+	const customerNumber = live ? process.env.CANADA_POST_CUSTOMER_NUMBER_LIVE : process.env.CANADA_POST_CUSTOMER_NUMBER_TEST
+	if (!apiKey || !secretKey || !customerNumber) {
+		throw new Error('Canada Post is not configured (missing API key/secret key/customer number)')
+	}
+	return { apiKey, secretKey, customerNumber }
+}
+
+export function upsApiBase(): string {
+	return isLive(process.env.UPS_ENV) ? 'https://onlinetools.ups.com' : 'https://wwwcie.ups.com'
+}
+
+export function upsCredentials(): { clientId: string; clientSecret: string; accountNumber: string } {
+	const live = isLive(process.env.UPS_ENV)
+	const clientId = live ? process.env.UPS_CLIENT_ID_LIVE : process.env.UPS_CLIENT_ID_TEST
+	const clientSecret = live ? process.env.UPS_CLIENT_SECRET_LIVE : process.env.UPS_CLIENT_SECRET_TEST
+	const accountNumber = live ? process.env.UPS_ACCOUNT_NUMBER_LIVE : process.env.UPS_ACCOUNT_NUMBER_TEST
+	if (!clientId || !clientSecret || !accountNumber) {
+		throw new Error('UPS is not configured (missing client credentials or account number)')
+	}
+	return { clientId, clientSecret, accountNumber }
+}
+
+export function shippingLabelsBucket(): string {
+	return process.env.SHIPPING_LABELS_BUCKET || 'shipping-labels'
+}

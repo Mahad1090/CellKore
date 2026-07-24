@@ -115,11 +115,12 @@ export default function AdminSellRequestsPage() {
 	const [status, setStatus] = useState<SellPhoneStatus>('submitted')
 	const [rejectionReason, setRejectionReason] = useState('')
 	const [note, setNote] = useState('')
-	const [returnShippingFee, setReturnShippingFee] = useState('')
 	const [labelCarrier, setLabelCarrier] = useState('')
 	const [labelTracking, setLabelTracking] = useState('')
 	const [labelUrl, setLabelUrl] = useState('')
 	const [savingLabel, setSavingLabel] = useState(false)
+	const [generatingLabel, setGeneratingLabel] = useState(false)
+	const [manualLabelEntry, setManualLabelEntry] = useState(false)
 	const [saving, setSaving] = useState(false)
 	const [copiedId, setCopiedId] = useState(false)
 	const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
@@ -152,14 +153,10 @@ export default function AdminSellRequestsPage() {
 		setStatus(request.status)
 		setRejectionReason(request.rejection_reason ?? '')
 		setNote('')
-		setReturnShippingFee(request.sell_phone_return_shipments?.fee_amount != null ? String(request.sell_phone_return_shipments.fee_amount) : '')
 		setLabelCarrier(request.sell_phone_return_shipments?.carrier ?? '')
 		setLabelTracking(request.sell_phone_return_shipments?.tracking_number ?? '')
 		setLabelUrl(request.sell_phone_return_shipments?.label_url ?? '')
 	}
-
-	const showReturnFeeField =
-		status === 'rejected' && (selected?.status === 'under_inspection' || Boolean(selected?.sell_phone_return_shipments))
 
 	const save = async () => {
 		if (!selected) return
@@ -181,7 +178,6 @@ export default function AdminSellRequestsPage() {
 					payout_reference: payoutReference.trim() || null,
 					payout_notes: payoutNotes.trim() || null,
 					payout_confirmed_at: paymentConfirmed ? new Date().toISOString() : null,
-					return_shipping_fee: showReturnFeeField && returnShippingFee !== '' ? Number(returnShippingFee) : undefined,
 				}),
 			})
 			const json = await res.json()
@@ -218,6 +214,27 @@ export default function AdminSellRequestsPage() {
 			toast({ title: 'Could not save label', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		} finally {
 			setSavingLabel(false)
+		}
+	}
+
+	const generateLabel = async () => {
+		if (!selected) return
+		setGeneratingLabel(true)
+		try {
+			const res = await fetch(`/api/admin/sell-requests/${selected.id}/return-shipment`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Label generated', description: `Tracking #: ${json.trackingNumber}`, variant: 'success' })
+			setSelected(null)
+			load()
+		} catch (err) {
+			toast({ title: 'Label generation failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setGeneratingLabel(false)
 		}
 	}
 
@@ -651,10 +668,17 @@ export default function AdminSellRequestsPage() {
 														<h4 className="text-xs font-extrabold uppercase tracking-[0.18em] text-foreground/90">RETURN SHIPMENT</h4>
 													</div>
 													<span className="inline-flex items-center justify-center text-center whitespace-nowrap shrink-0 text-xs font-extrabold text-amber-800 dark:text-amber-300 bg-amber-500/15 px-3 py-1 rounded-full border border-amber-500/30 font-mono">
-														${Number(selected.sell_phone_return_shipments.fee_amount).toFixed(2)} FEE
+														{selected.sell_phone_return_shipments.fee_amount != null
+															? `$${Number(selected.sell_phone_return_shipments.fee_amount).toFixed(2)} ${selected.sell_phone_return_shipments.currency ?? ''}`
+															: 'RATE NOT CHOSEN YET'}
 													</span>
 												</div>
 												<div className="text-xs space-y-2 text-foreground">
+													{selected.sell_phone_return_shipments.service_name && (
+														<p className="text-muted-foreground font-medium">
+															Service: <span className="text-foreground font-semibold">{selected.sell_phone_return_shipments.service_name}</span>
+														</p>
+													)}
 													<p className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
 														<ShieldCheck className="w-4 h-4" />
 														<span>
@@ -672,6 +696,8 @@ export default function AdminSellRequestsPage() {
 														<span className="text-[11px] font-bold text-foreground">
 															Label: {selected.sell_phone_return_shipments.label_status === 'generated'
 																? `${selected.sell_phone_return_shipments.carrier} · ${selected.sell_phone_return_shipments.tracking_number}`
+																: selected.sell_phone_return_shipments.label_status === 'failed'
+																? 'Generation failed'
 																: 'Not generated'}
 														</span>
 														{selected.sell_phone_return_shipments.label_url && (
@@ -684,14 +710,28 @@ export default function AdminSellRequestsPage() {
 
 												{writable && selected.sell_phone_return_shipments.paid_at && selected.sell_phone_return_shipments.label_status !== 'generated' && (
 													<div className="mt-3 pt-3 border-t border-amber-500/20 space-y-2.5">
-														<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground">Attach Label Details</p>
-														<input value={labelCarrier} onChange={(e) => setLabelCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
-														<input value={labelTracking} onChange={(e) => setLabelTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
-														<input value={labelUrl} onChange={(e) => setLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
-														<button onClick={saveLabel} disabled={savingLabel} className={`${adminButton} w-full justify-center mt-2`}>
-															{savingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-															Save Label
+														<button onClick={generateLabel} disabled={generatingLabel} className={`${adminButton} w-full justify-center`}>
+															{generatingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+															{selected.sell_phone_return_shipments.label_status === 'failed' ? 'Retry Label Generation' : 'Generate Label'}
 														</button>
+														<button
+															type="button"
+															onClick={() => setManualLabelEntry((v) => !v)}
+															className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground cursor-pointer"
+														>
+															{manualLabelEntry ? 'Cancel manual entry' : 'Enter label manually'}
+														</button>
+														{manualLabelEntry && (
+															<div className="space-y-2.5">
+																<input value={labelCarrier} onChange={(e) => setLabelCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
+																<input value={labelTracking} onChange={(e) => setLabelTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
+																<input value={labelUrl} onChange={(e) => setLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
+																<button onClick={saveLabel} disabled={savingLabel} className={`${adminButton} w-full justify-center`}>
+																	{savingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+																	Save Label
+																</button>
+															</div>
+														)}
 													</div>
 												)}
 											</div>
@@ -853,22 +893,10 @@ export default function AdminSellRequestsPage() {
 													placeholder="e.g. Device arrived with undisclosed water damage"
 												/>
 											</div>
-											{showReturnFeeField && (
-												<div>
-													<label className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1 block">
-														RETURN SHIPPING FEE (USD)
-													</label>
-													<input
-														type="number"
-														step="0.01"
-														value={returnShippingFee}
-														onChange={(e) => setReturnShippingFee(e.target.value)}
-														className={adminInput}
-														disabled={!writable}
-														placeholder="0.00"
-													/>
-												</div>
-											)}
+											<p className="text-[11px] text-muted-foreground leading-relaxed">
+												Once rejected, the customer will be prompted to enter their address and pick a live
+												Canada Post/UPS return shipping rate themselves — no fee to set here.
+											</p>
 										</div>
 									) : (
 										<div className="pt-3 border-t border-border/70 space-y-2">

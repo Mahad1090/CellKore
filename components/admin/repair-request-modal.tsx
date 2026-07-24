@@ -86,6 +86,8 @@ export function RepairRequestModal({
 	const [outboundTracking, setOutboundTracking] = useState(request.outbound_tracking_number ?? '')
 	const [outboundLabelUrl, setOutboundLabelUrl] = useState(request.outbound_label_url ?? '')
 	const [savingOutbound, setSavingOutbound] = useState(false)
+	const [generatingLabel, setGeneratingLabel] = useState(false)
+	const [manualOutboundEntry, setManualOutboundEntry] = useState(false)
 
 	useEffect(() => setModalTab(focusTab), [focusTab, request.id])
 
@@ -159,6 +161,26 @@ export function RepairRequestModal({
 			toast({ title: 'Could not save shipment', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		} finally {
 			setSavingOutbound(false)
+		}
+	}
+
+	const generateOutboundLabel = async () => {
+		setGeneratingLabel(true)
+		try {
+			const res = await fetch(`/api/admin/repair-requests/${request.id}/outbound-shipment`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({}),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Label generated', description: `Tracking #: ${json.trackingNumber}`, variant: 'success' })
+			onSaved()
+			onClose()
+		} catch (err) {
+			toast({ title: 'Label generation failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setGeneratingLabel(false)
 		}
 	}
 
@@ -462,6 +484,11 @@ export function RepairRequestModal({
 
 								<div className="pt-3 border-t border-border/70 space-y-2.5">
 									<p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-foreground">OUTBOUND SHIPMENT (SHIP BACK TO CUSTOMER)</p>
+									{request.selected_shipping_option && (
+										<p className="text-xs text-muted-foreground">
+											Customer selected: <span className="font-semibold text-foreground">{request.selected_shipping_option.label}</span>
+										</p>
+									)}
 									{request.outbound_label_status === 'generated' ? (
 										<div className="text-xs space-y-1.5">
 											<p><span className="text-muted-foreground">Carrier:</span> <span className="font-semibold">{request.outbound_carrier}</span></p>
@@ -471,17 +498,36 @@ export function RepairRequestModal({
 											)}
 										</div>
 									) : (
-										<>
-											<input value={outboundCarrier} onChange={(e) => setOutboundCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} disabled={!writable} />
-											<input value={outboundTracking} onChange={(e) => setOutboundTracking(e.target.value)} placeholder="Tracking number" className={adminInput} disabled={!writable} />
-											<input value={outboundLabelUrl} onChange={(e) => setOutboundLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} disabled={!writable} />
-											{writable && (
-												<button onClick={saveOutboundShipment} disabled={savingOutbound} className={`${adminButton} w-full justify-center mt-2`}>
-													{savingOutbound && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-													Save & Mark Shipped Back
+										writable && (
+											<>
+												<button
+													onClick={generateOutboundLabel}
+													disabled={generatingLabel || !request.selected_shipping_option}
+													className={`${adminButton} w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed`}
+												>
+													{generatingLabel && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+													Generate Label
 												</button>
-											)}
-										</>
+												<button
+													type="button"
+													onClick={() => setManualOutboundEntry((v) => !v)}
+													className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground cursor-pointer"
+												>
+													{manualOutboundEntry ? 'Cancel manual entry' : 'Enter label manually'}
+												</button>
+												{manualOutboundEntry && (
+													<div className="space-y-2.5">
+														<input value={outboundCarrier} onChange={(e) => setOutboundCarrier(e.target.value)} placeholder="Carrier (e.g. USPS)" className={adminInput} />
+														<input value={outboundTracking} onChange={(e) => setOutboundTracking(e.target.value)} placeholder="Tracking number" className={adminInput} />
+														<input value={outboundLabelUrl} onChange={(e) => setOutboundLabelUrl(e.target.value)} placeholder="Label URL (PDF link)" className={adminInput} />
+														<button onClick={saveOutboundShipment} disabled={savingOutbound} className={`${adminButton} w-full justify-center`}>
+															{savingOutbound && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+															Save & Mark Shipped Back
+														</button>
+													</div>
+												)}
+											</>
+										)
 									)}
 								</div>
 							</div>
