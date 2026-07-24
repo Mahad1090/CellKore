@@ -35,15 +35,19 @@ export function canadaPostCredentials(mode?: CanadaPostMode): { apiKey: string; 
 	return { apiKey, secretKey, customerNumber }
 }
 
+// UPS's developer portal issues one client_id/client_secret per app —
+// there is no separate sandbox credential set like some other carriers.
+// The same app credentials and account (shipper) number work against
+// both hosts; UPS_ENV only switches which host is called (CIE/sandbox
+// vs production).
 export function upsApiBase(): string {
 	return isLive(process.env.UPS_ENV) ? 'https://onlinetools.ups.com' : 'https://wwwcie.ups.com'
 }
 
 export function upsCredentials(): { clientId: string; clientSecret: string; accountNumber: string } {
-	const live = isLive(process.env.UPS_ENV)
-	const clientId = live ? process.env.UPS_CLIENT_ID_LIVE : process.env.UPS_CLIENT_ID_TEST
-	const clientSecret = live ? process.env.UPS_CLIENT_SECRET_LIVE : process.env.UPS_CLIENT_SECRET_TEST
-	const accountNumber = live ? process.env.UPS_ACCOUNT_NUMBER_LIVE : process.env.UPS_ACCOUNT_NUMBER_TEST
+	const clientId = process.env.UPS_CLIENT_ID
+	const clientSecret = process.env.UPS_CLIENT_SECRET
+	const accountNumber = process.env.UPS_ACCOUNT_NUMBER
 	if (!clientId || !clientSecret || !accountNumber) {
 		throw new Error('UPS is not configured (missing client credentials or account number)')
 	}
