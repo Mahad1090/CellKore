@@ -678,14 +678,24 @@ function ProductsPageContent() {
 					</div>
 				</div>
 
-				{/* Result Stats */}
+				{/* Result Stats & Centered Showing Products Pill (icentre.ke inspired) */}
 				{sorted !== null && (
-					<div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-						<span>
-							Showing <strong className="text-foreground font-bold">{sorted.length}</strong> {sorted.length === 1 ? 'product' : 'products'}
-						</span>
+					<div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground px-1 py-1">
+						{/* Centered Showing Badge */}
+						<div className="mx-auto sm:mx-0 px-4 py-1.5 rounded-full bg-secondary/80 border border-border/50 text-[11px] font-bold text-foreground/80 tracking-wide shadow-2xs">
+							Showing <span className="text-[#599161] font-extrabold">{sorted.length}</span> {sorted.length === 1 ? 'product' : 'products'}
+						</div>
+
 						{hasActiveSubFilters && (
-							<span className="text-[11px] text-primary font-bold">Filtered Results Active</span>
+							<div className="flex items-center gap-2">
+								<span className="text-[11px] text-primary font-extrabold uppercase tracking-wider">Filtered Results Active</span>
+								<button
+									onClick={resetAllFilters}
+									className="text-[10px] text-destructive hover:underline font-bold uppercase tracking-wider cursor-pointer"
+								>
+									Clear
+								</button>
+							</div>
 						)}
 					</div>
 				)}
