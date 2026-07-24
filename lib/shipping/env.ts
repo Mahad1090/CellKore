@@ -1,7 +1,7 @@
 // Test/live credential switching for Canada Post + UPS, mirroring the
-// PAYPAL_ENV pattern in lib/paypal-server.ts: one env var picks the mode,
-// every credential/base-URL is read as an explicit *_TEST / *_LIVE pair
-// so either carrier can differ by host, by credentials, or both without
+// NEXT_PUBLIC_PAYMENTS_ENV pattern in lib/payments-env.ts: one env var picks
+// the mode, every credential/base-URL is read as an explicit *_TEST / *_LIVE
+// pair so either carrier can differ by host, by credentials, or both without
 // any code change.
 
 function isLive(envVar: string | undefined): boolean {
@@ -14,16 +14,12 @@ function resolveCanadaPostMode(override?: CanadaPostMode): CanadaPostMode {
 	return override ?? (isLive(process.env.CANADA_POST_ENV) ? 'live' : 'test')
 }
 
-// Canada Post's test/production split is by host (CT gateway vs
-// production gateway), not by separate credentials — the same API
-// key/secret/customer number issued by the developer portal work
-// against whichever host you point at. `mode` lets a caller force
+// Canada Post's current (OAuth2/JSON) developer platform uses a single
+// host for both sandbox and production — the environment is determined
+// entirely by which API Key/Secret Key pair (client_id/client_secret)
+// requests the OAuth2 token, not by the URL. `mode` lets a caller force
 // test/live independent of CANADA_POST_ENV (used to run rating on live
 // while shipment/label creation stays on test, for now).
-export function canadaPostApiBase(mode?: CanadaPostMode): string {
-	return resolveCanadaPostMode(mode) === 'live' ? 'https://soa-gw.canadapost.ca' : 'https://ct.soa-gw.canadapost.ca'
-}
-
 export function canadaPostCredentials(mode?: CanadaPostMode): { apiKey: string; secretKey: string; customerNumber: string } {
 	const live = resolveCanadaPostMode(mode) === 'live'
 	const apiKey = live ? process.env.CANADA_POST_API_KEY_LIVE : process.env.CANADA_POST_API_KEY_TEST

@@ -15,6 +15,33 @@ import type { NormalizedRate, PackageInput, ShipmentRequest, ShipmentResult, Shi
 
 const API_VERSION = 'v2409'
 
+// getShippingRates() runs UPS and Canada Post in parallel via
+// Promise.allSettled and returns whichever carrier responds — bound every
+// request so a slow/hung carrier can't block the other's rates from
+// showing up promptly at checkout.
+const REQUEST_TIMEOUT_MS = 8000
+const SHIPMENT_TIMEOUT_MS = 20000
+
+// UPS's Rating API returns Service.Description as an empty string on this
+// account/region rather than omitting it or a human-readable name, so a
+// nullish (??) fallback never triggers — "" is not null/undefined. Service
+// codes are stable, long-documented UPS constants, so map the common ones
+// directly instead of relying on the API to describe itself.
+const UPS_SERVICE_NAMES: Record<string, string> = {
+	'01': 'UPS Next Day Air',
+	'02': 'UPS 2nd Day Air',
+	'03': 'UPS Ground',
+	'07': 'UPS Worldwide Express',
+	'08': 'UPS Worldwide Expedited',
+	'11': 'UPS Standard',
+	'12': 'UPS 3 Day Select',
+	'13': 'UPS Next Day Air Saver',
+	'14': 'UPS Next Day Air Early',
+	'54': 'UPS Worldwide Express Plus',
+	'59': 'UPS 2nd Day Air A.M.',
+	'65': 'UPS Worldwide Saver',
+}
+
 let cachedToken: { token: string; expiresAt: number } | null = null
 
 async function upsToken(): Promise<string> {
@@ -28,6 +55,7 @@ async function upsToken(): Promise<string> {
 			'Content-Type': 'application/x-www-form-urlencoded',
 		},
 		body: 'grant_type=client_credentials',
+		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 	})
 	if (!res.ok) throw new Error('UPS authentication failed')
 	const json = await res.json()
@@ -93,6 +121,7 @@ export async function getUpsRates(
 				},
 			},
 		}),
+		signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
 	})
 	if (!res.ok) {
 		const detail = await res.text().catch(() => '')
@@ -105,17 +134,20 @@ export async function getUpsRates(
 		? [json.RateResponse.RatedShipment]
 		: []
 
-	return ratedShipments.map((rs) => ({
-		carrier: 'ups' as const,
-		serviceCode: rs.Service?.Code ?? '',
-		serviceName: rs.Service?.Description ?? `UPS ${rs.Service?.Code ?? ''}`.trim(),
-		cost: Number(rs.TotalCharges?.MonetaryValue ?? 0),
-		currency: rs.TotalCharges?.CurrencyCode ?? 'USD',
-		transitDays: rs.GuaranteedDelivery?.BusinessDaysInTransit
-			? Number(rs.GuaranteedDelivery.BusinessDaysInTransit)
-			: undefined,
-		raw: rs,
-	}))
+	return ratedShipments.map((rs) => {
+		const code = rs.Service?.Code ?? ''
+		return {
+			carrier: 'ups' as const,
+			serviceCode: code,
+			serviceName: rs.Service?.Description || UPS_SERVICE_NAMES[code] || `UPS ${code}`.trim(),
+			cost: Number(rs.TotalCharges?.MonetaryValue ?? 0),
+			currency: rs.TotalCharges?.CurrencyCode ?? 'USD',
+			transitDays: rs.GuaranteedDelivery?.BusinessDaysInTransit
+				? Number(rs.GuaranteedDelivery.BusinessDaysInTransit)
+				: undefined,
+			raw: rs,
+		}
+	})
 }
 
 export async function createUpsShipment(req: ShipmentRequest): Promise<ShipmentResult> {
@@ -162,6 +194,7 @@ export async function createUpsShipment(req: ShipmentRequest): Promise<ShipmentR
 				},
 			},
 		}),
+		signal: AbortSignal.timeout(SHIPMENT_TIMEOUT_MS),
 	})
 	if (!res.ok) {
 		const detail = await res.text().catch(() => '')

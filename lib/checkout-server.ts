@@ -1,9 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { createServiceClient, generateOrderReference } from '@/lib/supabase-server'
-import { taxRateForCountry } from '@/lib/tax'
 import { sendOrderConfirmationEmail, sendNewOrderAdminAlert } from '@/lib/email/orders'
 import { getShippingRates } from '@/lib/shipping/aggregator'
 import { computePackageForItems } from '@/lib/shipping/package'
+import { recordTaxTransaction, type TaxBreakdownLine } from '@/lib/stripe-tax'
 import type { ShippingCarrier } from '@/lib/types'
 
 export interface CheckoutItemInput {
@@ -199,25 +199,6 @@ export interface ShippingAddressInput {
 	deliveryNotes?: string
 }
 
-export async function getTaxRateForAddress(service: SupabaseClient, address: ShippingAddressInput): Promise<number> {
-	const { data } = await service
-		.from('tax_rates')
-		.select('country_code, tax_rate, is_active')
-		.eq('country_code', (address.country ?? '').toUpperCase())
-		.eq('is_active', true)
-		.maybeSingle()
-	return taxRateForCountry(data ? [data] : [], address.country ?? '')
-}
-
-export async function computeTax(
-	service: SupabaseClient,
-	subtotalAfterDiscount: number,
-	address: ShippingAddressInput
-): Promise<number> {
-	const rate = await getTaxRateForAddress(service, address)
-	return Math.round(subtotalAfterDiscount * rate * 100) / 100
-}
-
 export class ShippingRateError extends Error {}
 
 export interface ShippingRateInput {
@@ -288,6 +269,11 @@ export interface FinalizeOrderParams {
 	userId: string | null
 	marketplace: 'US' | 'CA'
 	items: ResolvedItem[]
+	subtotal: number
+	discount: number
+	tax: number
+	taxBreakdown: TaxBreakdownLine[] | null
+	taxCalculationId: string | null
 	total: number
 	shippingAddress: ShippingAddressInput
 	shipping: PricedShipping
@@ -300,9 +286,19 @@ export interface FinalizeOrderParams {
 /**
  * Writes the paid order: address, order, items, stock decrements, cart purge.
  * On failure the incident is flagged to admin_logs (payment already captured).
+ *
+ * Idempotent by reference: the PayPal webhook backstop and the client-driven
+ * capture route can both attempt to finalize the same payment (e.g. the
+ * browser tab closes after PayPal confirms the capture but before the
+ * capture route's response comes back — the webhook fires independently).
+ * Whichever runs second is a no-op rather than a duplicate order.
  */
 export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ orderId: string }> {
 	const service = createServiceClient()
+
+	const { data: existingOrder } = await service.from('orders').select('id').eq('reference', params.reference).maybeSingle()
+	if (existingOrder) return { orderId: existingOrder.id }
+
 	try {
 		let shippingAddressId: string | null = null
 		if (params.userId) {
@@ -347,6 +343,11 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 				billing_address_id: shippingAddressId,
 				status: 'paid',
 				payment_status: 'paid',
+				subtotal_amount: params.subtotal,
+				discount_amount: params.discount,
+				tax_amount: params.tax,
+				tax_breakdown: params.taxBreakdown,
+				stripe_tax_calculation_id: params.taxCalculationId,
 				total_amount: params.total,
 				shipping_carrier: params.shipping.carrier,
 				shipping_service_code: params.shipping.serviceCode,
@@ -417,27 +418,36 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 			if (cart) await service.from('cart_items').delete().eq('cart_id', cart.id)
 		}
 
-		// Reconstruct the price breakdown for the receipt emails. The exact
-		// promo-code discount amount isn't available this far downstream, but
-		// it's fully derivable: tax was applied to (subtotal - discount), so
-		// working backwards from the known charged total recovers both.
-		// Shipping is untaxed (like gift fees), so both are excluded from the
-		// taxed base the same way.
-		const subtotal = params.items.reduce((sum, i) => sum + i.unitPrice * i.quantity, 0)
+		// Records the Tax Transaction with Stripe for filing/reporting purposes.
+		// Best-effort: the order is already paid and written, so a failure here
+		// (e.g. a transient Stripe error) must never undo or block it.
+		if (params.taxCalculationId) {
+			try {
+				const transactionId = await recordTaxTransaction(params.taxCalculationId, params.reference)
+				await service.from('orders').update({ stripe_tax_transaction_id: transactionId }).eq('id', order.id)
+			} catch (err) {
+				await service
+					.from('admin_logs')
+					.insert({
+						level: 'warning',
+						source: params.paymentProvider,
+						message: `Failed to record Stripe tax transaction for order ${params.reference}`,
+						payload: { reference: params.reference, error: err instanceof Error ? err.message : String(err) },
+					})
+					.then(undefined, () => undefined)
+			}
+		}
+
 		const extras = giftFees(params.gift) + params.shipping.cost
-		const rate = await getTaxRateForAddress(service, params.shippingAddress)
-		const discountedSubtotal = Math.round(((params.total - extras) / (1 + rate)) * 100) / 100
-		const discount = Math.max(0, Math.round((subtotal - discountedSubtotal) * 100) / 100)
-		const tax = Math.max(0, Math.round((params.total - extras - discountedSubtotal) * 100) / 100)
 
 		if (params.customerEmail) {
 			await sendOrderConfirmationEmail({
 				to: params.customerEmail,
 				reference: params.reference,
 				items: params.items.map((i) => ({ name: i.name, quantity: i.quantity, unitPrice: i.unitPrice })),
-				subtotal,
-				discount,
-				tax,
+				subtotal: params.subtotal,
+				discount: params.discount,
+				tax: params.tax,
 				extras,
 				total: params.total,
 				marketplace: params.marketplace,
@@ -446,9 +456,9 @@ export async function finalizePaidOrder(params: FinalizeOrderParams): Promise<{ 
 		}
 		await sendNewOrderAdminAlert({
 			reference: params.reference,
-			subtotal,
-			discount,
-			tax,
+			subtotal: params.subtotal,
+			discount: params.discount,
+			tax: params.tax,
 			extras,
 			total: params.total,
 			marketplace: params.marketplace,

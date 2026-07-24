@@ -72,17 +72,15 @@ export const CA_PROVINCE_TAX: TaxRegion[] = [
 	{ code: 'YT', name: 'Yukon', rate: 0.05 },
 ]
 
-export interface TaxRateLookup {
-	country_code: string
-	tax_rate: number
-	is_active: boolean
-}
-
-/** Looks up the admin-configured flat tax rate for a country (0 if unset/inactive). */
-export function taxRateForCountry(rates: TaxRateLookup[], countryCode: string): number {
-	const normalized = (countryCode || '').trim().toUpperCase()
-	const match = rates.find((r) => r.is_active && r.country_code.toUpperCase() === normalized)
-	return match?.tax_rate ?? 0
+/**
+ * Country-level average of a region tax table — used only for the cart
+ * page's pre-checkout estimate, before a shipping state/province is known.
+ * The real, authoritative tax is always computed server-side by Stripe Tax
+ * at checkout (see lib/stripe-tax.ts); this is a cosmetic preview only.
+ */
+export function averageRate(regions: TaxRegion[]): number {
+	if (regions.length === 0) return 0
+	return regions.reduce((sum, r) => sum + r.rate, 0) / regions.length
 }
 
 export function isValidPostalCode(country: string, value: string): boolean {

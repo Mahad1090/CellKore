@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase-server'
 import { authorizeSellRequestCustomer } from '@/lib/sell-request-auth'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
+import { stripeSecretKey } from '@/lib/payments-env'
 
 // Customer-facing: pays the total (repair charges + chosen shipping-back
 // option) for an accepted repair quote. Starts a Stripe Checkout session
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 	try {
 		if (provider === 'stripe') {
-			const stripeSecret = process.env.STRIPE_SECRET_KEY
+			const stripeSecret = stripeSecretKey()
 			if (!stripeSecret) return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 })
 			const stripe = new Stripe(stripeSecret)
 			const origin =

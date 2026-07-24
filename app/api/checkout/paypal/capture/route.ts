@@ -9,6 +9,7 @@ import {
 	type PricedShipping,
 } from '@/lib/checkout-server'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
+import type { TaxBreakdownLine } from '@/lib/stripe-tax'
 
 export async function POST(request: NextRequest) {
 	try {
@@ -24,6 +25,11 @@ export async function POST(request: NextRequest) {
 			gift: GiftOptions | null
 			marketplace: 'US' | 'CA'
 			userId: string | null
+			subtotal: number
+			discount: number
+			tax: number
+			taxBreakdown: TaxBreakdownLine[] | null
+			taxCalculationId: string | null
 		}
 		const orderReference: string = body.orderReference
 
@@ -72,6 +78,11 @@ export async function POST(request: NextRequest) {
 				widthCm: null,
 				heightCm: null,
 			})),
+			subtotal: checkout.subtotal,
+			discount: checkout.discount,
+			tax: checkout.tax,
+			taxBreakdown: checkout.taxBreakdown,
+			taxCalculationId: checkout.taxCalculationId,
 			total: capturedTotal,
 			shippingAddress: checkout.shippingAddress,
 			shipping: checkout.shipping,
@@ -79,6 +90,11 @@ export async function POST(request: NextRequest) {
 			paymentProvider: 'paypal-capture',
 			customerEmail: capture.payer?.email_address ?? null,
 		})
+
+		// No longer needed — either this call just finalized it, or the
+		// webhook backstop already beat us to it (finalizePaidOrder is
+		// idempotent by reference either way).
+		await service.from('paypal_pending_checkouts').delete().eq('paypal_order_id', paypalOrderId).then(undefined, () => undefined)
 
 		return NextResponse.json({ success: true, orderId, orderReference })
 	} catch (err) {

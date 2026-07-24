@@ -187,14 +187,6 @@ export interface WholesalePriceTier {
 	price_per_unit: number
 }
 
-export interface TaxRate {
-	id: string
-	country_code: string
-	country_name: string
-	tax_rate: number
-	is_active: boolean
-}
-
 export interface CmsPage {
 	id: string
 	slug: string

@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase-server'
 import { authorizeSellRequestCustomer } from '@/lib/sell-request-auth'
 import { paypalApiBase, paypalAccessToken } from '@/lib/paypal-server'
+import { stripeSecretKey } from '@/lib/payments-env'
 import { getShippingRates } from '@/lib/shipping/aggregator'
 import { computePackageForItems } from '@/lib/shipping/package'
 import type { ShippingCarrier } from '@/lib/types'
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 	try {
 		if (provider === 'stripe') {
-			const stripeSecret = process.env.STRIPE_SECRET_KEY
+			const stripeSecret = stripeSecretKey()
 			if (!stripeSecret) return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 })
 			const stripe = new Stripe(stripeSecret)
 			const origin =

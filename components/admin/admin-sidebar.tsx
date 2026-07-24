@@ -44,7 +44,7 @@ const navGroups: NavGroup[] = [
 	{
 		title: 'STORE & SETTINGS',
 		items: [
-			{ label: 'Tax Rates', href: '/admin/tax-rates', icon: Receipt },
+			{ label: 'Tax', href: '/admin/tax', icon: Receipt },
 			{ label: 'Store Links', href: '/admin/social-links', icon: Globe },
 			{ label: 'Addresses', href: '/admin/repair-settings', icon: MapPin },
 			{ label: 'CMS Content', href: '/admin/content', icon: FileText },

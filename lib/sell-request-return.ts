@@ -8,12 +8,17 @@ import { getShipFromAddress } from '@/lib/shipping/ship-from'
 /**
  * Marks a return shipment as paid and attempts real label generation via
  * the carrier + service the customer selected at payment time. Called
- * from both the Stripe webhook and the PayPal capture route once payment
- * is confirmed, so the two payment paths stay in sync. The device is
- * already physically at CellKore's warehouse by this point, so — unlike
- * the repair flow's outbound leg — label generation is attempted
- * immediately rather than waiting for a separate admin action; admin can
- * still retry or enter a label manually if this fails.
+ * from the Stripe webhook, the PayPal capture route, and the PayPal
+ * webhook backstop once payment is confirmed, so all payment paths stay
+ * in sync. The device is already physically at CellKore's warehouse by
+ * this point, so — unlike the repair flow's outbound leg — label
+ * generation is attempted immediately rather than waiting for a separate
+ * admin action; admin can still retry or enter a label manually if this
+ * fails.
+ *
+ * Idempotent: the PayPal capture route and the PayPal webhook backstop can
+ * both fire for the same payment, and this isn't safe to run twice (it
+ * would attempt a second, duplicate label purchase from the carrier).
  */
 export async function markReturnShipmentPaid(
 	service: SupabaseClient,
@@ -23,9 +28,12 @@ export async function markReturnShipmentPaid(
 ): Promise<void> {
 	const { data: shipment } = await service
 		.from('sell_phone_return_shipments')
-		.select('address_line1, address_line2, city, state_province, postal_code, country, phone, carrier, service_code')
+		.select(
+			'address_line1, address_line2, city, state_province, postal_code, country, phone, carrier, service_code, paid_at'
+		)
 		.eq('request_id', requestId)
 		.maybeSingle()
+	if (shipment?.paid_at) return
 
 	await service
 		.from('sell_phone_return_shipments')

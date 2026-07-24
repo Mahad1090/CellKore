@@ -75,6 +75,43 @@ export async function getShippingRates(pkg: PackageInput, destination: RateDesti
 	return { rates, errors }
 }
 
+export interface CarrierRateResult {
+	rates: NormalizedRate[]
+	error?: string
+}
+
+/**
+ * Single-carrier variants of getShippingRates(), for the checkout page's
+ * progressive rate display — called as two independent requests so UPS
+ * (consistently fast) can show up immediately while Canada Post (which has
+ * shown highly variable latency since its 2026 platform migration) is
+ * still loading, rather than the whole shipping-method list waiting on
+ * whichever carrier is slowest.
+ */
+export async function getUpsShippingRates(pkg: PackageInput, destination: RateDestination): Promise<CarrierRateResult> {
+	try {
+		const origin = await getShipFromAddress()
+		const rates = await getUpsRates(pkg, toShippingParty(origin), toShippingParty(destination))
+		return { rates }
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'UPS rates unavailable'
+		await logShippingError('ups', message)
+		return { rates: [], error: message }
+	}
+}
+
+export async function getCanadaPostShippingRates(pkg: PackageInput, destination: RateDestination): Promise<CarrierRateResult> {
+	try {
+		const origin = await getShipFromAddress()
+		const rates = await getCanadaPostRates(pkg, { postalCode: origin.postalCode }, toShippingParty(destination))
+		return { rates }
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Canada Post rates unavailable'
+		await logShippingError('canada_post', message)
+		return { rates: [], error: message }
+	}
+}
+
 async function logShippingError(source: 'canada_post' | 'ups', message: string): Promise<void> {
 	await createServiceClient()
 		.from('admin_logs')

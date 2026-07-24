@@ -15,9 +15,9 @@ import {
 	persistCartForUser,
 	type LocalCartItem,
 } from '@/lib/cart'
-import { fetchProductById, fetchTaxRates } from '@/lib/data'
-import { taxRateForCountry } from '@/lib/tax'
-import type { Product, TaxRate } from '@/lib/types'
+import { fetchProductById } from '@/lib/data'
+import { averageRate, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
+import type { Product } from '@/lib/types'
 import { primaryImage, isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
 
 interface HydratedItem extends LocalCartItem {
@@ -28,12 +28,7 @@ export default function CartPage() {
 	const { user, loading: authLoading } = useAuth()
 	const { marketplace } = useMarketplace()
 	const [items, setItems] = useState<HydratedItem[] | null>(null)
-	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
 	const [navigatingCheckout, setNavigatingCheckout] = useState(false)
-
-	useEffect(() => {
-		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
-	}, [])
 
 	useEffect(() => {
 		if (authLoading) return
@@ -89,8 +84,10 @@ export default function CartPage() {
 		() => (items ?? []).reduce((sum, item) => sum + unitPrice(item) * item.quantity, 0),
 		[items]
 	)
-	// Indicative tax estimate for the cart view; the exact amount is computed at checkout
-	const estimatedTaxRate = taxRateForCountry(taxRates, marketplace === 'CA' ? 'CA' : 'US')
+	// Indicative tax estimate for the cart view (country-level average — no
+	// shipping state/province is known yet at this stage); the exact amount
+	// is computed via Stripe Tax at checkout.
+	const estimatedTaxRate = averageRate(marketplace === 'CA' ? CA_PROVINCE_TAX : US_STATE_TAX)
 	const estimatedTax = subtotal * estimatedTaxRate
 
 	return (

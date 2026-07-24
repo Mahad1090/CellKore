@@ -18,7 +18,10 @@ export function PayPalButton({
 	onApprove: (orderId: string) => Promise<void>
 	onError?: (message: string) => void
 }) {
-	const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
+	const clientId =
+		process.env.NEXT_PUBLIC_PAYMENTS_ENV === 'live'
+			? process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID_LIVE
+			: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID_TEST
 	const containerRef = useRef<HTMLDivElement>(null)
 	const rendered = useRef(false)
 

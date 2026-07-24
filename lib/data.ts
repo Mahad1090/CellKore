@@ -9,7 +9,6 @@ import type {
 	ProductReview,
 	RepairSettings,
 	SocialLink,
-	TaxRate,
 	StoreTestimonial,
 	WholesalePriceTier,
 } from '@/lib/types'
@@ -167,15 +166,6 @@ export async function fetchWholesaleLots(marketplace?: Marketplace): Promise<Pro
 		)
 	}
 	return lots
-}
-
-export async function fetchTaxRates(): Promise<TaxRate[]> {
-	const { data, error } = await supabase
-		.from('tax_rates')
-		.select('*')
-		.eq('is_active', true)
-	if (error) throw error
-	return data ?? []
 }
 
 export async function fetchWholesaleTiers(productId: string): Promise<WholesalePriceTier[]> {

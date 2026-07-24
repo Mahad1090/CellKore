@@ -13,15 +13,61 @@ import { useAuth } from '@/contexts/auth-context'
 import { useMarketplace } from '@/contexts/marketplace-context'
 import { supabase } from '@/lib/supabase'
 import { loadCartItems, clearLocalCart, type LocalCartItem } from '@/lib/cart'
-import { fetchProductById, fetchTaxRates } from '@/lib/data'
-import { taxRateForCountry, isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
-import { primaryImage, type Product, type ProductVariant, type TaxRate } from '@/lib/types'
+import { fetchProductById } from '@/lib/data'
+import { isValidPostalCode, isValidPhone, US_STATE_TAX, CA_PROVINCE_TAX } from '@/lib/tax'
+import { primaryImage, type Product, type ProductVariant } from '@/lib/types'
 import type { NormalizedRate } from '@/lib/shipping/types'
 
 const DRAFT_KEY = 'cellkore_checkout_draft'
 const FINAL_SALE_NOTICE = 'Returns and Exchanges are not supported. All checkout items are final.'
 const GIFT_CARD_FEE = 5
 const GIFT_WRAP_FEE = 10
+
+interface CarrierRateState {
+	rates: NormalizedRate[]
+	loading: boolean
+	error?: string
+	requested: boolean
+}
+const EMPTY_CARRIER_STATE: CarrierRateState = { rates: [], loading: false, requested: false }
+
+/** Compact brand-colored wordmark badges shown next to each rate instead of a plain "UPS"/"Canada Post" text label. Drawn inline rather than sourced as external logo image files — no licensing/hotlinking concerns, nothing to break if a CDN goes down. */
+function UpsBadge() {
+	return (
+		<svg width="30" height="30" viewBox="0 0 30 30" aria-label="UPS" role="img" className="shrink-0">
+			<path
+				d="M15 1.2 L27.5 5.4 V16.8 C27.5 23.6 22.2 27.8 15 28.8 C7.8 27.8 2.5 23.6 2.5 16.8 V5.4 Z"
+				fill="#351C15"
+				stroke="#FFB500"
+				strokeWidth="0.75"
+			/>
+			<text x="15" y="19.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="900" fontSize="10.5" fill="#FFB500">
+				UPS
+			</text>
+		</svg>
+	)
+}
+
+function CanadaPostBadge() {
+	return (
+		<svg width="72" height="20" viewBox="0 0 72 20" aria-label="Canada Post" role="img" className="shrink-0">
+			<rect width="72" height="20" rx="3" fill="#E31837" />
+			<text x="36" y="13.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="8" letterSpacing="0.3" fill="#fff">
+				CANADA POST
+			</text>
+		</svg>
+	)
+}
+
+/** Skeleton row shown for a carrier whose rates haven't arrived yet — UPS and Canada Post are fetched independently so one carrier's latency never delays the other's rates from appearing. */
+function ShippingRateLoadingRow({ label }: { label: string }) {
+	return (
+		<div className="flex items-center gap-3 px-4 py-3 border border-dashed border-[#CFD6D0] rounded-2xl">
+			<Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />
+			<p className="text-xs font-medium text-muted-foreground">Fetching {label} rates…</p>
+		</div>
+	)
+}
 
 interface CheckoutForm {
 	firstName: string
@@ -86,12 +132,9 @@ export default function CheckoutPage() {
 	const [placing, setPlacing] = useState(false)
 	const [promo, setPromo] = useState<{ code: string; discountAmount: number } | null>(null)
 	const [checkingPromo, setCheckingPromo] = useState(false)
-	const [taxRates, setTaxRates] = useState<TaxRate[]>([])
-	const [shippingRates, setShippingRates] = useState<NormalizedRate[]>([])
+	const [upsRateState, setUpsRateState] = useState<CarrierRateState>(EMPTY_CARRIER_STATE)
+	const [canadaPostRateState, setCanadaPostRateState] = useState<CarrierRateState>(EMPTY_CARRIER_STATE)
 	const [selectedShippingRate, setSelectedShippingRate] = useState<NormalizedRate | null>(null)
-	const [loadingRates, setLoadingRates] = useState(false)
-	const [shippingRateErrors, setShippingRateErrors] = useState<Record<string, string>>({})
-	const [ratesRequested, setRatesRequested] = useState(false)
 	const prefillStage = useRef(0)
 	const paypalRendered = useRef(false)
 	const paypalRef = useRef<HTMLDivElement>(null)
@@ -177,11 +220,6 @@ export default function CheckoutPage() {
 		return () => clearTimeout(timer)
 	}, [form])
 
-	// ---- Load active tax rates ----
-	useEffect(() => {
-		fetchTaxRates().then(setTaxRates).catch(() => setTaxRates([]))
-	}, [])
-
 	// ---- Load cart in parallel ----
 	useEffect(() => {
 		if (authLoading) return
@@ -208,6 +246,10 @@ export default function CheckoutPage() {
 	}, [user, authLoading])
 
 	// ---- Live shipping rate quoting (Canada Post + UPS), re-triggered on address changes ----
+	// The two carriers are fetched as independent requests (not one combined
+	// call) so UPS — consistently fast — can show up immediately while
+	// Canada Post, whose new platform has shown highly variable latency,
+	// pops in whenever it's ready instead of holding up the whole list.
 	useEffect(() => {
 		if (!items || items.length === 0) return
 		const addressReady =
@@ -218,55 +260,76 @@ export default function CheckoutPage() {
 			isValidPostalCode(form.country, form.postalCode)
 		if (!addressReady) return
 
-		const timer = setTimeout(async () => {
-			setLoadingRates(true)
-			try {
-				const res = await fetch('/api/checkout/shipping-rates', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						cartItems: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
-						shippingAddress: {
-							fullName: `${form.firstName} ${form.lastName}`.trim(),
-							phone: form.phone,
-							line1: form.line1,
-							line2: form.line2 || undefined,
-							city: form.city,
-							stateProvince: form.stateProvince,
-							postalCode: form.postalCode,
-							country: form.country,
-						},
-					}),
-				})
-				const json = await res.json()
-				if (!res.ok) {
-					setShippingRates([])
-					setSelectedShippingRate(null)
-					setShippingRateErrors({ general: json.error ?? 'Unable to fetch shipping rates' })
-					return
-				}
-				const rates: NormalizedRate[] = json.rates ?? []
-				setShippingRates(rates)
-				setShippingRateErrors(json.errors ?? {})
-				setSelectedShippingRate((current) => {
-					if (current) {
-						const stillAvailable = rates.find((r) => r.carrier === current.carrier && r.serviceCode === current.serviceCode)
-						if (stillAvailable) return stillAvailable
-					}
-					return rates[0] ?? null
-				})
-			} catch {
-				setShippingRates([])
-				setSelectedShippingRate(null)
-				setShippingRateErrors({ general: 'Unable to fetch shipping rates' })
-			} finally {
-				setLoadingRates(false)
-				setRatesRequested(true)
+		let active = true
+
+		const timer = setTimeout(() => {
+			setSelectedShippingRate(null)
+			setUpsRateState({ rates: [], loading: true, requested: true })
+			setCanadaPostRateState({ rates: [], loading: true, requested: true })
+
+			const payload = {
+				cartItems: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+				shippingAddress: {
+					fullName: `${form.firstName} ${form.lastName}`.trim(),
+					phone: form.phone,
+					line1: form.line1,
+					line2: form.line2 || undefined,
+					city: form.city,
+					stateProvince: form.stateProvince,
+					postalCode: form.postalCode,
+					country: form.country,
+				},
 			}
+
+			const fetchCarrier = async (path: string, setState: (state: CarrierRateState) => void) => {
+				try {
+					const res = await fetch(path, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload),
+					})
+					const json = await res.json()
+					if (!active) return
+					if (!res.ok) {
+						setState({ rates: [], loading: false, requested: true, error: json.error ?? 'Unable to fetch shipping rates' })
+						return
+					}
+					setState({ rates: json.rates ?? [], loading: false, requested: true, error: json.error })
+				} catch {
+					if (!active) return
+					setState({ rates: [], loading: false, requested: true, error: 'Unable to fetch shipping rates' })
+				}
+			}
+
+			fetchCarrier('/api/checkout/shipping-rates/ups', setUpsRateState)
+			fetchCarrier('/api/checkout/shipping-rates/canada-post', setCanadaPostRateState)
 		}, 500)
-		return () => clearTimeout(timer)
+
+		return () => {
+			active = false
+			clearTimeout(timer)
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [items, form.line1, form.line2, form.city, form.stateProvince, form.postalCode, form.country, form.phone, form.firstName, form.lastName])
+
+	const shippingRates = useMemo(
+		() => [...upsRateState.rates, ...canadaPostRateState.rates].sort((a, b) => a.cost - b.cost),
+		[upsRateState.rates, canadaPostRateState.rates]
+	)
+
+	// Auto-picks the cheapest rate available so far as carriers resolve, but
+	// never yanks the selection away once something is chosen — if Canada
+	// Post lands later with a cheaper option, the customer can switch
+	// manually rather than having their radio selection jump on them.
+	useEffect(() => {
+		setSelectedShippingRate((current) => {
+			if (current) {
+				const stillAvailable = shippingRates.find((r) => r.carrier === current.carrier && r.serviceCode === current.serviceCode)
+				if (stillAvailable) return stillAvailable
+			}
+			return shippingRates[0] ?? null
+		})
+	}, [shippingRates])
 
 	const set = <K extends keyof CheckoutForm>(field: K, value: CheckoutForm[K]) =>
 		setForm((f) => ({ ...f, [field]: value }))
@@ -281,7 +344,10 @@ export default function CheckoutPage() {
 		[items]
 	)
 	const discount = promo?.discountAmount ?? 0
-	const taxRate = taxRateForCountry(taxRates, form.country)
+	const regions = form.country === 'CA' ? CA_PROVINCE_TAX : form.country === 'US' ? US_STATE_TAX : []
+	// Indicative preview only — the real tax is computed via Stripe Tax when
+	// the checkout session/order is created, server-side.
+	const taxRate = regions.find((r) => r.code === form.stateProvince)?.rate ?? 0
 	const tax = Math.max(0, (subtotal - discount) * taxRate)
 	const giftFees = form.isGift ? (form.giftCard ? GIFT_CARD_FEE : 0) + (form.giftWrapping ? GIFT_WRAP_FEE : 0) : 0
 	const shippingCost = selectedShippingRate?.cost ?? 0
@@ -401,7 +467,10 @@ export default function CheckoutPage() {
 	}
 
 	// ---- PayPal smart buttons ----
-	const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
+	const paypalClientId =
+		process.env.NEXT_PUBLIC_PAYMENTS_ENV === 'live'
+			? process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID_LIVE
+			: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID_TEST
 	useEffect(() => {
 		if (!paypalClientId || !items || items.length === 0 || paypalRendered.current) return
 		const renderButtons = () => {
@@ -469,8 +538,6 @@ export default function CheckoutPage() {
 
 	const inputClass =
 		'w-full px-4 py-3.5 border border-[#CFD6D0] rounded-2xl bg-white text-sm font-semibold text-[#0f172a] placeholder:text-muted-foreground/70 placeholder:font-normal focus:outline-none focus:border-[#599161] focus:ring-2 focus:ring-[#599161]/25 shadow-2xs transition-all'
-
-	const regions = form.country === 'CA' ? CA_PROVINCE_TAX : form.country === 'US' ? US_STATE_TAX : []
 
 	return (
 		<main className="min-h-screen bg-[#F6F8F6]">
@@ -568,70 +635,6 @@ export default function CheckoutPage() {
 								</div>
 							</div>
 
-							{/* Shipping method */}
-							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
-								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
-									<Truck className="w-4.5 h-4.5 text-[#599161]" />
-									Shipping Method
-								</h2>
-
-								{!ratesRequested && !loadingRates ? (
-									<p className="text-xs text-muted-foreground font-medium">Enter your full shipping address and phone number to see live rates.</p>
-								) : loadingRates ? (
-									<div className="flex items-center gap-2 text-xs text-muted-foreground font-medium py-3">
-										<Loader2 className="w-3.5 h-3.5 animate-spin" />
-										Fetching live rates from Canada Post &amp; UPS...
-									</div>
-								) : shippingRates.length === 0 ? (
-									<div className="p-4 bg-[#F8FAF8] border border-[#E0E6E1] rounded-2xl text-xs text-[#0f172a]/70 font-medium">
-										{shippingRateErrors.canada_post || shippingRateErrors.ups || shippingRateErrors.general
-											? `Unable to fetch shipping rates: ${shippingRateErrors.canada_post ?? shippingRateErrors.ups ?? shippingRateErrors.general}`
-											: 'No shipping rates are available for this address yet.'}
-									</div>
-								) : (
-									<div className="space-y-2.5">
-										{(shippingRateErrors.canada_post || shippingRateErrors.ups) && (
-											<div className="p-3 bg-[#F8FAF8] border border-[#E0E6E1] rounded-xl text-[11px] text-[#0f172a]/70 font-medium">
-												{shippingRateErrors.canada_post && `Canada Post rates unavailable — showing other carriers only. `}
-												{shippingRateErrors.ups && `UPS rates unavailable — showing other carriers only.`}
-											</div>
-										)}
-										{shippingRates.map((rate) => (
-											<label
-												key={`${rate.carrier}-${rate.serviceCode}`}
-												className={`flex items-center justify-between gap-3 px-4 py-3 border rounded-2xl cursor-pointer transition-all ${
-													selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
-														? 'border-[#599161] bg-[#599161]/5'
-														: 'border-[#CFD6D0] hover:border-[#599161]/50'
-												}`}
-											>
-												<div className="flex items-center gap-3">
-													<input
-														type="radio"
-														name="shippingRate"
-														checked={
-															selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
-														}
-														onChange={() => setSelectedShippingRate(rate)}
-														className="w-4 h-4 accent-[#599161] cursor-pointer"
-													/>
-													<div>
-														<p className="text-xs font-bold text-[#0f172a]">{rate.serviceName}</p>
-														<p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-															{rate.carrier === 'canada_post' ? 'Canada Post' : 'UPS'}
-															{rate.transitDays ? ` · ${rate.transitDays} business day${rate.transitDays === 1 ? '' : 's'}` : ''}
-														</p>
-													</div>
-												</div>
-												<span className="text-xs font-black text-[#0f172a] shrink-0">
-													${rate.cost.toFixed(2)} {rate.currency}
-												</span>
-											</label>
-										))}
-									</div>
-								)}
-							</div>
-
 							{/* Gift options */}
 							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
 								<label className="flex items-center gap-3 cursor-pointer">
@@ -683,7 +686,78 @@ export default function CheckoutPage() {
 						</div>
 
 						{/* Summary + payment */}
-						<div className="lg:col-span-2">
+						<div className="lg:col-span-2 space-y-8">
+							{/* Shipping method */}
+							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-xs">
+								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
+									<Truck className="w-4.5 h-4.5 text-[#599161]" />
+									Shipping Method
+								</h2>
+
+								{!upsRateState.requested && !canadaPostRateState.requested ? (
+									<p className="text-xs text-muted-foreground font-medium">Enter your full shipping address and phone number to see live rates.</p>
+								) : (
+									<div className="space-y-2.5">
+										{upsRateState.error && (
+											<div className="p-3 bg-[#F8FAF8] border border-[#E0E6E1] rounded-xl text-[11px] text-[#0f172a]/70 font-medium">
+												UPS rates unavailable — showing other carriers only.
+											</div>
+										)}
+										{canadaPostRateState.error && (
+											<div className="p-3 bg-[#F8FAF8] border border-[#E0E6E1] rounded-xl text-[11px] text-[#0f172a]/70 font-medium">
+												Canada Post rates unavailable — showing other carriers only.
+											</div>
+										)}
+
+										{shippingRates.map((rate) => (
+											<label
+												key={`${rate.carrier}-${rate.serviceCode}`}
+												className={`flex items-center justify-between gap-3 px-4 py-3 border rounded-2xl cursor-pointer transition-all ${
+													selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
+														? 'border-[#599161] bg-[#599161]/5'
+														: 'border-[#CFD6D0] hover:border-[#599161]/50'
+												}`}
+											>
+												<div className="flex items-center gap-3">
+													<input
+														type="radio"
+														name="shippingRate"
+														checked={
+															selectedShippingRate?.carrier === rate.carrier && selectedShippingRate?.serviceCode === rate.serviceCode
+														}
+														onChange={() => setSelectedShippingRate(rate)}
+														className="w-4 h-4 accent-[#599161] cursor-pointer"
+													/>
+													<div className="flex items-center gap-2.5">
+														{rate.carrier === 'canada_post' ? <CanadaPostBadge /> : <UpsBadge />}
+														<div>
+															<p className="text-xs font-bold text-[#0f172a]">{rate.serviceName}</p>
+															{rate.transitDays && (
+																<p className="text-[10px] text-muted-foreground font-medium">
+																	{rate.transitDays} business day{rate.transitDays === 1 ? '' : 's'}
+																</p>
+															)}
+														</div>
+													</div>
+												</div>
+												<span className="text-xs font-black text-[#0f172a] shrink-0">
+													${rate.cost.toFixed(2)} {rate.currency}
+												</span>
+											</label>
+										))}
+
+										{upsRateState.loading && <ShippingRateLoadingRow label="UPS" />}
+										{canadaPostRateState.loading && <ShippingRateLoadingRow label="Canada Post" />}
+
+										{!upsRateState.loading && !canadaPostRateState.loading && shippingRates.length === 0 && (
+											<div className="p-4 bg-[#F8FAF8] border border-[#E0E6E1] rounded-2xl text-xs text-[#0f172a]/70 font-medium">
+												No shipping rates are available for this address yet.
+											</div>
+										)}
+									</div>
+								)}
+							</div>
+
 							<div className="bg-white border border-[#DDE4DE] rounded-3xl p-6 sm:p-8 shadow-sm">
 								<h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#0f172a] mb-6 flex items-center gap-2 border-b border-[#E0E6E1] pb-3.5">
 									<ShoppingBag className="w-4.5 h-4.5 text-[#599161]" />

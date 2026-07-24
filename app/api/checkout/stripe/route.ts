@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase-server'
+import { stripeSecretKey } from '@/lib/payments-env'
+import { calculateOrderTax } from '@/lib/stripe-tax'
 import {
 	resolveAndValidateItems,
 	applyPromotion,
-	computeTax,
 	giftFees,
 	generateOrderReference,
 	validateAndPriceShipping,
@@ -17,7 +18,7 @@ import {
 } from '@/lib/checkout-server'
 
 export async function POST(request: NextRequest) {
-	const stripeSecret = process.env.STRIPE_SECRET_KEY
+	const stripeSecret = stripeSecretKey()
 	if (!stripeSecret) {
 		return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 })
 	}
@@ -52,9 +53,21 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ error: promo.message ?? 'Code invalid or expired' }, { status: 400 })
 		}
 		const discounted = subtotal - promo.discountAmount
-		const tax = await computeTax(service, discounted, shippingAddress)
-		const extras = giftFees(gift)
+		const currency = marketplace === 'CA' ? 'cad' : 'usd'
 		const shipping = await validateAndPriceShipping(items, shippingAddress, shippingRate)
+		const taxResult = await calculateOrderTax({
+			items: items.map((i) => ({
+				reference: i.variantId ? `${i.productId}:${i.variantId}` : i.productId,
+				amount: i.unitPrice * i.quantity,
+				quantity: i.quantity,
+			})),
+			shippingAddress,
+			shippingCost: shipping.cost,
+			discountAmount: promo.discountAmount,
+			currency,
+		})
+		const tax = taxResult.taxAmount
+		const extras = giftFees(gift)
 		const total = Math.round((discounted + tax + extras + shipping.cost) * 100) / 100
 
 		const orderReference = generateOrderReference()
@@ -141,6 +154,11 @@ export async function POST(request: NextRequest) {
 				shipping_service_name: shipping.serviceName,
 				shipping_cost: String(shipping.cost),
 				shipping_currency: shipping.currency,
+				subtotal: String(subtotal),
+				discount: String(promo.discountAmount),
+				tax: String(tax),
+				tax_calculation_id: taxResult.calculationId,
+				tax_breakdown: JSON.stringify(taxResult.breakdown),
 				total: String(total),
 				gift: JSON.stringify(gift ?? { isGift: false }),
 				items: JSON.stringify(
