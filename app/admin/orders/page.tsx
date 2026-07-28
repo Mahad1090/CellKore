@@ -6,6 +6,7 @@ import { PageTitle, StatusBadge, EmptyState, adminInput } from '@/components/adm
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
 import { useAdmin } from '@/contexts/admin-context'
+import { PickupScheduleModal } from '@/components/admin/pickup-schedule-modal'
 
 const ORDER_STATUSES: string[] = ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']
 const PAYMENT_STATUSES: string[] = ['unpaid', 'paid', 'refunded', 'failed']
@@ -246,6 +247,7 @@ function OrderRow({
 	const [manualEntry, setManualEntry] = useState(false)
 	const [manualTracking, setManualTracking] = useState('')
 	const [manualLabelUrl, setManualLabelUrl] = useState('')
+	const [pickupModalOpen, setPickupModalOpen] = useState(false)
 
 	useEffect(() => {
 		const name = order.users?.full_name || order.gift_recipient_name || '—'
@@ -664,6 +666,16 @@ function OrderRow({
 										</button>
 									)}
 
+									{writable && order.shipping_label_status === 'generated' && (
+										<button
+											onClick={() => setPickupModalOpen(true)}
+											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E9ECEA] hover:bg-[#EEF7F0] text-xs font-bold uppercase tracking-wider text-[#111111] transition-all cursor-pointer shadow-3xs"
+										>
+											<Truck className="w-4 h-4 text-[#599161]" />
+											Schedule Pickup
+										</button>
+									)}
+
 									{writable && (
 										<div className="pt-2 border-t border-[#E9ECEA]">
 											<button
@@ -705,6 +717,15 @@ function OrderRow({
 					</td>
 				</tr>
 			)}
+
+			<PickupScheduleModal
+				open={pickupModalOpen}
+				onClose={() => setPickupModalOpen(false)}
+				orderId={order.id}
+				orderReference={order.reference}
+				defaultCarrier={order.shipping_carrier}
+				onScheduled={onReload}
+			/>
 		</>
 	)
 }

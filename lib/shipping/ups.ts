@@ -44,7 +44,9 @@ const UPS_SERVICE_NAMES: Record<string, string> = {
 
 let cachedToken: { token: string; expiresAt: number } | null = null
 
-async function upsToken(): Promise<string> {
+// Exported so lib/shipping/ups-pickup.ts (Pickup API, same app credentials)
+// reuses the same cached OAuth token instead of authenticating separately.
+export async function upsToken(): Promise<string> {
 	if (cachedToken && cachedToken.expiresAt > Date.now() + 5000) return cachedToken.token
 
 	const { clientId, clientSecret } = upsCredentials()

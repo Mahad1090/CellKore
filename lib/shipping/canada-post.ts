@@ -20,7 +20,10 @@ import type { NormalizedRate, PackageInput, ShipmentRequest, ShipmentResult, Shi
 // account's Canada Post profile) — CellKore has no negotiated shipping
 // contract, so the Account/contractId payment path doesn't apply.
 
-const API_ROOT = 'https://api.canadapost-postescanada.ca/prod/devportal-portaildesdeveloppeurs'
+// Exported so lib/shipping/canada-post-pickup.ts (Pickup API, same host/auth,
+// different path prefix) reuses the same OAuth token cache/retry logic
+// instead of duplicating it.
+export const API_ROOT = 'https://api.canadapost-postescanada.ca/prod/devportal-portaildesdeveloppeurs'
 const TOKEN_URL = `${API_ROOT}/cpc-api-native-oauth-provider/oauth2/token`
 
 // Canada Post's new platform has shown highly variable latency (sub-second
@@ -50,7 +53,7 @@ const tokenCache = new Map<string, CachedToken>()
 // in those cases instead of surfacing "unavailable" for a blip. This never
 // fabricates data — if the retry also times out, the caller still gets a
 // real error and the checkout page still shows "Canada Post unavailable".
-async function fetchWithTimeoutRetry(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+export async function fetchWithTimeoutRetry(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
 	try {
 		return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) })
 	} catch (err) {
@@ -61,7 +64,7 @@ async function fetchWithTimeoutRetry(url: string, init: RequestInit, timeoutMs: 
 	}
 }
 
-async function getAccessToken(mode: 'test' | 'live'): Promise<string> {
+export async function getAccessToken(mode: 'test' | 'live'): Promise<string> {
 	const cached = tokenCache.get(mode)
 	if (cached && cached.expiresAt > Date.now()) return cached.accessToken
 

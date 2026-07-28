@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
 	LayoutDashboard, Package, Tag, MapPin, Boxes, Layers, ListChecks, Phone, Smartphone, Settings, FileText,
-	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, Globe, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen, Megaphone
+	Users, BarChart3, ShoppingBag, Shield, MailPlus, Wrench, Receipt, Globe, ArrowUpRight, ChevronLeft, ChevronRight, X, Inbox, BookOpen, Megaphone, Truck
 } from 'lucide-react'
 import { useAdmin } from '@/contexts/admin-context'
 import type { AdminPermission } from '@/lib/admin/rbac'
@@ -21,6 +21,7 @@ const navGroups: NavGroup[] = [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 			{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
+			{ label: 'Pickups', href: '/admin/pickups', icon: Truck, permission: 'orders:read' },
 			{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },
 			{ label: 'Analytics', href: '/admin/analytics', icon: BarChart3, permission: 'analytics:read' },
 		],
