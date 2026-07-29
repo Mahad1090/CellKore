@@ -27,6 +27,18 @@ function pickupHeaders(accessToken: string): Record<string, string> {
 	}
 }
 
+// Read-only lookups (availability/price/list/details) back UI buttons an
+// admin is actively waiting on — a single bounded attempt that fails fast
+// beats fetchWithTimeoutRetry's timeout-then-retry (up to ~16s: two 8s
+// attempts back to back), which routinely blew past the platform's own
+// gateway timeout and surfaced as a slow 502 instead of a quick, clear
+// error. Booking actions (create/modify/cancel) keep the retry — those are
+// deliberate, infrequent actions where a successful booking matters more
+// than instant feedback.
+async function fetchOnce(url: string, init: RequestInit, timeoutMs: number): Promise<Response> {
+	return fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) })
+}
+
 // Canada Post's Contact schema requires phone in strict 999-999-9999 form;
 // CellKore's ship-from phone is free text, so normalize rather than fail.
 function formatPhoneForCanadaPost(phone: string): string {
@@ -36,8 +48,17 @@ function formatPhoneForCanadaPost(phone: string): string {
 }
 
 export interface CanadaPostPickupInput {
+	// true = pickup at the address on file in CellKore's Canada Post profile
+	// (no address sent); false = alternate/third-party address (origin,
+	// always our ship-from warehouse, is sent explicitly). Not present on
+	// modify — Canada Post doesn't allow changing the address after creation.
+	businessAddressFlag?: boolean
 	origin: ShippingParty
+	contactName?: string // defaults to origin.name
+	phone?: string // defaults to origin.phone
+	telephoneExt?: string
 	email: string
+	receiveEmailUpdatesFlag?: boolean
 	date: string // YYYY-MM-DD
 	preferredTime: string // HH:MM, between 12:00 and 16:00 in 15-min steps
 	closingTime: string // HH:MM, at least 1hr after preferredTime
@@ -45,6 +66,11 @@ export interface CanadaPostPickupInput {
 	pickupVolume: string
 	loadingDockFlag?: boolean
 	fiveTonFlag?: boolean
+	priorityFlag?: boolean
+	returnsFlag?: boolean
+	heavyItemFlag?: boolean
+	contractId?: string
+	methodOfPayment?: string // default 'CreditCard'
 }
 
 function alternateAddressBlock(origin: ShippingParty) {
@@ -59,11 +85,12 @@ function alternateAddressBlock(origin: ShippingParty) {
 
 function contactInfoBlock(input: CanadaPostPickupInput) {
 	return {
-		contactName: input.origin.name.slice(0, 35),
+		contactName: (input.contactName || input.origin.name).slice(0, 35),
 		email: input.email,
-		contactPhone: formatPhoneForCanadaPost(input.origin.phone),
+		contactPhone: formatPhoneForCanadaPost(input.phone || input.origin.phone),
+		...(input.telephoneExt ? { telephoneExt: input.telephoneExt.slice(0, 6) } : {}),
 		lang: 'e' as const,
-		receiveEmailUpdatesFlag: true,
+		receiveEmailUpdatesFlag: input.receiveEmailUpdatesFlag ?? false,
 	}
 }
 
@@ -75,16 +102,32 @@ function locationDetailsBlock(input: CanadaPostPickupInput) {
 	}
 }
 
+function itemCharacteristicsBlock(input: CanadaPostPickupInput) {
+	return {
+		priorityFlag: input.priorityFlag ?? false,
+		returnsFlag: input.returnsFlag ?? false,
+		heavyItemFlag: input.heavyItemFlag ?? false,
+	}
+}
+
+function paymentInfoBlock(input: CanadaPostPickupInput) {
+	return {
+		methodOfPayment: input.methodOfPayment || 'CreditCard',
+		...(input.contractId ? { contractId: input.contractId.slice(0, 10) } : {}),
+	}
+}
+
 export interface CanadaPostPickupCreateResult {
 	requestId: string
 	price?: { preTaxAmount?: string; gstAmount?: string; pstAmount?: string; hstAmount?: string; dueAmount?: string }
 	raw: unknown
 }
 
-/** "Create On-demand Pickup" — books a driver pickup at an alternate (ship-from) address, paid by credit card per Canada Post's rules for third-party pickups. */
+/** "Create On-demand Pickup" — books a driver pickup, either at the address on file or an alternate (ship-from) address. */
 export async function createCanadaPostPickup(input: CanadaPostPickupInput): Promise<CanadaPostPickupCreateResult> {
 	const { customerNumber } = canadaPostCredentials(MODE)
 	const accessToken = await getAccessToken(MODE)
+	const useBusinessAddress = input.businessAddressFlag ?? false
 
 	const res = await fetchWithTimeoutRetry(
 		`${PICKUP_API_ROOT}/${customerNumber}/pickup-request`,
@@ -93,14 +136,17 @@ export async function createCanadaPostPickup(input: CanadaPostPickupInput): Prom
 			headers: pickupHeaders(accessToken),
 			body: JSON.stringify({
 				pickupType: 'OnDemand',
-				pickupLocation: { businessAddressFlag: false, alternateAddress: alternateAddressBlock(input.origin) },
+				pickupLocation: useBusinessAddress
+					? { businessAddressFlag: true }
+					: { businessAddressFlag: false, alternateAddress: alternateAddressBlock(input.origin) },
 				contactInfo: contactInfoBlock(input),
 				locationDetails: locationDetailsBlock(input),
+				itemCharacteristics: itemCharacteristicsBlock(input),
 				pickupVolume: input.pickupVolume.slice(0, 40),
 				pickupTimes: {
 					onDemandPickupTime: { date: input.date, preferredTime: input.preferredTime, closingTime: input.closingTime },
 				},
-				paymentInfo: { methodOfPayment: 'CreditCard' },
+				paymentInfo: paymentInfoBlock(input),
 			}),
 		},
 		CREATE_TIMEOUT_MS
@@ -129,11 +175,12 @@ export async function modifyCanadaPostPickup(requestId: string, input: CanadaPos
 			body: JSON.stringify({
 				contactInfo: contactInfoBlock(input),
 				locationDetails: locationDetailsBlock(input),
+				itemCharacteristics: itemCharacteristicsBlock(input),
 				pickupVolume: input.pickupVolume.slice(0, 40),
 				pickupTimes: {
 					onDemandPickupTime: { date: input.date, preferredTime: input.preferredTime, closingTime: input.closingTime },
 				},
-				paymentInfo: { methodOfPayment: 'CreditCard' },
+				paymentInfo: paymentInfoBlock(input),
 			}),
 		},
 		CREATE_TIMEOUT_MS
@@ -173,7 +220,7 @@ export async function listCanadaPostPickups(): Promise<CanadaPostPickupSummary[]
 	const { customerNumber } = canadaPostCredentials(MODE)
 	const accessToken = await getAccessToken(MODE)
 
-	const res = await fetchWithTimeoutRetry(
+	const res = await fetchOnce(
 		`${PICKUP_API_ROOT}/${customerNumber}/pickup-request`,
 		{ method: 'GET', headers: pickupHeaders(accessToken) },
 		REQUEST_TIMEOUT_MS
@@ -203,7 +250,7 @@ export async function getCanadaPostPickupDetails(requestId: string): Promise<any
 	const { customerNumber } = canadaPostCredentials(MODE)
 	const accessToken = await getAccessToken(MODE)
 
-	const res = await fetchWithTimeoutRetry(
+	const res = await fetchOnce(
 		`${PICKUP_API_ROOT}/${customerNumber}/pickup-request/${requestId}/details`,
 		{ method: 'GET', headers: pickupHeaders(accessToken) },
 		REQUEST_TIMEOUT_MS
@@ -240,7 +287,7 @@ export async function getCanadaPostPickupPrice(params: CanadaPostPickupPricePara
 	if (params.priorityFlag !== undefined) query.set('priorityFlag', String(params.priorityFlag))
 	if (params.alternateAddressPostalCode) query.set('alternateAddressPostalCode', params.alternateAddressPostalCode.replace(/\s/g, ''))
 
-	const res = await fetchWithTimeoutRetry(
+	const res = await fetchOnce(
 		`${PICKUP_API_ROOT}/${customerNumber}/pickup-request/price?${query.toString()}`,
 		{ method: 'GET', headers: pickupHeaders(accessToken) },
 		REQUEST_TIMEOUT_MS
@@ -264,7 +311,7 @@ export async function getCanadaPostPickupAvailability(postalCode: string): Promi
 	const accessToken = await getAccessToken(MODE)
 	const normalized = postalCode.replace(/\s/g, '').toUpperCase()
 
-	const res = await fetchWithTimeoutRetry(
+	const res = await fetchOnce(
 		`${PICKUP_API_ROOT}/pickup-availability/${normalized}`,
 		{ method: 'GET', headers: pickupHeaders(accessToken) },
 		REQUEST_TIMEOUT_MS

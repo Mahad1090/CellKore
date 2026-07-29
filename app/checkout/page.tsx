@@ -301,8 +301,65 @@ export default function CheckoutPage() {
 				}
 			}
 
+			// Canada Post's platform has shown highly variable latency (see
+			// lib/shipping/canada-post.ts), so a single failed attempt here is
+			// often just a transient blip rather than a real outage — worth a
+			// few bounded retries with backoff before honestly telling the
+			// customer shipping is unavailable. Never invents a fallback rate:
+			// the only two outcomes are a real quote or an honest error.
+			const CANADA_POST_RETRY_DELAYS_MS = [2000, 4000, 8000, 15000]
+			const CANADA_POST_MAX_ATTEMPTS = 6 // ~1 minute of backoff before giving up
+
+			const fetchCanadaPostWithRetry = async () => {
+				let attempt = 0
+				while (active && attempt < CANADA_POST_MAX_ATTEMPTS) {
+					try {
+						const res = await fetch('/api/checkout/shipping-rates/canada-post', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(payload),
+						})
+						const json = await res.json()
+						if (!active) return
+
+						// A 400 means the input itself is invalid (bad address,
+						// out-of-stock item) — that's not a carrier problem, and
+						// waiting a minute to retry it won't make it valid.
+						if (res.status === 400) {
+							setCanadaPostRateState({ rates: [], loading: false, requested: true, error: json.error ?? 'Unable to fetch shipping rates' })
+							return
+						}
+						// A clean success — real rates (possibly zero, if Canada
+						// Post genuinely doesn't service that destination) with no
+						// error — is not retried, whether or not rates is empty.
+						if (res.ok && !json.error) {
+							setCanadaPostRateState({ rates: json.rates ?? [], loading: false, requested: true, error: undefined })
+							return
+						}
+						// Anything else (non-2xx, or a 200 carrying a carrier-side
+						// error) is treated as transient and retried.
+						throw new Error(json.error ?? 'Unable to fetch shipping rates')
+					} catch (err) {
+						if (!active) return
+						attempt++
+						if (attempt >= CANADA_POST_MAX_ATTEMPTS) {
+							setCanadaPostRateState({
+								rates: [],
+								loading: false,
+								requested: true,
+								error: err instanceof Error ? err.message : 'Canada Post is temporarily unavailable',
+							})
+							return
+						}
+						await new Promise((resolve) =>
+							setTimeout(resolve, CANADA_POST_RETRY_DELAYS_MS[Math.min(attempt - 1, CANADA_POST_RETRY_DELAYS_MS.length - 1)])
+						)
+					}
+				}
+			}
+
 			fetchCarrier('/api/checkout/shipping-rates/ups', setUpsRateState)
-			fetchCarrier('/api/checkout/shipping-rates/canada-post', setCanadaPostRateState)
+			fetchCanadaPostWithRetry()
 		}, 500)
 
 		return () => {

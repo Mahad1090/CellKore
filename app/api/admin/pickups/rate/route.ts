@@ -26,7 +26,12 @@ export async function POST(request: NextRequest) {
 			return NextResponse.json({ cost: result.cost, currency: result.currency })
 		}
 		if (carrier === 'canada_post') {
-			const price = await getCanadaPostPickupPrice({ date: pickupDate })
+			const price = await getCanadaPostPickupPrice({
+				date: pickupDate,
+				contractId: body.contract_id || undefined,
+				priorityFlag: body.priority_flag !== undefined ? Boolean(body.priority_flag) : undefined,
+				alternateAddressPostalCode: body.alternate_address_postal_code || undefined,
+			})
 			return NextResponse.json({ cost: Number(price.dueAmount), currency: 'CAD', breakdown: price })
 		}
 		return NextResponse.json({ error: 'carrier must be "ups" or "canada_post"' }, { status: 400 })

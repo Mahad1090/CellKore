@@ -1,3 +1,4 @@
+import { Agent } from 'undici'
 import { canadaPostCredentials } from '@/lib/shipping/env'
 import type { NormalizedRate, PackageInput, ShipmentRequest, ShipmentResult, ShippingParty } from '@/lib/shipping/types'
 
@@ -155,6 +156,81 @@ function pruneExpiredRateCacheEntries(): void {
 	}
 }
 
+// Explicit, generous connection pool for the rating call specifically
+// (previously an implicit bare `fetch()` relying on undici's default global
+// dispatcher). There's no documented Canada Post rate limit on concurrent
+// connections that would call for capping this lower, so 50 is a generous
+// default relative to CellKore's real concurrency rather than an arbitrary
+// low number that would itself become a bottleneck under load (a sale,
+// a promo, many checkouts quoting rates at once).
+const ratingPooledDispatcher = new Agent({ connections: 50, keepAliveTimeout: 10_000, keepAliveMaxTimeout: 30_000 })
+
+const RATE_PRIMARY_TIMEOUT_MS = 6000
+const RATE_HEDGE_TIMEOUT_MS = 10000
+// Above real fresh-connection latency (so a healthy primary isn't hedged
+// against needlessly) but well below the primary's own timeout (so a dead
+// pooled socket doesn't cost the full primary timeout before a fresh
+// attempt even starts).
+const RATE_HEDGE_DELAY_MS = 2500
+
+type FetchInit = RequestInit & { dispatcher?: Agent }
+type FetchOutcome = { ok: true; res: Response } | { ok: false; err: unknown }
+
+function toOutcome(p: Promise<Response>): Promise<FetchOutcome> {
+	return p.then(
+		(res): FetchOutcome => ({ ok: true, res }),
+		(err): FetchOutcome => ({ ok: false, err })
+	)
+}
+
+// Unlike axios, fetch() only rejects on a network failure/timeout — an
+// HTTP error status (4xx/5xx) still resolves the promise. So "a real
+// answer" here is simply "the fetch settled" rather than needing to
+// inspect the error/response shape the way an axios-based hedge would.
+function isRealAnswer(o: FetchOutcome): o is { ok: true; res: Response } {
+	return o.ok
+}
+
+function unwrap(o: FetchOutcome): Response {
+	if (o.ok) return o.res
+	throw o.err
+}
+
+/**
+ * Hedged retry for the Canada Post rating call only: races the primary
+ * attempt (pooled/keep-alive connection) against a "hedge" attempt fired on
+ * a guaranteed-fresh connection after a short delay, instead of waiting for
+ * the primary to fail before even starting a retry. A plain
+ * timeout-then-retry (see fetchWithTimeoutRetry above) costs the FULL
+ * primary timeout before a stuck/dead pooled socket ever gets replaced,
+ * even though a fresh-connection retry usually recovers in ~1-2s. A
+ * legitimately slow-but-alive primary is unaffected — it still gets its
+ * own full timeout budget via the race; only the dead-socket case gets
+ * short-circuited. Never fabricates a rate: if both attempts fail, the
+ * caller still gets a real error.
+ */
+async function fetchRatesHedged(url: string, init: FetchInit): Promise<Response> {
+	const primary = toOutcome(
+		fetch(url, { ...init, dispatcher: ratingPooledDispatcher, signal: AbortSignal.timeout(RATE_PRIMARY_TIMEOUT_MS) } as FetchInit)
+	)
+	const delayElapsed = new Promise<'delay'>((resolve) => setTimeout(() => resolve('delay'), RATE_HEDGE_DELAY_MS))
+
+	const first = await Promise.race([primary, delayElapsed])
+	if (first !== 'delay' && isRealAnswer(first)) return first.res
+
+	// Primary failed fast (dead pooled connection), or is slow enough to
+	// suspect one — race a fresh connection without waiting any further.
+	const hedge = toOutcome(
+		fetch(url, { ...init, dispatcher: new Agent({ connections: 1 }), signal: AbortSignal.timeout(RATE_HEDGE_TIMEOUT_MS) } as FetchInit)
+	)
+	const tagged = [primary.then((o) => ({ idx: 0 as const, o })), hedge.then((o) => ({ idx: 1 as const, o }))] as const
+	const winner = await Promise.race(tagged)
+	if (isRealAnswer(winner.o)) return winner.o.res
+
+	const other = await tagged[winner.idx === 0 ? 1 : 0]
+	return unwrap(other.o) // both failed — surface whichever error
+}
+
 export async function getCanadaPostRates(
 	pkg: PackageInput,
 	origin: { postalCode: string },
@@ -167,27 +243,23 @@ export async function getCanadaPostRates(
 	const { customerNumber } = canadaPostCredentials('live')
 	const accessToken = await getAccessToken('live')
 
-	const res = await fetchWithTimeoutRetry(
-		`${API_ROOT}/rating/v1/prices`,
-		{
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${accessToken}`,
-				'Content-Type': 'application/json',
-				Accept: 'application/json',
-			},
-			body: JSON.stringify({
-				customerNumber,
-				parcelCharacteristics: {
-					weight: pkg.weightKg,
-					dimensions: { length: pkg.lengthCm, width: pkg.widthCm, height: pkg.heightCm },
-				},
-				originPostalCode: origin.postalCode.replace(/\s/g, ''),
-				destination: destinationBlock(destination),
-			}),
+	const res = await fetchRatesHedged(`${API_ROOT}/rating/v1/prices`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${accessToken}`,
+			'Content-Type': 'application/json',
+			Accept: 'application/json',
 		},
-		REQUEST_TIMEOUT_MS
-	)
+		body: JSON.stringify({
+			customerNumber,
+			parcelCharacteristics: {
+				weight: pkg.weightKg,
+				dimensions: { length: pkg.lengthCm, width: pkg.widthCm, height: pkg.heightCm },
+			},
+			originPostalCode: origin.postalCode.replace(/\s/g, ''),
+			destination: destinationBlock(destination),
+		}),
+	})
 	if (!res.ok) {
 		const detail = await res.text().catch(() => '')
 		throw new Error(`Canada Post rating failed: ${res.status} ${detail}`.trim())

@@ -85,10 +85,13 @@ export async function POST(request: NextRequest) {
 					pickupDate: pickupDate.replace(/-/g, ''),
 					readyTime: String(body.ready_time ?? '09:00').replace(':', ''),
 					closeTime: String(body.close_time ?? '17:00').replace(':', ''),
+					contactName: body.contact_name || undefined,
+					phone: body.phone || undefined,
 					pieceCount,
 					totalWeightKg,
 					specialInstruction,
 					referenceNumber: orderReference,
+					paymentMethod: body.payment_method || undefined,
 				})
 				carrierRequestId = result.prn
 				estimatedCost = result.cost
@@ -99,13 +102,25 @@ export async function POST(request: NextRequest) {
 			const email = String(body.contact_email ?? '').trim()
 			if (!email) return NextResponse.json({ error: 'contact_email is required for Canada Post pickups' }, { status: 400 })
 			const result = await createCanadaPostPickup({
+				businessAddressFlag: Boolean(body.business_address_flag),
 				origin,
+				contactName: body.contact_name || undefined,
+				phone: body.phone || undefined,
+				telephoneExt: body.telephone_ext || undefined,
 				email,
+				receiveEmailUpdatesFlag: Boolean(body.receive_email_updates_flag),
 				date: pickupDate,
 				preferredTime: String(body.ready_time ?? '13:00'),
 				closingTime: String(body.close_time ?? '15:00'),
 				pickupInstructions: specialInstruction || 'Ready at front desk',
-				pickupVolume: String(body.piece_count ?? pieceCount),
+				pickupVolume: String(body.pickup_volume ?? body.piece_count ?? pieceCount),
+				loadingDockFlag: Boolean(body.loading_dock_flag),
+				fiveTonFlag: Boolean(body.five_ton_flag),
+				priorityFlag: Boolean(body.priority_flag),
+				returnsFlag: Boolean(body.returns_flag),
+				heavyItemFlag: Boolean(body.heavy_item_flag),
+				contractId: body.contract_id || undefined,
+				methodOfPayment: body.method_of_payment || undefined,
 			})
 			carrierRequestId = result.requestId
 			estimatedCost = result.price?.dueAmount ? Number(result.price.dueAmount) : undefined

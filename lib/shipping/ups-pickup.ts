@@ -85,10 +85,13 @@ export async function rateUpsPickup(
 
 export interface UpsPickupCreateInput extends UpsPickupDateInfo {
 	origin: ShippingParty
+	contactName?: string // defaults to origin.name
+	phone?: string // defaults to origin.phone
 	pieceCount: number
 	totalWeightKg?: number
 	specialInstruction?: string
 	referenceNumber?: string
+	paymentMethod?: string // default '01' (pay by shipper account)
 }
 
 export interface UpsPickupCreateResult {
@@ -115,13 +118,13 @@ export async function createUpsPickup(input: UpsPickupCreateInput): Promise<UpsP
 				PickupDateInfo: { CloseTime: input.closeTime, ReadyTime: input.readyTime, PickupDate: input.pickupDate },
 				PickupAddress: {
 					CompanyName: (origin.company || origin.name).slice(0, 27),
-					ContactName: origin.name.slice(0, 22),
+					ContactName: (input.contactName || origin.name).slice(0, 22),
 					AddressLine: pickupAddressLines(origin),
 					City: origin.city,
 					StateProvince: origin.stateProvince,
 					CountryCode: origin.country,
 					ResidentialIndicator: 'N',
-					Phone: { Number: origin.phone },
+					Phone: { Number: input.phone || origin.phone },
 				},
 				AlternateAddressIndicator: 'N',
 				PickupPiece: [
@@ -136,7 +139,7 @@ export async function createUpsPickup(input: UpsPickupCreateInput): Promise<UpsP
 					? { TotalWeight: { Weight: input.totalWeightKg.toFixed(1), UnitOfMeasurement: 'KGS' } }
 					: {}),
 				OverweightIndicator: 'N',
-				PaymentMethod: '01', // pay by shipper account
+				PaymentMethod: input.paymentMethod || '01', // default: pay by shipper account
 				...(input.specialInstruction ? { SpecialInstruction: input.specialInstruction.slice(0, 57) } : {}),
 				...(input.referenceNumber ? { ReferenceNumber: input.referenceNumber.slice(0, 35) } : {}),
 			},

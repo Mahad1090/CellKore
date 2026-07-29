@@ -52,12 +52,23 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 	try {
 		await modifyCanadaPostPickup(pickup.carrier_request_id, {
 			origin,
+			contactName: body.contact_name || undefined,
+			phone: body.phone || undefined,
+			telephoneExt: body.telephone_ext || undefined,
 			email,
+			receiveEmailUpdatesFlag: Boolean(body.receive_email_updates_flag),
 			date: pickupDate,
 			preferredTime: readyTime,
 			closingTime: closeTime,
 			pickupInstructions: specialInstruction,
 			pickupVolume: String(pieceCount),
+			loadingDockFlag: Boolean(body.loading_dock_flag),
+			fiveTonFlag: Boolean(body.five_ton_flag),
+			priorityFlag: Boolean(body.priority_flag),
+			returnsFlag: Boolean(body.returns_flag),
+			heavyItemFlag: Boolean(body.heavy_item_flag),
+			contractId: body.contract_id || undefined,
+			methodOfPayment: body.method_of_payment || undefined,
 		})
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Pickup modification failed'
