@@ -641,7 +641,7 @@ function OrderRow({
 
 									{order.shipping_label_url && (
 										<a
-											href={order.shipping_label_url}
+											href={`/api/admin/shipping-labels/sign?type=order&url=${encodeURIComponent(order.shipping_label_url)}`}
 											target="_blank"
 											rel="noopener noreferrer"
 											className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#EEF7F0] border border-[#599161]/20 text-xs font-bold uppercase tracking-wider text-[#599161] hover:bg-[#dcefe0] transition-all"

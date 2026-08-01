@@ -25,3 +25,31 @@ export async function uploadShippingLabel(
 	const { data } = service.storage.from(bucket).getPublicUrl(path)
 	return data.publicUrl
 }
+
+const SIGNED_URL_TTL_SECONDS = 300
+
+/** Recovers the bucket-relative object path from a stored (formerly-public) label URL. */
+function objectPathFromStoredUrl(stored: string): string | null {
+	const marker = `/storage/v1/object/public/${shippingLabelsBucket()}/`
+	const idx = stored.indexOf(marker)
+	const path = idx >= 0 ? stored.slice(idx + marker.length) : stored
+	if (!path || path.includes('..')) return null
+	return path
+}
+
+/**
+ * Exchanges a stored label URL for a short-lived signed URL. The
+ * shipping-labels bucket is private, so the stored "public" URL no longer
+ * resolves on its own — callers must authorize the request (admin, or the
+ * request's owning customer) before calling this.
+ */
+export async function signShippingLabelUrl(stored: string): Promise<string | null> {
+	const path = objectPathFromStoredUrl(stored)
+	if (!path) return null
+	const service = createServiceClient()
+	const { data, error } = await service.storage
+		.from(shippingLabelsBucket())
+		.createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+	if (error || !data) return null
+	return data.signedUrl
+}

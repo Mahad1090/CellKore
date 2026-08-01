@@ -41,6 +41,7 @@ export function ReturnShipmentPayment({
 	const [loadingRates, setLoadingRates] = useState(false)
 	const [ratesRequested, setRatesRequested] = useState(false)
 	const [submittingStripe, setSubmittingStripe] = useState(false)
+	const [viewingLabel, setViewingLabel] = useState(false)
 
 	if (request.status !== 'rejected') return null
 
@@ -138,6 +139,24 @@ export function ReturnShipmentPayment({
 	const inputClass =
 		'w-full px-3.5 py-2.5 border border-border rounded-xl bg-white text-xs text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all'
 
+	const viewLabel = async () => {
+		setViewingLabel(true)
+		try {
+			const res = await fetch(`/api/sell-requests/${request.id}/return-shipment/label`, {
+				method: 'POST',
+				headers: authHeaders,
+				body: JSON.stringify({ contact }),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			window.open(json.signedUrl, '_blank', 'noopener,noreferrer')
+		} catch (err) {
+			toast({ title: 'Could not open label', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setViewingLabel(false)
+		}
+	}
+
 	if (shipment?.paid_at) {
 		return (
 			<div className="rounded-2xl border border-border bg-muted/30 p-4 space-y-2">
@@ -150,9 +169,14 @@ export function ReturnShipmentPayment({
 						<p>Carrier: <span className="font-semibold">{shipment.carrier}</span></p>
 						<p>Tracking #: <span className="font-semibold">{shipment.tracking_number}</span></p>
 						{shipment.label_url && (
-							<a href={shipment.label_url} target="_blank" rel="noreferrer" className="inline-block text-primary font-semibold hover:underline">
-								View Shipping Label
-							</a>
+							<button
+								type="button"
+								onClick={viewLabel}
+								disabled={viewingLabel}
+								className="inline-block text-primary font-semibold hover:underline disabled:opacity-60"
+							>
+								{viewingLabel ? 'Opening…' : 'View Shipping Label'}
+							</button>
 						)}
 					</div>
 				) : (

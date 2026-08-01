@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
+import { toImageCdnUrl } from '@/lib/image-cdn'
 
 const BUCKET = 'product-images'
 const MAX_BYTES = 5 * 1024 * 1024
@@ -26,10 +27,10 @@ export async function POST(request: NextRequest) {
 	const service = createServiceClient()
 	const { error } = await service.storage
 		.from(BUCKET)
-		.upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false })
+		.upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false, cacheControl: '31536000' })
 	if (error) {
 		return NextResponse.json({ error: error.message }, { status: 500 })
 	}
 	const { data } = service.storage.from(BUCKET).getPublicUrl(path)
-	return NextResponse.json({ publicUrl: data.publicUrl, path })
+	return NextResponse.json({ publicUrl: toImageCdnUrl(data.publicUrl), path })
 }

@@ -701,7 +701,7 @@ export default function AdminSellRequestsPage() {
 																: 'Not generated'}
 														</span>
 														{selected.sell_phone_return_shipments.label_url && (
-															<a href={selected.sell_phone_return_shipments.label_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:underline">
+															<a href={`/api/admin/shipping-labels/sign?type=sell-return&url=${encodeURIComponent(selected.sell_phone_return_shipments.label_url)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 hover:underline">
 																View Label <ExternalLink className="w-3 h-3" />
 															</a>
 														)}

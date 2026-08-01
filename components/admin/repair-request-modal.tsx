@@ -494,7 +494,7 @@ export function RepairRequestModal({
 											<p><span className="text-muted-foreground">Carrier:</span> <span className="font-semibold">{request.outbound_carrier}</span></p>
 											<p><span className="text-muted-foreground">Tracking #:</span> <span className="font-mono font-bold">{request.outbound_tracking_number}</span></p>
 											{request.outbound_label_url && (
-												<a href={request.outbound_label_url} target="_blank" rel="noreferrer" className="text-primary font-semibold hover:underline inline-block">View Label</a>
+												<a href={`/api/admin/shipping-labels/sign?type=repair&url=${encodeURIComponent(request.outbound_label_url)}`} target="_blank" rel="noreferrer" className="text-primary font-semibold hover:underline inline-block">View Label</a>
 											)}
 										</div>
 									) : (

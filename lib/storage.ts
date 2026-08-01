@@ -1,6 +1,7 @@
 'use client'
 
 import { supabase } from '@/lib/supabase'
+import { toImageCdnUrl } from '@/lib/image-cdn'
 
 export const SELL_PHONE_BUCKET = 'sell-phone-images'
 export const REPAIR_IMAGES_BUCKET = 'repair-images'
@@ -70,10 +71,10 @@ export async function uploadSellPhoneImages(requestId: string, files: File[]): P
 			const path = `requests/${requestId}/${Date.now()}-${sanitizeFilename(file.name)}`
 			const { error } = await supabase.storage
 				.from(SELL_PHONE_BUCKET)
-				.upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+				.upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '31536000' })
 			if (error) throw error
 			const { data } = supabase.storage.from(SELL_PHONE_BUCKET).getPublicUrl(path)
-			uploaded.push({ path, publicUrl: data.publicUrl })
+			uploaded.push({ path, publicUrl: toImageCdnUrl(data.publicUrl) })
 		}
 		return uploaded
 	} catch (err) {
@@ -100,10 +101,10 @@ export async function uploadRepairImages(requestId: string, files: File[]): Prom
 			const path = `requests/${requestId}/${Date.now()}-${sanitizeFilename(file.name)}`
 			const { error } = await supabase.storage
 				.from(REPAIR_IMAGES_BUCKET)
-				.upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+				.upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false, cacheControl: '31536000' })
 			if (error) throw error
 			const { data } = supabase.storage.from(REPAIR_IMAGES_BUCKET).getPublicUrl(path)
-			uploaded.push({ path, publicUrl: data.publicUrl })
+			uploaded.push({ path, publicUrl: toImageCdnUrl(data.publicUrl) })
 		}
 		return uploaded
 	} catch (err) {
