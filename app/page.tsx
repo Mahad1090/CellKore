@@ -18,7 +18,26 @@ export default function Home() {
 	const [products, setProducts] = useState<Product[] | null>(null)
 
 	useEffect(() => {
-		fetchActiveCategories().then(setCategories).catch(() => setCategories([]))
+		fetchActiveCategories()
+			.then((list) => {
+				const hasPhones = list.some((c) => c.slug === 'iphones' || c.slug === 'samsungs')
+				if (hasPhones) {
+					const filtered = list.filter((c) => c.slug !== 'iphones' && c.slug !== 'samsungs' && c.slug !== 'iphone' && c.slug !== 'samsung')
+					const phonesCategory: Category = {
+						id: 'phones-merged-id',
+						name: 'Phones',
+						slug: 'phones',
+						image_url: '/iphone_category.webp',
+						is_active: true,
+						sort_order: 1,
+						created_at: new Date().toISOString(),
+					}
+					setCategories([phonesCategory, ...filtered].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)))
+				} else {
+					setCategories(list)
+				}
+			})
+			.catch(() => setCategories([]))
 	}, [])
 
 	useEffect(() => {
@@ -123,19 +142,17 @@ export default function Home() {
 				) : (
 					<div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 py-2">
 						{categories.map((category) => {
-							const isIphone = category.slug === 'iphones' || category.slug === 'iphone'
-							const isSamsung = category.slug === 'samsungs' || category.slug === 'samsung'
+							const isPhone = category.slug === 'phones'
 							const isIpad = category.slug === 'ipads' || category.slug === 'ipad'
 							const isTablet = category.slug === 'tablets' || category.slug === 'tablet'
 							const isWatch = category.slug === 'watches' || category.slug === 'watch'
 							const isLaptop = category.slug === 'laptops' || category.slug === 'laptop'
 							const isSpareParts = category.slug === 'spare-parts' || category.slug === 'spare_parts'
 							const isAccessories = category.slug === 'accessories'
-							const hasCustomCover = isIphone || isSamsung || isIpad || isTablet || isWatch || isLaptop || isSpareParts || isAccessories
+							const hasCustomCover = isPhone || isIpad || isTablet || isWatch || isLaptop || isSpareParts || isAccessories
 
 							let coverImage = null
-							if (isIphone) coverImage = '/iphone_category.webp'
-							else if (isSamsung) coverImage = '/samsung_category.webp'
+							if (isPhone) coverImage = '/phones.png'
 							else if (isIpad) coverImage = '/ipad_category.webp'
 							else if (isTablet) coverImage = '/tablets_category.webp'
 							else if (isWatch) coverImage = '/watches_category.webp'
@@ -154,9 +171,8 @@ export default function Home() {
 											<img
 												src={coverImage || ''}
 												alt={category.name}
-												className={`w-full h-full object-cover transition-transform duration-500 ${
-													isSamsung ? 'object-[40%_center]' : 'object-center'
-												} ${
+												className={`w-full h-full object-cover transition-transform duration-500 object-center ${
+													isPhone ? 'scale-[1.6] group-hover:scale-[1.65]' :
 													isTablet ? 'scale-110 group-hover:scale-[1.15]' : 'scale-100 group-hover:scale-[1.05]'
 												}`}
 											/>

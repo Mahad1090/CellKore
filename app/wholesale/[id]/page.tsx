@@ -23,6 +23,7 @@ import { fetchProductById, fetchWholesaleColors } from '@/lib/data'
 import { addToLocalCart } from '@/lib/cart'
 import type { Product } from '@/lib/types'
 import { totalStock } from '@/lib/types'
+import { useMarketplace } from '@/contexts/marketplace-context'
 
 const FINAL_SALE_NOTICE = 'Returns and exchanges are not supported — all wholesale transactions are final.'
 
@@ -30,6 +31,7 @@ export default function WholesaleDetailPage() {
 	const params = useParams()
 	const router = useRouter()
 	const { toast } = useToast()
+	const { formatPrice } = useMarketplace()
 	const id = typeof params.id === 'string' ? params.id : ''
 
 	const [lot, setLot] = useState<Product | null | undefined>(undefined)
@@ -162,7 +164,7 @@ export default function WholesaleDetailPage() {
 								: 'bg-primary text-primary-foreground hover:opacity-90 active:scale-95 cursor-pointer shadow-lg'
 						}`}
 					>
-						{soldOut ? 'Sold Out' : `Proceed to Checkout — $${unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+						{soldOut ? 'Sold Out' : `Proceed to Checkout — ${formatPrice(unitPrice, false)}`}
 					</button>
 				</div>
 
@@ -209,11 +211,11 @@ export default function WholesaleDetailPage() {
 							</p>
 							<div className="flex items-baseline gap-2 mb-2">
 								<span className="text-3xl font-extrabold text-primary tracking-tight">
-									${unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									{formatPrice(unitPrice, false)}
 								</span>
 								{units > 0 && (
 									<span className="text-xs text-muted-foreground font-semibold">
-										(${ (unitPrice / units).toFixed(2) } / unit)
+										({formatPrice(unitPrice / units, true)} / unit)
 									</span>
 								)}
 							</div>

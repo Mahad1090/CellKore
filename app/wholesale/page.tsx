@@ -19,7 +19,7 @@ const PERKS = [
 ]
 
 export default function WholesalePage() {
-	const { marketplace, loading: marketLoading } = useMarketplace()
+	const { marketplace, loading: marketLoading, formatPrice } = useMarketplace()
 	const [lots, setLots] = useState<Product[] | null>(null)
 
 	useEffect(() => {
@@ -116,7 +116,7 @@ export default function WholesalePage() {
 													<div>
 														<p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Lot Price</p>
 														<p className="text-xl font-bold text-card-foreground">
-															${Number(lot.base_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+															{formatPrice(lot.base_price, false)}
 														</p>
 													</div>
 													{units > 0 && (

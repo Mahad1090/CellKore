@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import {
 	ShoppingCart, Heart, Menu, X, Search, Home, Smartphone, Store, DollarSign,
-	Package, Info, Mail, User, Globe, ChevronDown, BookOpen, Wrench,
+	Package, Info, Mail, User, Globe, ChevronDown, BookOpen, Wrench, Briefcase,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -123,11 +123,58 @@ export function Navigation() {
 	}, [mobileMenuOpen])
 
 	const navLinks = [
-		{ href: '/products?category=iphones', label: 'Shop', icon: Smartphone },
-		{ href: '/sell', label: 'Sell', icon: DollarSign },
-		{ href: '/wholesale', label: 'Wholesale', icon: Package },
-		{ href: '/repair', label: 'Repair', icon: Wrench },
-		{ href: '/spare-parts', label: 'Spare Parts', icon: Info },
+		{
+			href: '/products?category=phones',
+			label: 'Shop',
+			icon: Smartphone,
+			subItems: [
+				{ href: '/products', label: 'All Products' },
+				{ href: '/products?category=phones', label: 'Phones' },
+				{ href: '/products?category=ipads', label: 'iPads & Tablets' },
+				{ href: '/products?category=laptops', label: 'Laptops' },
+				{ href: '/products?category=watches', label: 'Smartwatches' },
+				{ href: '/products?category=accessories', label: 'Accessories' },
+			],
+		},
+		{
+			href: '/repair',
+			label: 'Services',
+			icon: Briefcase,
+			subItems: [
+				{ href: '/repair', label: 'Device Repair' },
+				{ href: '/sell', label: 'Sell Your Device' },
+				{ href: '/wholesale', label: 'Wholesale Accounts' },
+				{ href: '/repair/status', label: 'Track Repair Status' },
+				{ href: '/sell/track', label: 'Track Sell Request' },
+			],
+		},
+		{
+			href: '/sell',
+			label: 'Sell',
+			icon: DollarSign,
+			subItems: [
+				{ href: '/sell', label: 'Sell Your Device' },
+				{ href: '/sell/track', label: 'Track Sell Request' },
+			],
+		},
+		{
+			href: '/wholesale',
+			label: 'Wholesale',
+			icon: Package,
+			subItems: [
+				{ href: '/wholesale', label: 'Wholesale Portal' },
+				{ href: '/wholesale#manifests', label: 'Request Manifest' },
+			],
+		},
+		{
+			href: '/spare-parts',
+			label: 'Spare Parts',
+			icon: Info,
+			subItems: [
+				{ href: '/spare-parts', label: 'Browse Parts' },
+				{ href: '/products?category=spare-parts', label: 'iPhone Spare Parts' },
+			],
+		},
 	]
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,9 +265,8 @@ export function Navigation() {
 
 			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">
-						{/* Left Block */}
-						<div className="flex items-center w-auto md:w-1/3 lg:w-[42%] justify-start gap-2 md:gap-3 z-10">
+					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">						{/* Left Block */}
+						<div className="flex items-center w-auto md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-3 z-10">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -229,21 +275,39 @@ export function Navigation() {
 								{mobileMenuOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
 							</button>
 
-							<div className="hidden md:flex items-center space-x-4 lg:space-x-6">
+							<div className="hidden md:flex items-center space-x-2.5 lg:space-x-3 xl:space-x-5">
 								{navLinks.map((link) => (
-									<Link
-										key={link.href}
-										href={link.href}
-										className="relative text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] font-semibold tracking-[0.12em] lg:tracking-[0.18em] uppercase py-1 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-primary after:transition-all after:duration-300 hover:after:w-full whitespace-nowrap"
-									>
-										{link.label}
-									</Link>
+									<div key={link.label} className="relative group py-3">
+										<Link
+											href={link.href}
+											className="flex items-center gap-1.5 text-foreground/80 hover:text-primary transition-all duration-300 text-[10.5px] lg:text-[11px] xl:text-[12px] font-bold tracking-[0.05em] lg:tracking-[0.08em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
+										>
+											<span>{link.label}</span>
+											{link.subItems && (
+												<ChevronDown className="w-3 h-3 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
+											)}
+										</Link>
+
+										{link.subItems && (
+											<div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-[#fdfdfd]/95 backdrop-blur-md border border-border rounded-2xl shadow-xl p-1.5 min-w-[200px] invisible opacity-0 translate-y-2 scale-95 origin-top group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 transition-all duration-200 z-50">
+												{link.subItems.map((sub) => (
+													<Link
+														key={sub.href}
+														href={sub.href}
+														className="block px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/75 hover:bg-secondary hover:text-primary transition-all duration-200 cursor-pointer whitespace-nowrap"
+													>
+														{sub.label}
+													</Link>
+												))}
+											</div>
+										)}
+									</div>
 								))}
 							</div>
 						</div>
 
 						{/* Center Block - Logo + tagline (Dead-centered on Mobile & Desktop) */}
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[16%] z-10 pointer-events-auto">
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[12%] z-10 pointer-events-auto">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
 									src="/cellkore_apple_green.webp"
@@ -257,7 +321,7 @@ export function Navigation() {
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-auto md:w-1/3 lg:w-[42%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
+						<div className="flex items-center justify-end w-auto md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
 							{/* Persistent marketplace selector (Desktop view only, mobile uses drawer top) */}
 							<div className="relative md:mr-2 hidden md:block">
 								<button
@@ -446,7 +510,7 @@ export function Navigation() {
 
 								{/* Products */}
 								<Link
-									href="/products?category=iphones"
+									href="/products?category=phones"
 									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
 									onClick={() => setMobileMenuOpen(false)}
 								>

@@ -8,7 +8,7 @@ import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
 import { GridShimmer } from '@/components/shimmer'
 import { useMarketplace } from '@/contexts/marketplace-context'
-import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
+import { fetchActiveCategories, fetchCatalogProducts, fetchWholesaleLots } from '@/lib/data'
 import type { Category, Product } from '@/lib/types'
 import { getDiscountedPrice } from '@/lib/types'
 
@@ -140,14 +140,29 @@ const ACCESSORY_MODELS = [
 	{ label: 'Tempered Glass Screen Protectors', value: 'Screen Protectors' },
 ]
 
+const WHOLESALE_CATEGORIES = [
+	{ label: 'All Wholesale Lots', value: 'all' },
+	{ label: 'Phones', value: 'phones' },
+	{ label: 'iPads & Tablets', value: 'ipads' },
+	{ label: 'Laptops', value: 'laptops' },
+]
+
+const PHONES_MODELS = [
+	{ label: 'All Phone Models', value: 'all' },
+	...IPHONE_MODELS.filter(m => m.value !== 'all'),
+	...SAMSUNG_MODELS.filter(m => m.value !== 'all'),
+]
+
 // Strictly Category-Specific Model Maps
 const MODEL_SUB_FILTERS: Record<string, { label: string; value: string }[]> = {
 	iphones: IPHONE_MODELS,
 	iphone: IPHONE_MODELS,
-	ipads: IPAD_MODELS,
-	ipad: IPAD_MODELS,
 	samsungs: SAMSUNG_MODELS,
 	samsung: SAMSUNG_MODELS,
+	phones: PHONES_MODELS,
+	phone: PHONES_MODELS,
+	ipads: IPAD_MODELS,
+	ipad: IPAD_MODELS,
 	laptops: LAPTOP_MODELS,
 	laptop: LAPTOP_MODELS,
 	tablets: TABLET_MODELS,
@@ -163,28 +178,22 @@ const MODEL_SUB_FILTERS: Record<string, { label: string; value: string }[]> = {
 const BRAND_SUB_FILTERS: Record<string, { label: string; value: string }[]> = {
 	iphones: [{ label: 'Apple', value: 'Apple' }],
 	iphone: [{ label: 'Apple', value: 'Apple' }],
-	ipads: [{ label: 'Apple', value: 'Apple' }],
-	ipad: [{ label: 'Apple', value: 'Apple' }],
 	samsungs: [{ label: 'Samsung', value: 'Samsung' }],
 	samsung: [{ label: 'Samsung', value: 'Samsung' }],
-	laptops: [
+	phones: [
 		{ label: 'All Brands', value: 'all' },
 		{ label: 'Apple', value: 'Apple' },
-		{ label: 'Dell', value: 'Dell' },
-		{ label: 'HP', value: 'HP' },
-		{ label: 'Lenovo', value: 'Lenovo' },
-		{ label: 'ASUS', value: 'ASUS' },
-		{ label: 'Acer', value: 'Acer' },
+		{ label: 'Samsung', value: 'Samsung' },
+		{ label: 'Other Brands', value: 'other' },
 	],
-	laptop: [
+	phone: [
 		{ label: 'All Brands', value: 'all' },
 		{ label: 'Apple', value: 'Apple' },
-		{ label: 'Dell', value: 'Dell' },
-		{ label: 'HP', value: 'HP' },
-		{ label: 'Lenovo', value: 'Lenovo' },
-		{ label: 'ASUS', value: 'ASUS' },
-		{ label: 'Acer', value: 'Acer' },
+		{ label: 'Samsung', value: 'Samsung' },
+		{ label: 'Other Brands', value: 'other' },
 	],
+	ipads: [{ label: 'Apple', value: 'Apple' }],
+	ipad: [{ label: 'Apple', value: 'Apple' }],
 	watches: [
 		{ label: 'All Brands', value: 'all' },
 		{ label: 'Apple', value: 'Apple' },
@@ -224,7 +233,9 @@ function ProductsPageContent() {
 	const [conditionFilter, setConditionFilter] = useState('all')
 	const [lockStatusFilter, setLockStatusFilter] = useState('all')
 	const [priceFilter, setPriceFilter] = useState('all')
+	const [wholesaleCategoryFilter, setWholesaleCategoryFilter] = useState('all')
 
+	const isPhoneSelected = selectedCategory === 'phones' || selectedCategory === 'phone'
 	const isIphoneSelected = selectedCategory === 'iphones' || selectedCategory === 'iphone'
 	const isSamsungSelected = selectedCategory === 'samsungs' || selectedCategory === 'samsung'
 	const isIpadSelected = selectedCategory === 'ipads' || selectedCategory === 'ipad'
@@ -233,11 +244,14 @@ function ProductsPageContent() {
 	const isWatchSelected = selectedCategory === 'watches' || selectedCategory === 'watch'
 	const isSparePartsSelected = selectedCategory === 'spare-parts' || selectedCategory === 'spare_parts'
 	const isAccessoriesSelected = selectedCategory === 'accessories'
+	const isWholesaleSelected = selectedCategory === 'wholesale'
 
-	const bannerVideo = isIphoneSelected
+	const bannerVideo = isPhoneSelected
 		? 'iphone_banner'
-		: isSamsungSelected
-			? 'samsung_banner'
+		: isIphoneSelected
+			? 'iphone_banner'
+			: isSamsungSelected
+				? 'samsung_banner'
 			: isIpadSelected
 				? 'ipad_banner'
 				: isLaptopSelected
@@ -264,20 +278,52 @@ function ProductsPageContent() {
 	}, [searchParams])
 
 	useEffect(() => {
-		fetchActiveCategories().then(setCategories).catch(() => setCategories([]))
+		fetchActiveCategories()
+			.then((list) => {
+				const hasPhones = list.some((c) => c.slug === 'iphones' || c.slug === 'samsungs')
+				if (hasPhones) {
+					const filtered = list.filter((c) => c.slug !== 'iphones' && c.slug !== 'samsungs' && c.slug !== 'iphone' && c.slug !== 'samsung')
+					const phonesCategory: Category = {
+						id: 'phones-merged-id',
+						name: 'Phones',
+						slug: 'phones',
+						image_url: '/phones.png',
+						is_active: true,
+						sort_order: 1,
+						created_at: new Date().toISOString(),
+					}
+					setCategories([phonesCategory, ...filtered].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)))
+				} else {
+					setCategories(list)
+				}
+			})
+			.catch(() => setCategories([]))
 	}, [])
 
 	useEffect(() => {
 		if (marketLoading) return
 		setProducts(null)
 		const timer = setTimeout(() => {
-			fetchCatalogProducts({
-				marketplace,
-				search: searchQuery.trim() || undefined,
-				categorySlug: selectedCategory === 'all' ? undefined : selectedCategory,
-			})
-				.then(setProducts)
-				.catch(() => setProducts([]))
+			if (selectedCategory === 'wholesale') {
+				fetchWholesaleLots(marketplace)
+					.then((lots) => {
+						if (searchQuery.trim()) {
+							const q = searchQuery.toLowerCase()
+							setProducts(lots.filter(p => p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q) || (p.brand || '').toLowerCase().includes(q)))
+						} else {
+							setProducts(lots)
+						}
+					})
+					.catch(() => setProducts([]))
+			} else {
+				fetchCatalogProducts({
+					marketplace,
+					search: searchQuery.trim() || undefined,
+					categorySlug: selectedCategory === 'all' ? undefined : selectedCategory,
+				})
+					.then(setProducts)
+					.catch(() => setProducts([]))
+			}
 		}, 200)
 		return () => clearTimeout(timer)
 	}, [marketplace, marketLoading, searchQuery, selectedCategory])
@@ -291,6 +337,7 @@ function ProductsPageContent() {
 		setConditionFilter('all')
 		setLockStatusFilter('all')
 		setPriceFilter('all')
+		setWholesaleCategoryFilter('all')
 	}
 
 	const resetAllFilters = () => {
@@ -301,6 +348,7 @@ function ProductsPageContent() {
 		setConditionFilter('all')
 		setLockStatusFilter('all')
 		setPriceFilter('all')
+		setWholesaleCategoryFilter('all')
 	}
 
 	const hasActiveSubFilters =
@@ -321,11 +369,51 @@ function ProductsPageContent() {
 			const pBrand = (product.brand || '').toLowerCase()
 			const pCond = (product.condition || '').toLowerCase()
 
+			// Wholesale-specific filtering
+			if (selectedCategory === 'wholesale') {
+				// 1. Wholesale Sub-Category Filter (Phones, Tablets, Laptops)
+				if (wholesaleCategoryFilter !== 'all') {
+					const slug = (product.categories?.slug || '').toLowerCase()
+					if (wholesaleCategoryFilter === 'phones') {
+						const isPhone = slug === 'iphones' || slug === 'samsungs' || slug === 'iphone' || slug === 'samsung' || slug === 'phones'
+						if (!isPhone) return false
+					} else if (wholesaleCategoryFilter === 'ipads') {
+						const isTablet = slug === 'ipads' || slug === 'ipad' || slug === 'tablets' || slug === 'tablet'
+						if (!isTablet) return false
+					} else {
+						if (!slug.includes(wholesaleCategoryFilter.toLowerCase())) return false
+					}
+				}
+
+				// 2. Condition Filter
+				if (conditionFilter !== 'all') {
+					if (conditionFilter === 'new' && pCond !== 'new') return false
+					if (conditionFilter === 'refurbished' && pCond !== 'refurbished') return false
+					if (conditionFilter === 'used' && pCond !== 'used' && pCond !== 'pre-owned') return false
+				}
+
+				// 3. Price Filter (matches lot total base price)
+				const price = Number(product.base_price)
+				if (priceFilter === 'under-100' && price >= 100) return false
+				if (priceFilter === '100-300' && (price < 100 || price > 300)) return false
+				if (priceFilter === '300-700' && (price < 300 || price > 700)) return false
+				if (priceFilter === '700-1200' && (price < 700 || price > 1200)) return false
+				if (priceFilter === 'over-1200' && price <= 1200) return false
+
+				return true
+			}
+
+			// Standard catalog filtering
 			// 1. Brand Filter
 			if (brandFilter !== 'all') {
-				const b = brandFilter.toLowerCase()
-				const matchesBrand = pBrand.includes(b) || pName.includes(b) || pDesc.includes(b)
-				if (!matchesBrand) return false
+				if (brandFilter === 'other') {
+					const matchesBrand = !pBrand.includes('apple') && !pBrand.includes('samsung') && !pName.includes('iphone') && !pName.includes('galaxy')
+					if (!matchesBrand) return false
+				} else {
+					const b = brandFilter.toLowerCase()
+					const matchesBrand = pBrand.includes(b) || pName.includes(b) || pDesc.includes(b)
+					if (!matchesBrand) return false
+				}
 			}
 
 			// 2. Condition Filter
@@ -403,7 +491,7 @@ function ProductsPageContent() {
 
 			return true
 		})
-	}, [products, brandFilter, conditionFilter, storageFilter, lockStatusFilter, priceFilter, modelFilter])
+	}, [products, selectedCategory, wholesaleCategoryFilter, brandFilter, conditionFilter, storageFilter, lockStatusFilter, priceFilter, modelFilter])
 
 	const sorted = useMemo(() => {
 		if (!filteredProducts) return null
@@ -450,15 +538,25 @@ function ProductsPageContent() {
 				)}
 				<div className="relative w-full px-4 sm:px-8 lg:px-12 z-10">
 					<p className="text-sm uppercase tracking-[0.25em] opacity-80 mb-3">
-						{(isIphoneSelected || isSamsungSelected || isIpadSelected || isLaptopSelected || isTabletSelected || isWatchSelected || isSparePartsSelected || isAccessoriesSelected) ? (
+						{(isPhoneSelected || isIphoneSelected || isSamsungSelected || isIpadSelected || isLaptopSelected || isTabletSelected || isWatchSelected || isSparePartsSelected || isAccessoriesSelected || isWholesaleSelected) ? (
 							<span className="text-amber-400 font-semibold">Shop</span>
 						) : (
 							'Catalog'
 						)}
 					</p>
 					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
-						{isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Shop Devices'}
+						{isPhoneSelected ? 'Phones' : isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : isWholesaleSelected ? 'Wholesale Lots' : 'Shop Devices'}
 					</h1>
+					{isPhoneSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Premium, certified pre-owned and refurbished Apple iPhones, Samsung Galaxy, and other premier smartphones. Fully tested, unlocked, and backed by warranty.
+						</p>
+					)}
+					{isWholesaleSelected && (
+						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
+							Bulk lots and manifestations of premium smartphones, tablets, and laptops. Inspected, graded, and packaged for retail stock or distribution.
+						</p>
+					)}
 					{isIphoneSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
 							Premium, certified pre-owned and refurbished iPhones. Fully tested, unlocked, and backed by our complete warranty.
@@ -503,8 +601,122 @@ function ProductsPageContent() {
 			</section>
 
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-				{/* Top Search & Category Selection Bar */}
-				<div className="flex flex-wrap items-center gap-3">
+
+				{/* Brand Sub-Posters (Show when Phones category active) */}
+				{isPhoneSelected && (
+					<div className="grid grid-cols-3 gap-4 pb-4 pt-1 max-w-2xl mx-auto">
+						{/* iPhone Poster */}
+						<button
+							onClick={() => setBrandFilter(brandFilter === 'Apple' ? 'all' : 'Apple')}
+							className={`relative aspect-[3/4] rounded-2xl overflow-hidden text-center border transition-all duration-300 group shadow-xs cursor-pointer ${
+								brandFilter === 'Apple'
+									? 'border-primary ring-4 ring-primary/15 scale-[1.02]'
+									: 'border-border hover:border-primary/50 hover:scale-[1.01]'
+							}`}
+						>
+							<img
+								src="/iphone_category.webp"
+								alt="iPhone mockup"
+								className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+							/>
+							<div className="absolute inset-0 bg-black/55 group-hover:bg-black/45 transition-colors z-10" />
+							
+							<div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 z-20">
+								<svg viewBox="0 0 16 16" className="w-4.5 h-4.5 fill-current text-white mb-1.5 shrink-0" xmlns="http://www.w3.org/2000/svg">
+									<path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516s1.52.087 2.475-1.258.762-2.391.728-2.43m3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422s1.675-2.789 1.698-2.854-.597-.79-1.254-1.157a3.7 3.7 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56s.625 1.924 1.273 2.796c.576.984 1.34 1.667 1.659 1.899s1.219.386 1.843.067c.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758q.52-1.185.473-1.282"/>
+								</svg>
+								<h3 className="text-sm font-black text-white tracking-wider uppercase leading-tight">iPhones</h3>
+								<p className="text-[9px] text-zinc-300 mt-1 max-w-[90%] font-medium">Explore premium Apple iOS</p>
+							</div>
+						</button>
+
+						{/* Samsung Poster */}
+						<button
+							onClick={() => setBrandFilter(brandFilter === 'Samsung' ? 'all' : 'Samsung')}
+							className={`relative aspect-[3/4] rounded-2xl overflow-hidden text-center border transition-all duration-300 group shadow-xs cursor-pointer ${
+								brandFilter === 'Samsung'
+									? 'border-primary ring-4 ring-primary/15 scale-[1.02]'
+									: 'border-border hover:border-primary/50 hover:scale-[1.01]'
+							}`}
+						>
+							<img
+								src="/samsung_category.webp"
+								alt="Samsung mockup"
+								className="absolute inset-0 w-full h-full object-cover object-[40%_center] group-hover:scale-105 transition-transform duration-500"
+							/>
+							<div className="absolute inset-0 bg-black/55 group-hover:bg-black/45 transition-colors z-10" />
+							
+							<div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 z-20">
+								<div 
+									className="w-16 h-3 bg-[#0a56a6] mb-1.5 shrink-0" 
+									style={{
+										maskImage: 'url(/samsung_wordmark.svg)',
+										WebkitMaskImage: 'url(/samsung_wordmark.svg)',
+										maskSize: 'contain',
+										WebkitMaskSize: 'contain',
+										maskRepeat: 'no-repeat',
+										WebkitMaskRepeat: 'no-repeat',
+										maskPosition: 'center',
+										WebkitMaskPosition: 'center'
+									}}
+								/>
+								<h3 className="text-sm font-black text-white tracking-wider uppercase leading-tight">Galaxy</h3>
+								<p className="text-[9px] text-zinc-300 mt-1 max-w-[90%] font-medium">Android flagship series</p>
+							</div>
+						</button>
+
+						{/* Other Poster */}
+						<button
+							onClick={() => setBrandFilter(brandFilter === 'other' ? 'all' : 'other')}
+							className={`relative aspect-[3/4] rounded-2xl overflow-hidden text-center border transition-all duration-300 group shadow-xs cursor-pointer ${
+								brandFilter === 'other'
+									? 'border-primary ring-4 ring-primary/15 scale-[1.02]'
+									: 'border-border hover:border-primary/50 hover:scale-[1.01]'
+							}`}
+						>
+							<img
+								src="/other_phones_category.png"
+								alt="Other phones mockup"
+								className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+							/>
+							<div className="absolute inset-0 bg-black/55 group-hover:bg-black/45 transition-colors z-10" />
+							
+							<div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 z-20">
+								<span className="text-[7.5px] uppercase tracking-[0.18em] text-[#a1a1aa] font-black mb-1.5">OTHER BRANDS</span>
+								<h3 className="text-sm font-black text-white tracking-wider uppercase leading-tight">Other Devices</h3>
+								<p className="text-[9px] text-zinc-300 mt-1 max-w-[90%] font-medium">Pixel, Motorola, & more</p>
+							</div>
+						</button>
+					</div>
+				)}
+
+				{/* Wholesale Lots Subcategory Selector */}
+				{isWholesaleSelected && (
+					<div className="space-y-2 pb-2 pt-1">
+						<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Filter Wholesale Lots</p>
+						<div className="flex flex-wrap items-center gap-2">
+							{WHOLESALE_CATEGORIES.map((cat) => {
+								const isActive = wholesaleCategoryFilter === cat.value
+								return (
+									<button
+										key={cat.value}
+										onClick={() => setWholesaleCategoryFilter(cat.value)}
+										className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+											isActive
+												? 'bg-primary text-primary-foreground border-primary'
+												: 'border-border bg-card text-foreground/75 hover:border-primary hover:text-primary'
+										}`}
+									>
+										{cat.label}
+									</button>
+								)
+							})}
+						</div>
+					</div>
+				)}
+
+				{/* Top Search & Sorting Bar */}
+				<div className="flex flex-wrap items-center justify-between gap-3">
 					{/* Search input */}
 					<div className="relative flex-1 min-w-[220px] max-w-xs">
 						<Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -517,38 +729,11 @@ function ProductsPageContent() {
 						/>
 					</div>
 
-					{/* Category Chips (Square Rounded Corners - rounded-xl) */}
-					<div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-						<button
-							onClick={() => handleCategoryChange('all')}
-							className={`px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-								selectedCategory === 'all'
-									? 'bg-primary text-primary-foreground border-primary'
-									: 'border-border bg-card text-foreground/75 hover:border-primary hover:text-primary'
-							}`}
-						>
-							All Products
-						</button>
-						{categories.map((category) => (
-							<button
-								key={category.id}
-								onClick={() => handleCategoryChange(category.slug)}
-								className={`px-4 py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-[0.14em] border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
-									selectedCategory === category.slug
-										? 'bg-primary text-primary-foreground border-primary'
-										: 'border-border bg-card text-foreground/75 hover:border-primary hover:text-primary'
-								}`}
-							>
-								{category.name}
-							</button>
-						))}
-					</div>
-
 					{/* Sort Dropdown */}
 					<select
 						value={sortBy}
 						onChange={(e) => setSortBy(e.target.value)}
-						className="ml-auto px-4 py-2.5 border border-border rounded-xl bg-background text-xs font-bold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+						className="px-4 py-2.5 border border-border rounded-xl bg-background text-xs font-bold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
 					>
 						<option value="newest">Sort: Newest</option>
 						<option value="price-low">Price: Low to High</option>
@@ -578,57 +763,61 @@ function ProductsPageContent() {
 					</div>
 
 					{/* Category-Specific Filter Select Dropdowns Grid */}
-					<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-1">
-						{/* 1. Brand Filter Dropdown */}
-						<div>
-							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Brand</label>
-							<select
-								value={brandFilter}
-								onChange={(e) => setBrandFilter(e.target.value)}
-								className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-							>
-								{activeBrandOptions.map((opt) => (
-									<option key={opt.value} value={opt.value}>
-										{opt.label}
-									</option>
-								))}
-							</select>
-						</div>
+					<div className={`grid grid-cols-2 gap-3 pt-1 ${isWholesaleSelected ? 'sm:grid-cols-2 max-w-md' : 'sm:grid-cols-3 lg:grid-cols-6'}`}>
+						{!isWholesaleSelected && (
+							<>
+								{/* 1. Brand Filter Dropdown */}
+								<div>
+									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Brand</label>
+									<select
+										value={brandFilter}
+										onChange={(e) => setBrandFilter(e.target.value)}
+										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+									>
+										{activeBrandOptions.map((opt) => (
+											<option key={opt.value} value={opt.value}>
+												{opt.label}
+											</option>
+										))}
+									</select>
+								</div>
 
-						{/* 2. Specific Model Select Dropdown */}
-						<div>
-							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
-								{isIphoneSelected ? 'iPhone Model' : isSamsungSelected ? 'Galaxy Model' : isIpadSelected ? 'iPad Model' : isLaptopSelected ? 'Laptop Model' : isWatchSelected ? 'Watch Model' : isSparePartsSelected ? 'Part Type' : isAccessoriesSelected ? 'Accessory Type' : 'Model'}
-							</label>
-							<select
-								value={modelFilter}
-								onChange={(e) => setModelFilter(e.target.value)}
-								className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-							>
-								{(activeModelOptions || IPHONE_MODELS).map((opt) => (
-									<option key={opt.value} value={opt.value}>
-										{opt.label}
-									</option>
-								))}
-							</select>
-						</div>
+								{/* 2. Specific Model Select Dropdown */}
+								<div>
+									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
+										{isPhoneSelected ? 'Phone Model' : isIphoneSelected ? 'iPhone Model' : isSamsungSelected ? 'Galaxy Model' : isIpadSelected ? 'iPad Model' : isLaptopSelected ? 'Laptop Model' : isWatchSelected ? 'Watch Model' : isSparePartsSelected ? 'Part Type' : isAccessoriesSelected ? 'Accessory Type' : 'Model'}
+									</label>
+									<select
+										value={modelFilter}
+										onChange={(e) => setModelFilter(e.target.value)}
+										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+									>
+										{(activeModelOptions || IPHONE_MODELS).map((opt) => (
+											<option key={opt.value} value={opt.value}>
+												{opt.label}
+											</option>
+										))}
+									</select>
+								</div>
 
-						{/* 3. Storage Capacity Dropdown */}
-						<div>
-							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Storage Capacity</label>
-							<select
-								value={storageFilter}
-								onChange={(e) => setStorageFilter(e.target.value)}
-								className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-							>
-								<option value="all">All Storage</option>
-								<option value="64GB">64GB</option>
-								<option value="128GB">128GB</option>
-								<option value="256GB">256GB</option>
-								<option value="512GB">512GB</option>
-								<option value="1TB">1TB+</option>
-							</select>
-						</div>
+								{/* 3. Storage Capacity Dropdown */}
+								<div>
+									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Storage Capacity</label>
+									<select
+										value={storageFilter}
+										onChange={(e) => setStorageFilter(e.target.value)}
+										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+									>
+										<option value="all">All Storage</option>
+										<option value="64GB">64GB</option>
+										<option value="128GB">128GB</option>
+										<option value="256GB">256GB</option>
+										<option value="512GB">512GB</option>
+										<option value="1TB">1TB+</option>
+									</select>
+								</div>
+							</>
+						)}
 
 						{/* 4. Condition Dropdown */}
 						<div>
@@ -645,23 +834,29 @@ function ProductsPageContent() {
 							</select>
 						</div>
 
-						{/* 5. Carrier Lock Status Dropdown */}
-						<div>
-							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Carrier Status</label>
-							<select
-								value={lockStatusFilter}
-								onChange={(e) => setLockStatusFilter(e.target.value)}
-								className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-							>
-								<option value="all">All Statuses</option>
-								<option value="unlocked">Factory Unlocked</option>
-								<option value="locked">Carrier Locked</option>
-							</select>
-						</div>
+						{!isWholesaleSelected && (
+							<>
+								{/* 5. Carrier Lock Status Dropdown */}
+								<div>
+									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Carrier Status</label>
+									<select
+										value={lockStatusFilter}
+										onChange={(e) => setLockStatusFilter(e.target.value)}
+										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+									>
+										<option value="all">All Statuses</option>
+										<option value="unlocked">Factory Unlocked</option>
+										<option value="locked">Carrier Locked</option>
+									</select>
+								</div>
+							</>
+						)}
 
 						{/* 6. Price Range Dropdown */}
 						<div>
-							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Price Range</label>
+							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
+								{isWholesaleSelected ? 'Lot Price Range' : 'Price Range'}
+							</label>
 							<select
 								value={priceFilter}
 								onChange={(e) => setPriceFilter(e.target.value)}

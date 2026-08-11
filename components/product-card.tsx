@@ -6,6 +6,7 @@ import { Heart, Smartphone } from 'lucide-react'
 import type { Product } from '@/lib/types'
 import { primaryImage, totalStock, isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
 import { getWishlist } from '@/lib/cart'
+import { useMarketplace } from '@/contexts/marketplace-context'
 
 const CONDITION_LABELS: Record<string, string> = {
 	new: 'New',
@@ -57,6 +58,7 @@ function getColorHexFallback(colorName: string | null): string {
 }
 
 export function ProductCard({ product }: { product: Product }) {
+	const { formatPrice } = useMarketplace()
 	const image = primaryImage(product)
 	const hasVariants = (product.product_variants ?? []).length > 0
 	const outOfStock = hasVariants && totalStock(product) === 0
@@ -122,6 +124,11 @@ export function ProductCard({ product }: { product: Product }) {
 						}`}>
 							{CONDITION_LABELS[product.condition] ?? product.condition}
 						</span>
+						{product.is_wholesale && (
+							<span className="px-2.5 py-0.5 rounded-full bg-[#599161]/10 border border-[#599161]/25 text-[#599161] text-[8.5px] font-extrabold uppercase tracking-wider shadow-sm">
+								Wholesale Lot
+							</span>
+						)}
 						{hasDiscount && (
 							<span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[8px] font-bold uppercase tracking-wider shadow-sm">
 								{Number(product.discount_percent)}% Off
@@ -150,9 +157,13 @@ export function ProductCard({ product }: { product: Product }) {
 
 				{/* Info Container */}
 				<div className="p-4 flex flex-col flex-1 text-center">
-					{product.brand && (
+					{product.is_wholesale && product.lot_quantity ? (
+						<p className="text-[9.5px] uppercase tracking-[0.16em] font-extrabold text-amber-500 mb-1.5">
+							Bulk Lot of {product.lot_quantity} Units
+						</p>
+					) : product.brand ? (
 						<p className="text-[8px] uppercase tracking-[0.2em] font-semibold text-primary mb-1">{product.brand}</p>
-					)}
+					) : null}
 					<h3 className="text-xs md:text-sm font-semibold text-foreground/80 tracking-wide leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
 						{product.name}
 					</h3>
@@ -186,14 +197,29 @@ export function ProductCard({ product }: { product: Product }) {
 					
 					{/* Price & Brand Icon */}
 					<div className="mt-auto pt-3 flex items-center justify-between border-t border-border/40">
-						<div className="flex items-baseline gap-1.5">
-							<span className="text-sm md:text-[17px] font-bold text-[#599161] tracking-tight">
-								${(hasDiscount ? discountedPrice : basePrice).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-							</span>
-							{hasDiscount && (
-								<span className="text-[10px] md:text-xs text-muted-foreground line-through decoration-muted-foreground/60 font-medium">
-									${basePrice.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-								</span>
+						<div className="flex flex-col items-start text-left">
+							{product.is_wholesale ? (
+								<>
+									<span className="text-sm md:text-[16px] font-extrabold text-[#599161] tracking-tight leading-none">
+										{formatPrice(basePrice, false)}
+									</span>
+									{product.lot_quantity && (
+										<span className="text-[9.5px] text-muted-foreground font-medium mt-1">
+											{formatPrice(basePrice / product.lot_quantity, true)} / unit
+										</span>
+									)}
+								</>
+							) : (
+								<div className="flex items-baseline gap-1.5">
+									<span className="text-sm md:text-[17px] font-bold text-[#599161] tracking-tight">
+										{formatPrice(hasDiscount ? discountedPrice : basePrice, false)}
+									</span>
+									{hasDiscount && (
+										<span className="text-[10px] md:text-xs text-muted-foreground line-through decoration-muted-foreground/60 font-medium">
+											{formatPrice(basePrice, false)}
+										</span>
+									)}
+								</div>
 							)}
 						</div>
 						<div className="flex items-center">

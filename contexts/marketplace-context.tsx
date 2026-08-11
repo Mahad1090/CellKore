@@ -14,6 +14,7 @@ interface MarketplaceContextType {
 	detectedCountry: 'US' | 'CA' | 'INT' | null
 	isInternational: boolean
 	loading: boolean
+	formatPrice: (amount: number | string, showCents?: boolean) => string
 }
 
 const MarketplaceContext = createContext<MarketplaceContextType | undefined>(undefined)
@@ -83,6 +84,23 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
 		writeCookie(COOKIE_NAME, m)
 	}
 
+	const formatPrice = (amount: number | string, showCents: boolean = false) => {
+		const num = typeof amount === 'string' ? parseFloat(amount) : amount
+		if (isNaN(num)) return ''
+		const decimals = showCents ? 2 : 0
+		const formatted = num.toLocaleString(undefined, {
+			minimumFractionDigits: decimals,
+			maximumFractionDigits: decimals,
+		})
+		if (marketplace === 'CA') {
+			return `C$${formatted}`
+		} else if (detectedCountry === 'INT') {
+			return `US$${formatted}`
+		} else {
+			return `$${formatted}`
+		}
+	}
+
 	return (
 		<MarketplaceContext.Provider
 			value={{
@@ -91,6 +109,7 @@ export function MarketplaceProvider({ children }: { children: React.ReactNode })
 				detectedCountry,
 				isInternational: detectedCountry === 'INT',
 				loading,
+				formatPrice,
 			}}
 		>
 			{children}

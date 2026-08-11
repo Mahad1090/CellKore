@@ -26,7 +26,7 @@ interface HydratedItem extends LocalCartItem {
 
 export default function CartPage() {
 	const { user, loading: authLoading } = useAuth()
-	const { marketplace } = useMarketplace()
+	const { marketplace, formatPrice } = useMarketplace()
 	const [items, setItems] = useState<HydratedItem[] | null>(null)
 	const [navigatingCheckout, setNavigatingCheckout] = useState(false)
 
@@ -170,11 +170,11 @@ export default function CartPage() {
 												<div className="flex items-center gap-4">
 													<div className="flex items-baseline gap-2">
 														<span className="text-sm font-bold text-card-foreground">
-															${(unitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+															{formatPrice(unitPrice(item) * item.quantity, true)}
 														</span>
 														{isProductOnSale(item.product) && (
 															<span className="text-xs text-muted-foreground line-through">
-																${(originalUnitPrice(item) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+																{formatPrice(originalUnitPrice(item) * item.quantity, true)}
 															</span>
 														)}
 													</div>
@@ -200,18 +200,18 @@ export default function CartPage() {
 								<div className="flex justify-between text-foreground/75">
 									<span>Subtotal</span>
 									<span className="font-medium text-card-foreground">
-										${subtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+										{formatPrice(subtotal, true)}
 									</span>
 								</div>
 								<div className="flex justify-between text-foreground/75">
 									<span>Estimated Tax</span>
 									<span className="font-medium text-card-foreground">
-										${estimatedTax.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+										{formatPrice(estimatedTax, true)}
 									</span>
 								</div>
 								<div className="border-t border-border pt-3 flex justify-between text-base font-bold text-card-foreground">
 									<span>Estimated Total</span>
-									<span>${(subtotal + estimatedTax).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+									<span>{formatPrice(subtotal + estimatedTax, true)}</span>
 								</div>
 								<p className="text-[11px] text-muted-foreground">
 									Final tax is calculated from your shipping state or province at checkout.

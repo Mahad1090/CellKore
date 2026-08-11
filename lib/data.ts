@@ -77,7 +77,17 @@ export async function fetchCatalogProducts(filters: CatalogFilters = {}): Promis
 		)
 	}
 	if (filters.categorySlug) {
-		products = products.filter((p) => p.categories?.slug === filters.categorySlug)
+		if (filters.categorySlug === 'phones') {
+			products = products.filter((p) =>
+				p.categories?.slug === 'iphones' ||
+				p.categories?.slug === 'samsungs' ||
+				p.categories?.slug === 'iphone' ||
+				p.categories?.slug === 'samsung' ||
+				p.categories?.slug === 'phones'
+			)
+		} else {
+			products = products.filter((p) => p.categories?.slug === filters.categorySlug)
+		}
 	}
 	return products
 }

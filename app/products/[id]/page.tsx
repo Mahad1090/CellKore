@@ -19,6 +19,7 @@ import { categoryHasValues, getCategoriesForBrand, getCategoryValues } from '@/l
 import { ProductReviewsSection } from '@/components/product-reviews'
 import type { Product } from '@/lib/types'
 import { isProductOnSale, getOriginalPrice, getDiscountedPrice } from '@/lib/types'
+import { useMarketplace } from '@/contexts/marketplace-context'
 
 function getColorHexFallback(colorName: string | null): string {
 	if (!colorName) return '#cccccc'
@@ -62,6 +63,7 @@ export default function ProductDetailPage() {
 	const params = useParams()
 	const id = typeof params.id === 'string' ? params.id : ''
 	const { toast } = useToast()
+	const { formatPrice } = useMarketplace()
 
 	const [product, setProduct] = useState<Product | null | undefined>(undefined)
 	const [selectedColor, setSelectedColor] = useState<string | null>(null)
@@ -397,11 +399,11 @@ export default function ProductDetailPage() {
 
 						<div className="flex items-baseline gap-3 mb-6">
 							<p className="text-3xl font-bold text-primary">
-								${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+								{formatPrice(displayPrice, false)}
 							</p>
 							{hasDiscount && (
 								<p className="text-lg font-medium text-muted-foreground line-through decoration-muted-foreground/60">
-									${displayOriginalPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+									{formatPrice(displayOriginalPrice, false)}
 								</p>
 							)}
 						</div>

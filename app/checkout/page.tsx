@@ -125,7 +125,7 @@ export default function CheckoutPage() {
 	const router = useRouter()
 	const { toast } = useToast()
 	const { user, loading: authLoading } = useAuth()
-	const { marketplace, detectedCountry } = useMarketplace()
+	const { marketplace, detectedCountry, formatPrice } = useMarketplace()
 
 	const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM)
 	const [items, setItems] = useState<HydratedItem[] | null>(null)
@@ -725,7 +725,7 @@ export default function CheckoutPage() {
 													onChange={(e) => set('giftCard', e.target.checked)}
 													className="w-3.5 h-3.5 accent-[#599161] cursor-pointer"
 												/>
-												<span>Gift Card (+${GIFT_CARD_FEE})</span>
+												<span>Gift Card (+{formatPrice(GIFT_CARD_FEE, false)})</span>
 											</label>
 											<label className="flex items-center gap-2.5 px-4 py-2.5 border border-[#CFD6D0] rounded-full cursor-pointer hover:border-[#599161] transition-colors font-semibold text-xs text-[#0f172a]">
 												<input
@@ -734,7 +734,7 @@ export default function CheckoutPage() {
 													onChange={(e) => set('giftWrapping', e.target.checked)}
 													className="w-3.5 h-3.5 accent-[#599161] cursor-pointer"
 												/>
-												<span>Gift Wrapping (+${GIFT_WRAP_FEE})</span>
+												<span>Gift Wrapping (+{formatPrice(GIFT_WRAP_FEE, false)})</span>
 											</label>
 										</div>
 									</div>
@@ -798,7 +798,7 @@ export default function CheckoutPage() {
 													</div>
 												</div>
 												<span className="text-xs font-black text-[#0f172a] shrink-0">
-													${rate.cost.toFixed(2)} {rate.currency}
+													{formatPrice(rate.cost, true)}
 												</span>
 											</label>
 										))}
@@ -841,11 +841,11 @@ export default function CheckoutPage() {
 														<p className="text-[10px] text-muted-foreground font-medium truncate mt-0.5">{variantLabel}</p>
 													)}
 													<p className="text-[11px] text-[#599161] font-extrabold mt-0.5">
-														${unitPrice(item).toFixed(2)} <span className="text-muted-foreground font-semibold">× {item.quantity}</span>
+														{formatPrice(unitPrice(item), true)} <span className="text-muted-foreground font-semibold">× {item.quantity}</span>
 													</p>
 												</div>
 												<span className="font-black text-[#0f172a] text-xs sm:text-sm shrink-0">
-													${(unitPrice(item) * item.quantity).toFixed(2)}
+													{formatPrice(unitPrice(item) * item.quantity, true)}
 												</span>
 											</div>
 										)
@@ -855,33 +855,33 @@ export default function CheckoutPage() {
 								<div className="space-y-3 text-sm border-t border-[#E0E6E1] pt-4">
 									<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 										<span>Subtotal</span>
-										<span className="font-bold text-[#0f172a]">${subtotal.toFixed(2)}</span>
+										<span className="font-bold text-[#0f172a]">{formatPrice(subtotal, true)}</span>
 									</div>
 									{discount > 0 && (
 										<div className="flex justify-between text-[#599161] font-bold text-xs">
 											<span>Discount ({promo?.code})</span>
-											<span>-${discount.toFixed(2)}</span>
+											<span>-{formatPrice(discount, true)}</span>
 										</div>
 									)}
 									<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 										<span>Tax {form.country ? `(${form.country})` : ''}</span>
-										<span className="font-bold text-[#0f172a]">${tax.toFixed(2)}</span>
+										<span className="font-bold text-[#0f172a]">{formatPrice(tax, true)}</span>
 									</div>
 									{giftFees > 0 && (
 										<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 											<span>Gift options</span>
-											<span className="font-bold text-[#0f172a]">${giftFees.toFixed(2)}</span>
+											<span className="font-bold text-[#0f172a]">{formatPrice(giftFees, true)}</span>
 										</div>
 									)}
 									<div className="flex justify-between text-[#0f172a]/80 font-semibold text-xs">
 										<span>Shipping{selectedShippingRate ? ` (${selectedShippingRate.serviceName})` : ''}</span>
 										<span className="font-bold text-[#0f172a]">
-											{selectedShippingRate ? `$${shippingCost.toFixed(2)}` : '—'}
+											{selectedShippingRate ? formatPrice(shippingCost, true) : '—'}
 										</span>
 									</div>
 									<div className="flex justify-between text-base font-black text-[#0f172a] border-t border-[#E0E6E1] pt-3.5">
 										<span>Total</span>
-										<span className="text-lg text-[#599161]">${total.toFixed(2)}</span>
+										<span className="text-lg text-[#599161]">{formatPrice(total, true)}</span>
 									</div>
 								</div>
 
