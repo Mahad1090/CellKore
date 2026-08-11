@@ -123,9 +123,11 @@ export function Navigation() {
 	}, [mobileMenuOpen])
 
 	const navLinks = [
-		{ href: '/', label: 'Home', icon: Home },
-		{ href: '/about', label: 'About Us', icon: Info },
-		{ href: '/contact', label: 'Contact Us', icon: Mail },
+		{ href: '/products?category=iphones', label: 'Shop', icon: Smartphone },
+		{ href: '/sell', label: 'Sell', icon: DollarSign },
+		{ href: '/wholesale', label: 'Wholesale', icon: Package },
+		{ href: '/repair', label: 'Repair', icon: Wrench },
+		{ href: '/spare-parts', label: 'Spare Parts', icon: Info },
 	]
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,7 +220,7 @@ export function Navigation() {
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">
 						{/* Left Block */}
-						<div className="flex items-center w-auto md:w-1/3 justify-start gap-2 md:gap-3 z-10">
+						<div className="flex items-center w-auto md:w-1/3 lg:w-[42%] justify-start gap-2 md:gap-3 z-10">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -241,21 +243,21 @@ export function Navigation() {
 						</div>
 
 						{/* Center Block - Logo + tagline (Dead-centered on Mobile & Desktop) */}
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 z-10 pointer-events-auto">
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[16%] z-10 pointer-events-auto">
 							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
 									src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
 									className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
-								<span className="hidden md:block text-[9px] uppercase tracking-[0.3em] text-muted-foreground mt-1 font-medium">
+								<span className="hidden md:block text-[9px] uppercase tracking-[0.25em] text-muted-foreground mt-1 font-medium whitespace-nowrap text-center">
 									Your Premium Electronics Hub
 								</span>
 							</Link>
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-auto md:w-1/3 space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
+						<div className="flex items-center justify-end w-auto md:w-1/3 lg:w-[42%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
 							{/* Persistent marketplace selector (Desktop view only, mobile uses drawer top) */}
 							<div className="relative md:mr-2 hidden md:block">
 								<button

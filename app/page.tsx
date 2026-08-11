@@ -102,7 +102,7 @@ export default function Home() {
 							<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
 							<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">CellKore Catalog</p>
 						</div>
-						<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+						<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
 							Shop by Device Type
 						</h2>
 					</div>
@@ -190,7 +190,7 @@ export default function Home() {
 							<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
 							<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">Authenticated Stock</p>
 						</div>
-						<h2 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-luxury uppercase bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+						<h2 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight font-sans bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
 							Featured Devices
 						</h2>
 					</div>
@@ -228,7 +228,7 @@ export default function Home() {
 				<div className="space-y-5">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
 								Wholesale & Bulk Lots
 							</h2>
 						</div>
@@ -254,7 +254,7 @@ export default function Home() {
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
 								Wholesale Bulk Lots
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -280,7 +280,7 @@ export default function Home() {
 								<span className="h-0.5 w-6 bg-emerald-500 rounded-full inline-block" />
 								<p className="text-[10px] uppercase tracking-[0.28em] text-emerald-600 dark:text-emerald-400 font-bold">Trade-In & Valuation</p>
 							</div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent">
 								Sell Your Device
 							</h2>
 						</div>
@@ -307,7 +307,7 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
 								Sell Your Device
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -333,7 +333,7 @@ export default function Home() {
 								<span className="h-0.5 w-6 bg-teal-500 rounded-full inline-block" />
 								<p className="text-[10px] uppercase tracking-[0.28em] text-teal-600 dark:text-teal-400 font-bold">Repair Portal</p>
 							</div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-teal-600 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-teal-600 bg-clip-text text-transparent">
 								Device Repair & Maintenance
 							</h2>
 						</div>
@@ -360,7 +360,7 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
 								Device Repair & Service
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -386,7 +386,7 @@ export default function Home() {
 								<span className="h-0.5 w-6 bg-amber-500 rounded-full inline-block" />
 								<p className="text-[10px] uppercase tracking-[0.28em] text-amber-600 dark:text-amber-400 font-bold">Spare Parts Catalog</p>
 							</div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-amber-600 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-amber-600 bg-clip-text text-transparent">
 								Spare Parts & Components
 							</h2>
 						</div>
@@ -413,7 +413,7 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
 								Replacement Parts
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
@@ -439,7 +439,7 @@ export default function Home() {
 								<span className="h-0.5 w-6 bg-blue-500 rounded-full inline-block" />
 								<p className="text-[10px] uppercase tracking-[0.28em] text-blue-600 dark:text-blue-400 font-bold">North America Regional Hub</p>
 							</div>
-							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-luxury uppercase text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-blue-500 bg-clip-text text-transparent">
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-blue-500 bg-clip-text text-transparent">
 								Regional Marketplaces
 							</h2>
 						</div>
@@ -466,7 +466,7 @@ export default function Home() {
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
 
-							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-luxury uppercase text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
 								Regional Marketplaces
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
