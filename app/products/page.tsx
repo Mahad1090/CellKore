@@ -227,7 +227,7 @@ function ProductsPageContent() {
 	const [products, setProducts] = useState<Product[] | null>(null)
 
 	// Filter states
-	const [brandFilter, setBrandFilter] = useState('all')
+	const [brandFilter, setBrandFilter] = useState(searchParams.get('brand') || 'all')
 	const [modelFilter, setModelFilter] = useState('all')
 	const [storageFilter, setStorageFilter] = useState('all')
 	const [conditionFilter, setConditionFilter] = useState('all')
@@ -274,7 +274,7 @@ function ProductsPageContent() {
 		setSelectedCategory(searchParams.get('category') || 'all')
 		setSearchQuery(searchParams.get('search') || '')
 		setModelFilter('all')
-		setBrandFilter('all')
+		setBrandFilter(searchParams.get('brand') || 'all')
 	}, [searchParams])
 
 	useEffect(() => {

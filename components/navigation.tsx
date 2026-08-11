@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {
 	ShoppingCart, Heart, Menu, X, Search, Home, Smartphone, Store, DollarSign,
 	Package, Info, Mail, User, Globe, ChevronDown, BookOpen, Wrench, Briefcase,
+	Tablet, Laptop, Headphones,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -125,54 +126,41 @@ export function Navigation() {
 	const navLinks = [
 		{
 			href: '/products?category=phones',
-			label: 'Shop',
+			label: 'Phones',
 			icon: Smartphone,
 			subItems: [
-				{ href: '/products', label: 'All Products' },
-				{ href: '/products?category=phones', label: 'Phones' },
-				{ href: '/products?category=ipads', label: 'iPads & Tablets' },
-				{ href: '/products?category=laptops', label: 'Laptops' },
-				{ href: '/products?category=watches', label: 'Smartwatches' },
-				{ href: '/products?category=accessories', label: 'Accessories' },
+				{ href: '/products?category=iphones', label: 'iPhones' },
+				{ href: '/products?category=samsungs', label: 'Samsungs' },
+				{ href: '/products?category=phones&brand=other', label: 'Other Androids' },
 			],
+		},
+		{
+			href: '/products?category=ipads',
+			label: 'iPads & Tablets',
+			icon: Tablet,
+			subItems: [
+				{ href: '/products?category=ipads', label: 'iPads' },
+				{ href: '/products?category=tablets', label: 'Tablets' },
+			],
+		},
+		{
+			href: '/products?category=laptops',
+			label: 'Laptops',
+			icon: Laptop,
+		},
+		{
+			href: '/products?category=accessories',
+			label: 'Accessories',
+			icon: Headphones,
 		},
 		{
 			href: '/repair',
-			label: 'Services',
+			label: 'Other Services',
 			icon: Briefcase,
 			subItems: [
-				{ href: '/repair', label: 'Device Repair' },
+				{ href: '/spare-parts', label: 'Buy Spare Parts' },
 				{ href: '/sell', label: 'Sell Your Device' },
-				{ href: '/wholesale', label: 'Wholesale Accounts' },
-				{ href: '/repair/status', label: 'Track Repair Status' },
-				{ href: '/sell/track', label: 'Track Sell Request' },
-			],
-		},
-		{
-			href: '/sell',
-			label: 'Sell',
-			icon: DollarSign,
-			subItems: [
-				{ href: '/sell', label: 'Sell Your Device' },
-				{ href: '/sell/track', label: 'Track Sell Request' },
-			],
-		},
-		{
-			href: '/wholesale',
-			label: 'Wholesale',
-			icon: Package,
-			subItems: [
-				{ href: '/wholesale', label: 'Wholesale Portal' },
-				{ href: '/wholesale#manifests', label: 'Request Manifest' },
-			],
-		},
-		{
-			href: '/spare-parts',
-			label: 'Spare Parts',
-			icon: Info,
-			subItems: [
-				{ href: '/spare-parts', label: 'Browse Parts' },
-				{ href: '/products?category=spare-parts', label: 'iPhone Spare Parts' },
+				{ href: '/repair', label: 'Repairing Services' },
 			],
 		},
 	]
