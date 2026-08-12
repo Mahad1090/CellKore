@@ -171,8 +171,8 @@ export default function Home() {
 											<img
 												src={coverImage || ''}
 												alt={category.name}
-												className={`w-full h-full object-cover transition-transform duration-500 object-center ${
-													isTablet ? 'scale-110 group-hover:scale-[1.15]' : 'scale-100 group-hover:scale-[1.05]'
+												className={`w-full h-full object-cover transition-transform duration-500 ${
+													isTablet ? 'object-bottom scale-105 group-hover:scale-[1.10]' : 'object-center scale-100 group-hover:scale-[1.05]'
 												}`}
 											/>
 										) : (

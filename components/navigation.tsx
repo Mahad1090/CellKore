@@ -246,7 +246,7 @@ export function Navigation() {
 			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">						{/* Left Block */}
-						<div className="flex items-center w-auto md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-3 z-10">
+						<div className="flex items-center w-auto md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-6 lg:gap-8 xl:gap-12 z-10">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -260,11 +260,11 @@ export function Navigation() {
 									<div key={link.label} className="relative group py-3">
 										<Link
 											href={link.href}
-											className="flex items-center gap-2 text-foreground/80 hover:text-primary transition-all duration-300 text-[14px] lg:text-[16px] xl:text-[18px] font-bold tracking-[0.05em] lg:tracking-[0.08em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
+											className="flex items-center gap-1.5 text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] xl:text-[12px] font-extrabold tracking-[0.12em] lg:tracking-[0.14em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
 										>
 											<span>{link.label}</span>
 											{link.subItems && (
-												<ChevronDown className="w-3.5 h-3.5 lg:w-4 lg:h-4 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
+												<ChevronDown className="w-3 h-3 lg:w-3.5 lg:h-3.5 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
 											)}
 										</Link>
 

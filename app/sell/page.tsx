@@ -624,7 +624,7 @@ export default function SellYourPhonePage() {
 										setSelectedCosmetic(null)
 										setForm(f => ({ ...f, brand: dt.brand, model: '', storage: '', condition: 'good', damages: '' }))
 									}}
-									className={`relative group rounded-2xl border bg-card w-[140px] sm:w-[170px] h-[160px] flex-shrink-0 shadow-sm transition-all duration-300 cursor-pointer overflow-hidden ${
+									className={`relative group rounded-2xl border bg-card w-[140px] sm:w-[170px] h-[190px] flex-shrink-0 shadow-sm transition-all duration-300 cursor-pointer overflow-hidden ${
 										isActive
 											? 'border-[#599161] ring-2 ring-[#599161]/20 scale-[1.02] shadow-lg'
 											: 'border-border/80 hover:border-[#599161] hover:shadow-xl hover:-translate-y-1.5'
@@ -633,7 +633,9 @@ export default function SellYourPhonePage() {
 									<img
 										src={dt.image}
 										alt={dt.label}
-										className={`w-full h-full object-cover object-top transition-transform duration-500 ${
+										className={`w-full h-full object-cover transition-transform duration-500 ${
+											dt.id === 'tablet' ? 'object-[center_30%]' : 'object-top'
+										} ${
 											dt.id === 'ipad'
 												? 'scale-110 group-hover:scale-[1.15]'
 												: dt.id === 'tablet'
