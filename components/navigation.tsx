@@ -134,18 +134,16 @@ export function Navigation() {
 				{ href: '/products?category=laptops', label: 'Laptops' },
 				{ href: '/products?category=watches', label: 'Smartwatches' },
 				{ href: '/products?category=accessories', label: 'Accessories' },
+				{ href: '/wholesale', label: 'Wholesale Products' },
 			],
 		},
 		{
 			href: '/repair',
-			label: 'Services',
-			icon: Briefcase,
+			label: 'Repair',
+			icon: Wrench,
 			subItems: [
 				{ href: '/repair', label: 'Device Repair' },
-				{ href: '/sell', label: 'Sell Your Device' },
-				{ href: '/wholesale', label: 'Wholesale Accounts' },
 				{ href: '/repair/status', label: 'Track Repair Status' },
-				{ href: '/sell/track', label: 'Track Sell Request' },
 			],
 		},
 		{
@@ -155,24 +153,6 @@ export function Navigation() {
 			subItems: [
 				{ href: '/sell', label: 'Sell Your Device' },
 				{ href: '/sell/track', label: 'Track Sell Request' },
-			],
-		},
-		{
-			href: '/wholesale',
-			label: 'Wholesale',
-			icon: Package,
-			subItems: [
-				{ href: '/wholesale', label: 'Wholesale Portal' },
-				{ href: '/wholesale#manifests', label: 'Request Manifest' },
-			],
-		},
-		{
-			href: '/spare-parts',
-			label: 'Spare Parts',
-			icon: Info,
-			subItems: [
-				{ href: '/spare-parts', label: 'Browse Parts' },
-				{ href: '/products?category=spare-parts', label: 'iPhone Spare Parts' },
 			],
 		},
 	]
@@ -275,16 +255,16 @@ export function Navigation() {
 								{mobileMenuOpen ? <X className="w-4.5 h-4.5" /> : <Menu className="w-4.5 h-4.5" />}
 							</button>
 
-							<div className="hidden md:flex items-center space-x-2.5 lg:space-x-3 xl:space-x-5">
+							<div className="hidden md:flex items-center space-x-6 lg:space-x-8 xl:space-x-12">
 								{navLinks.map((link) => (
 									<div key={link.label} className="relative group py-3">
 										<Link
 											href={link.href}
-											className="flex items-center gap-1.5 text-foreground/80 hover:text-primary transition-all duration-300 text-[10.5px] lg:text-[11px] xl:text-[12px] font-bold tracking-[0.05em] lg:tracking-[0.08em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
+											className="flex items-center gap-2 text-foreground/80 hover:text-primary transition-all duration-300 text-[14px] lg:text-[16px] xl:text-[18px] font-bold tracking-[0.05em] lg:tracking-[0.08em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
 										>
 											<span>{link.label}</span>
 											{link.subItems && (
-												<ChevronDown className="w-3 h-3 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
+												<ChevronDown className="w-3.5 h-3.5 lg:w-4 lg:h-4 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
 											)}
 										</Link>
 
@@ -548,15 +528,7 @@ export function Navigation() {
 									<span className="group-hover:translate-x-1 transition-transform duration-300">Device Repair</span>
 								</Link>
 
-								{/* Wholesale */}
-								<Link
-									href="/wholesale"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Package className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Wholesale</span>
-								</Link>
+
 
 								{/* Shop by Category Accordion */}
 								{categories.length > 0 && (

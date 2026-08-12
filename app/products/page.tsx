@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Filter, SlidersHorizontal, RotateCcw, Sparkles, X, Search } from 'lucide-react'
+import { Filter, SlidersHorizontal, RotateCcw, Sparkles, X, Search, Package, ChevronLeft } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/product-card'
@@ -235,6 +235,10 @@ function ProductsPageContent() {
 	const [priceFilter, setPriceFilter] = useState('all')
 	const [wholesaleCategoryFilter, setWholesaleCategoryFilter] = useState('all')
 
+	// Per-category wholesale view
+	const [showWholesale, setShowWholesale] = useState(false)
+	const [wholesaleLots, setWholesaleLots] = useState<Product[] | null>(null)
+
 	const isPhoneSelected = selectedCategory === 'phones' || selectedCategory === 'phone'
 	const isIphoneSelected = selectedCategory === 'iphones' || selectedCategory === 'iphone'
 	const isSamsungSelected = selectedCategory === 'samsungs' || selectedCategory === 'samsung'
@@ -247,7 +251,7 @@ function ProductsPageContent() {
 	const isWholesaleSelected = selectedCategory === 'wholesale'
 
 	const bannerVideo = isPhoneSelected
-		? 'iphone_banner'
+		? (brandFilter === 'Samsung' ? 'samsung_banner' : 'iphone_banner')
 		: isIphoneSelected
 			? 'iphone_banner'
 			: isSamsungSelected
@@ -287,7 +291,7 @@ function ProductsPageContent() {
 						id: 'phones-merged-id',
 						name: 'Phones',
 						slug: 'phones',
-						image_url: '/phones.png',
+						image_url: '/phones.png?v=2',
 						is_active: true,
 						sort_order: 1,
 						created_at: new Date().toISOString(),
@@ -328,6 +332,21 @@ function ProductsPageContent() {
 		return () => clearTimeout(timer)
 	}, [marketplace, marketLoading, searchQuery, selectedCategory])
 
+	// Fetch wholesale lots for the current category when wholesale view is toggled on
+	useEffect(() => {
+		if (!showWholesale || marketLoading) return
+		setWholesaleLots(null)
+		fetchWholesaleLots(marketplace)
+			.then(setWholesaleLots)
+			.catch(() => setWholesaleLots([]))
+	}, [showWholesale, marketplace, marketLoading])
+
+	// Reset wholesale view when category changes
+	useEffect(() => {
+		setShowWholesale(false)
+		setWholesaleLots(null)
+	}, [selectedCategory, brandFilter])
+
 	// Reset sub-filters when category changes
 	const handleCategoryChange = (slug: string) => {
 		setSelectedCategory(slug)
@@ -338,6 +357,8 @@ function ProductsPageContent() {
 		setLockStatusFilter('all')
 		setPriceFilter('all')
 		setWholesaleCategoryFilter('all')
+		setShowWholesale(false)
+		setWholesaleLots(null)
 	}
 
 	const resetAllFilters = () => {
@@ -545,11 +566,19 @@ function ProductsPageContent() {
 						)}
 					</p>
 					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
-						{isPhoneSelected ? 'Phones' : isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : isWholesaleSelected ? 'Wholesale Lots' : 'Shop Devices'}
+						{isPhoneSelected
+							? (brandFilter === 'Apple' ? 'iPhones' : brandFilter === 'Samsung' ? 'Samsung' : brandFilter === 'other' ? 'Other Phones' : 'Phones')
+							: isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : isWholesaleSelected ? 'Wholesale Lots' : 'Shop Devices'}
 					</h1>
 					{isPhoneSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
-							Premium, certified pre-owned and refurbished Apple iPhones, Samsung Galaxy, and other premier smartphones. Fully tested, unlocked, and backed by warranty.
+							{brandFilter === 'Apple'
+								? 'Premium, certified pre-owned and refurbished iPhones. Fully tested, unlocked, and backed by our complete warranty.'
+								: brandFilter === 'Samsung'
+									? 'Premium, certified pre-owned and refurbished Samsung Galaxy devices. Fully tested, unlocked, and backed by our complete warranty.'
+									: brandFilter === 'other'
+										? 'Premium, certified pre-owned and refurbished smartphones from Google Pixel, Motorola, OnePlus, and more.'
+										: 'Premium, certified pre-owned and refurbished Apple iPhones, Samsung Galaxy, and other premier smartphones. Fully tested, unlocked, and backed by warranty.'}
 						</p>
 					)}
 					{isWholesaleSelected && (
@@ -690,7 +719,7 @@ function ProductsPageContent() {
 					</div>
 				)}
 
-				{/* Wholesale Lots Subcategory Selector */}
+				{/* Wholesale Lots Subcategory Selector (global wholesale page) */}
 				{isWholesaleSelected && (
 					<div className="space-y-2 pb-2 pt-1">
 						<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Filter Wholesale Lots</p>
@@ -714,6 +743,70 @@ function ProductsPageContent() {
 						</div>
 					</div>
 				)}
+
+				{/* Per-Category Wholesale Card — shown for every non-wholesale category */}
+				{!isWholesaleSelected && selectedCategory !== 'all' && !showWholesale && (() => {
+					const bgImage = brandFilter === 'Apple' || isIphoneSelected
+						? '/iphone_banner_poster.jpg'
+						: brandFilter === 'Samsung' || isSamsungSelected
+							? '/samsung_banner_poster.jpg'
+							: isIpadSelected
+								? '/ipad_banner_poster.jpg'
+								: isLaptopSelected
+									? '/laptop_banner_poster.jpg'
+									: isTabletSelected
+										? '/tablet_banner_poster.jpg'
+										: isWatchSelected
+											? '/watch_banner_poster.jpg'
+											: isSparePartsSelected
+												? '/iphone_banner_poster.jpg'
+												: isAccessoriesSelected
+													? '/iphone_banner_poster.jpg'
+													: '/iphone_banner_poster.jpg'
+					return (
+						<button
+							id="wholesale-card-btn"
+							onClick={() => setShowWholesale(true)}
+							className="w-full group overflow-hidden rounded-2xl border border-primary/30 hover:border-primary/70 hover:shadow-primary/10 hover:shadow-xl transition-all duration-300 cursor-pointer text-left flex h-[130px] bg-card"
+						>
+							{/* Left — image panel */}
+							<div className="relative w-[480px] shrink-0 overflow-hidden">
+								<img
+									src={bgImage}
+									alt="Wholesale background"
+									className="absolute inset-0 w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-500"
+								/>
+								{/* right-edge fade to card bg */}
+								<div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-card" />
+								{/* shimmer sweep */}
+								<div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
+							</div>
+
+							{/* Right — content panel */}
+							<div className="flex-1 flex items-center justify-between gap-3 px-5 py-4">
+								<div className="flex items-center gap-4">
+									<div className="shrink-0 w-11 h-11 rounded-xl bg-primary flex items-center justify-center">
+										<Package className="w-5 h-5 text-primary-foreground" />
+									</div>
+									<div>
+										<div className="flex items-center gap-2 mb-1">
+											<span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Wholesale</span>
+											<span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-black uppercase tracking-wider">Bulk Lots</span>
+										</div>
+										<p className="text-sm font-black text-foreground tracking-wide">
+											Buy {brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Lots
+										</p>
+										<p className="text-[11px] text-muted-foreground mt-0.5">Bulk-graded lots for retailers &amp; distributors — inspected &amp; manifested</p>
+									</div>
+								</div>
+								<div className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold transition-all">
+									View Lots
+									<ChevronLeft className="w-4 h-4 rotate-180" />
+								</div>
+							</div>
+						</button>
+					)
+				})()}
 
 				{/* Top Search & Sorting Bar */}
 				<div className="flex flex-wrap items-center justify-between gap-3">
@@ -895,7 +988,78 @@ function ProductsPageContent() {
 					</div>
 				)}
 
-				{sorted === null ? (
+				{/* Wholesale Lots View — scoped to current category + brand */}
+				{showWholesale ? (
+					<div className="space-y-5">
+						{/* Header with back button */}
+						<div className="flex items-center gap-3">
+							<button
+								onClick={() => setShowWholesale(false)}
+								className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:border-primary hover:text-primary text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+							>
+								<ChevronLeft className="w-3.5 h-3.5" />
+								Back to products
+							</button>
+							<div className="flex items-center gap-2">
+								<Package className="w-4 h-4 text-primary" />
+								<span className="text-sm font-black text-foreground">
+									{brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Lots
+								</span>
+								<span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider">Bulk</span>
+							</div>
+						</div>
+						{/* Wholesale grid */}
+						{wholesaleLots === null ? (
+							<GridShimmer count={6} />
+						) : (() => {
+							// Filter wholesale lots to the current category + brand
+							const scopedLots = wholesaleLots.filter((lot) => {
+								const slug = (lot.categories?.slug || '').toLowerCase()
+								const pName = lot.name.toLowerCase()
+								const pBrand = (lot.brand || '').toLowerCase()
+								// Category matching
+								if (isPhoneSelected || isIphoneSelected || isSamsungSelected) {
+									const isPhoneLot = slug === 'iphones' || slug === 'samsungs' || slug === 'iphone' || slug === 'samsung' || slug === 'phones' || pName.includes('iphone') || pName.includes('galaxy') || pName.includes('phone')
+									if (!isPhoneLot) return false
+									// Brand scoping
+									if (brandFilter === 'Apple') {
+										if (!pBrand.includes('apple') && !pName.includes('iphone')) return false
+									} else if (brandFilter === 'Samsung') {
+										if (!pBrand.includes('samsung') && !pName.includes('galaxy') && !pName.includes('samsung')) return false
+									} else if (brandFilter === 'other') {
+										if (pBrand.includes('apple') || pBrand.includes('samsung') || pName.includes('iphone') || pName.includes('galaxy')) return false
+									}
+								} else if (isIpadSelected) {
+									if (slug !== 'ipads' && slug !== 'ipad' && !pName.includes('ipad')) return false
+								} else if (isLaptopSelected) {
+									if (slug !== 'laptops' && slug !== 'laptop' && !pName.includes('laptop') && !pName.includes('macbook')) return false
+								} else if (isTabletSelected) {
+									if (slug !== 'tablets' && slug !== 'tablet' && !pName.includes('tablet')) return false
+								} else if (isWatchSelected) {
+									if (slug !== 'watches' && slug !== 'watch' && !pName.includes('watch')) return false
+								} else if (isSparePartsSelected) {
+									if (!slug.includes('spare') && !pName.includes('spare') && !pName.includes('screen') && !pName.includes('battery')) return false
+								} else if (isAccessoriesSelected) {
+									if (!slug.includes('accessor') && !pName.includes('accessor') && !pName.includes('case') && !pName.includes('charger')) return false
+								}
+								return true
+							})
+							return scopedLots.length === 0 ? (
+								<div className="text-center py-20 border border-dashed border-primary/20 rounded-2xl bg-card">
+									<Package className="w-10 h-10 text-primary/30 mx-auto mb-3" />
+									<p className="text-foreground font-bold text-base mb-1">No wholesale lots available for this category.</p>
+									<p className="text-muted-foreground text-xs">Check back soon or contact us for bulk inquiries.</p>
+								</div>
+							) : (
+								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+									{scopedLots.map((lot) => (
+										<ProductCard key={lot.id} product={lot} />
+									))}
+								</div>
+							)
+						})()}
+					</div>
+				) : sorted === null ? (
 					<GridShimmer count={12} />
 				) : sorted.length === 0 ? (
 					<div className="text-center py-20 border border-dashed border-border rounded-2xl bg-card">

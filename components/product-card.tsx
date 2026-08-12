@@ -15,9 +15,9 @@ const CONDITION_LABELS: Record<string, string> = {
 }
 
 const CONDITION_CLASSES: Record<string, string> = {
-	new: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30',
-	used: 'bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200/60 dark:border-zinc-800/60',
-	refurbished: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/30',
+	new: 'bg-emerald-600 text-white border-emerald-600',
+	used: 'bg-zinc-600 text-white border-zinc-600',
+	refurbished: 'bg-amber-600 text-white border-amber-600',
 }
 
 function getBrandIcon(brand: string | null) {
@@ -125,17 +125,17 @@ export function ProductCard({ product }: { product: Product }) {
 							{CONDITION_LABELS[product.condition] ?? product.condition}
 						</span>
 						{product.is_wholesale && (
-							<span className="px-2.5 py-0.5 rounded-full bg-[#599161]/10 border border-[#599161]/25 text-[#599161] text-[8.5px] font-extrabold uppercase tracking-wider shadow-sm">
+							<span className="px-2.5 py-0.5 rounded-full bg-[#599161] text-white text-[8.5px] font-extrabold uppercase tracking-wider shadow-sm">
 								Wholesale Lot
 							</span>
 						)}
 						{hasDiscount && (
-							<span className="px-2.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-[8px] font-bold uppercase tracking-wider shadow-sm">
+							<span className="px-2.5 py-0.5 rounded-full bg-rose-600 text-white text-[8px] font-bold uppercase tracking-wider shadow-sm">
 								{Number(product.discount_percent)}% Off
 							</span>
 						)}
 						{outOfStock && (
-							<span className="px-2.5 py-0.5 rounded-full bg-red-500/10 border border-red-500/20 text-red-600 text-[8px] font-bold uppercase tracking-wider shadow-sm">
+							<span className="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[8px] font-bold uppercase tracking-wider shadow-sm">
 								{product.is_wholesale ? 'Sold Out' : 'Out of Stock'}
 							</span>
 						)}
