@@ -41,10 +41,10 @@ export default function MarketplacePage() {
 					preload="auto"
 					src={
 						marketplace === 'CA'
-							? '/canada_marketplace_banner.mp4'
+							? '/canada_marketplace_banner.mp4?v=2'
 							: marketplace === 'US'
-								? '/us_marketplace_banner.mp4'
-								: '/all_marketplace_banner.mp4'
+								? '/us_marketplace_banner.mp4?v=2'
+								: '/all_marketplace_banner.mp4?v=2'
 					}
 					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0 transition-opacity duration-500"
 				/>

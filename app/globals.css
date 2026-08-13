@@ -13,6 +13,32 @@
     display: none; /* Chrome, Safari, Opera */
 }
 
+/*
+ * Smooth, premium scrolling throughout the site.
+ * - Native momentum scrolling on iOS for any internal scroll container.
+ * - Scroll-chaining containment so an inner drawer/panel reaching its
+ *   bounds doesn't rubber-band the page behind it.
+ * - content-visibility lets the browser skip layout/paint work for
+ *   sections that are off-screen, which is the single biggest lever for
+ *   long-page scroll jank — apply via the `.scroll-lazy` utility on any
+ *   heavy below-the-fold section.
+ */
+html {
+    scroll-behavior: smooth;
+}
+body {
+    overscroll-behavior-y: none;
+}
+.no-scrollbar,
+[class*='overflow-y-auto'],
+[class*='overflow-x-auto'] {
+    -webkit-overflow-scrolling: touch;
+}
+.scroll-lazy {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 800px;
+}
+
 @theme inline {
     --font-heading: var(--font-heading), "Georgia", serif;
     --font-sans: var(--font-body), "Helvetica Neue", sans-serif;

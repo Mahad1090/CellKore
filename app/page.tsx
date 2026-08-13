@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck, ShoppingBag, Package, ArrowRight } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
+import { LazyBackgroundVideo } from '@/components/lazy-background-video'
 import { TestimonialsPreview } from '@/components/testimonials-preview'
 import { ProductCard } from '@/components/product-card'
 import { GridShimmer } from '@/components/shimmer'
@@ -78,7 +79,7 @@ export default function Home() {
 					<div className="flex flex-col items-center gap-4 sm:gap-5 pt-2 max-w-full px-2">
 						{/* 1. Dominant Signature Primary Button */}
 						<Link
-							href="/products?category=iphones"
+							href="/categories"
 							className="inline-flex items-center justify-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-[#599161] hover:bg-[#46754e] text-white font-extrabold text-xs uppercase tracking-[0.2em] shadow-xl hover:shadow-[#599161]/30 hover:scale-105 active:scale-95 transition-all duration-300 group border border-[#599161]/40 cursor-pointer min-w-[160px]"
 						>
 							<ShoppingBag className="w-4 h-4 text-white/90 group-hover:rotate-12 transition-transform duration-300 shrink-0" />
@@ -125,7 +126,7 @@ export default function Home() {
 							Shop by Device Type
 						</h2>
 					</div>
-					<Link href="/products?category=iphones" className="glow-outline-btn glow-outline-primary">
+					<Link href="/categories" className="glow-outline-btn glow-outline-primary">
 						<span className="glow-outline-beam" />
 						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
 							View All Categories
@@ -209,7 +210,7 @@ export default function Home() {
 							Featured Devices
 						</h2>
 					</div>
-					<Link href="/products?category=iphones" className="glow-outline-btn glow-outline-primary">
+					<Link href="/products" className="glow-outline-btn glow-outline-primary">
 						<span className="glow-outline-beam" />
 						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
 							Explore All
@@ -240,11 +241,11 @@ export default function Home() {
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20 py-12">
 
 				{/* FEATURE SECTION 1: WHOLESALE BULK LOTS (Running Video Banner: /bulk_banner.mp4) */}
-				<div className="space-y-5">
+				<div className="space-y-5 scroll-lazy">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
-								Wholesale & Bulk Lots
+								Wholesale & Bulk Bundles
 							</h2>
 						</div>
 						<Link href="/wholesale" className="glow-outline-btn glow-outline-primary">
@@ -256,24 +257,18 @@ export default function Home() {
 					</div>
 
 					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
-						<video
-							autoPlay
-							loop
-							muted
-							playsInline
-							preload="auto"
+						<LazyBackgroundVideo
+							src="/bulk_banner.mp4?v=2"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
-						>
-							<source src="/bulk_banner.mp4" type="video/mp4" />
-						</video>
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
 							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
-								Wholesale Bulk Lots
+								Wholesale Bulk Bundles
 							</h3>
 							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
-								Gain access to volume pricing, verified grading manifests, and commercial bulk inventory lots. Built for electronics retailers, repair shops, and distributors.
+								Gain access to volume pricing, verified grading manifests, and commercial bulk inventory bundles. Built for electronics retailers, repair shops, and distributors.
 							</p>
 							<div className="flex flex-wrap items-center gap-4">
 								<Link
@@ -288,7 +283,7 @@ export default function Home() {
 				</div>
 
 				{/* FEATURE SECTION 2: SELL YOUR DEVICE (Running Video Banner: /sell_ur_phone_banner.mp4) */}
-				<div className="space-y-5">
+				<div className="space-y-5 scroll-lazy">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<div className="flex items-center gap-2 mb-2">
@@ -308,16 +303,10 @@ export default function Home() {
 					</div>
 
 					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
-						<video
-							autoPlay
-							loop
-							muted
-							playsInline
-							preload="auto"
+						<LazyBackgroundVideo
+							src="/sell_ur_phone_banner.mp4?v=5"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
-						>
-							<source src="/sell_ur_phone_banner.mp4?v=4" type="video/mp4" />
-						</video>
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
@@ -341,7 +330,7 @@ export default function Home() {
 				</div>
 
 				{/* FEATURE SECTION 3: DEVICE REPAIR & RESTORATION (Running Video Banner: /laptop_banner.mp4) */}
-				<div className="space-y-5">
+				<div className="space-y-5 scroll-lazy">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<div className="flex items-center gap-2 mb-2">
@@ -361,16 +350,10 @@ export default function Home() {
 					</div>
 
 					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
-						<video
-							autoPlay
-							loop
-							muted
-							playsInline
-							preload="auto"
+						<LazyBackgroundVideo
+							src="/repair_banner.mp4?v=2"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
-						>
-							<source src="/repair_banner.mp4" type="video/mp4" />
-						</video>
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
@@ -394,7 +377,7 @@ export default function Home() {
 				</div>
 
 				{/* FEATURE SECTION 3.5: SPARE PARTS & COMPONENTS (Running Video Banner: /spare_parts_banner.mp4) */}
-				<div className="space-y-5">
+				<div className="space-y-5 scroll-lazy">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<div className="flex items-center gap-2 mb-2">
@@ -414,16 +397,10 @@ export default function Home() {
 					</div>
 
 					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
-						<video
-							autoPlay
-							loop
-							muted
-							playsInline
-							preload="auto"
+						<LazyBackgroundVideo
+							src="/spare_parts_banner.mp4?v=2"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
-						>
-							<source src="/spare_parts_banner.mp4" type="video/mp4" />
-						</video>
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
@@ -447,7 +424,7 @@ export default function Home() {
 				</div>
 
 				{/* FEATURE SECTION 4: REGIONAL MARKETPLACES (Running Video Banner: /us_marketplace_banner.mp4) */}
-				<div className="space-y-5">
+				<div className="space-y-5 scroll-lazy">
 					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
 						<div>
 							<div className="flex items-center gap-2 mb-2">
@@ -467,16 +444,10 @@ export default function Home() {
 					</div>
 
 					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
-						<video
-							autoPlay
-							loop
-							muted
-							playsInline
-							preload="auto"
+						<LazyBackgroundVideo
+							src="/us_marketplace_banner.mp4?v=2"
 							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
-						>
-							<source src="/us_marketplace_banner.mp4" type="video/mp4" />
-						</video>
+						/>
 						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
 
 						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">

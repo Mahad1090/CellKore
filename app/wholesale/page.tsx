@@ -12,7 +12,7 @@ import type { Product } from '@/lib/types'
 import { primaryImage, totalStock } from '@/lib/types'
 
 const PERKS = [
-	{ icon: Package, title: 'Manifested Lots', text: 'Full inventory manifests before you commit' },
+	{ icon: Package, title: 'Manifested Bundles', text: 'Full inventory manifests before you commit' },
 	{ icon: Tag, title: 'Tiered Pricing', text: 'Price breaks that scale with quantity' },
 	{ icon: Truck, title: 'Freight Ready', text: 'Palletized and shipped across US & Canada' },
 	{ icon: ShieldCheck, title: 'Certified Grading', text: 'Every unit tested and graded' },
@@ -41,15 +41,15 @@ export default function WholesalePage() {
 					muted
 					playsInline
 					preload="auto"
-					src="/bulk_banner.mp4"
+					src="/bulk_banner.mp4?v=2"
 					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
 				/>
 				<div className="absolute inset-0 bg-black/60 z-10" />
 				<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
 					<p className="text-sm uppercase tracking-[0.25em] text-white/80 mb-3">Wholesale</p>
-					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase text-white drop-shadow-md">Bulk Device Lots</h1>
+					<h1 className="text-3xl md:text-5xl font-bold tracking-luxury uppercase text-white drop-shadow-md">Bulk Device Bundles</h1>
 					<p className="text-white/90 mt-4 text-base md:text-lg font-light max-w-2xl leading-relaxed drop-shadow-sm">
-						Manifested wholesale lots with transparent bulk pricing tiers. All wholesale transactions are final.
+						Manifested wholesale bundles with transparent bulk pricing tiers. All wholesale transactions are final.
 					</p>
 				</div>
 			</section>
@@ -67,13 +67,13 @@ export default function WholesalePage() {
 					))}
 				</div>
 
-				<h2 className="text-2xl font-bold text-foreground tracking-luxury uppercase mb-8">Available Lots</h2>
+				<h2 className="text-2xl font-bold text-foreground tracking-luxury uppercase mb-8">Available Bundles</h2>
 
 				{lots === null ? (
 					<GridShimmer count={6} />
 				) : lots.length === 0 ? (
 					<div className="text-center py-24 border border-dashed border-border rounded-3xl">
-						<p className="text-muted-foreground text-sm">No wholesale lots are currently listed for this marketplace.</p>
+						<p className="text-muted-foreground text-sm">No wholesale bundles are currently listed for this marketplace.</p>
 					</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -114,7 +114,7 @@ export default function WholesalePage() {
 												</h3>
 												<div className="mt-auto pt-4 flex items-end justify-between">
 													<div>
-														<p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Lot Price</p>
+														<p className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Bundle Price</p>
 														<p className="text-xl font-bold text-card-foreground">
 															{formatPrice(lot.base_price, false)}
 														</p>

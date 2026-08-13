@@ -141,7 +141,7 @@ const ACCESSORY_MODELS = [
 ]
 
 const WHOLESALE_CATEGORIES = [
-	{ label: 'All Wholesale Lots', value: 'all' },
+	{ label: 'All Wholesale Bundles', value: 'all' },
 	{ label: 'Phones', value: 'phones' },
 	{ label: 'iPads & Tablets', value: 'ipads' },
 	{ label: 'Laptops', value: 'laptops' },
@@ -545,7 +545,7 @@ function ProductsPageContent() {
 					<>
 						<video
 							key={bannerVideo}
-							src={`/${bannerVideo}.mp4`}
+							src={`/${bannerVideo}.mp4?v=2`}
 							poster={(bannerVideo === 'us_marketplace_banner' || bannerVideo === 'canada_marketplace_banner' || bannerVideo === 'all_marketplace_banner') ? undefined : `/${bannerVideo}_poster.jpg`}
 							autoPlay
 							loop
@@ -568,7 +568,7 @@ function ProductsPageContent() {
 					<h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-luxury uppercase leading-none">
 						{isPhoneSelected
 							? (brandFilter === 'Apple' ? 'iPhones' : brandFilter === 'Samsung' ? 'Samsung' : brandFilter === 'other' ? 'Other Phones' : 'Phones')
-							: isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : isWholesaleSelected ? 'Wholesale Lots' : 'Shop Devices'}
+							: isIphoneSelected ? 'Apple' : isSamsungSelected ? 'Samsung' : isIpadSelected ? 'iPads' : isLaptopSelected ? 'Laptops' : isTabletSelected ? 'Tablets' : isWatchSelected ? 'Watches' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : isWholesaleSelected ? 'Wholesale Bundles' : 'Shop Devices'}
 					</h1>
 					{isPhoneSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
@@ -583,7 +583,7 @@ function ProductsPageContent() {
 					)}
 					{isWholesaleSelected && (
 						<p className="text-sm md:text-base text-primary-foreground/90 mt-6 max-w-2xl font-light leading-relaxed tracking-wide">
-							Bulk lots and manifestations of premium smartphones, tablets, and laptops. Inspected, graded, and packaged for retail stock or distribution.
+							Bulk bundles and manifestations of premium smartphones, tablets, and laptops. Inspected, graded, and packaged for retail stock or distribution.
 						</p>
 					)}
 					{isIphoneSelected && (
@@ -719,10 +719,10 @@ function ProductsPageContent() {
 					</div>
 				)}
 
-				{/* Wholesale Lots Subcategory Selector (global wholesale page) */}
+				{/* Wholesale Bundles Subcategory Selector (global wholesale page) */}
 				{isWholesaleSelected && (
 					<div className="space-y-2 pb-2 pt-1">
-						<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Filter Wholesale Lots</p>
+						<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Filter Wholesale Bundles</p>
 						<div className="flex flex-wrap items-center gap-2">
 							{WHOLESALE_CATEGORIES.map((cat) => {
 								const isActive = wholesaleCategoryFilter === cat.value
@@ -791,16 +791,16 @@ function ProductsPageContent() {
 									<div>
 										<div className="flex items-center gap-2 mb-1">
 											<span className="text-[9px] font-black uppercase tracking-[0.25em] text-primary">Wholesale</span>
-											<span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-black uppercase tracking-wider">Bulk Lots</span>
+											<span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[8px] font-black uppercase tracking-wider">Bulk Bundles</span>
 										</div>
 										<p className="text-sm font-black text-foreground tracking-wide">
-											Buy {brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Lots
+											Buy {brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Bundles
 										</p>
-										<p className="text-[11px] text-muted-foreground mt-0.5">Bulk-graded lots for retailers &amp; distributors — inspected &amp; manifested</p>
+										<p className="text-[11px] text-muted-foreground mt-0.5">Bulk-graded bundles for retailers &amp; distributors — inspected &amp; manifested</p>
 									</div>
 								</div>
 								<div className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold transition-all">
-									View Lots
+									View Bundles
 									<ChevronLeft className="w-4 h-4 rotate-180" />
 								</div>
 							</div>
@@ -948,7 +948,7 @@ function ProductsPageContent() {
 						{/* 6. Price Range Dropdown */}
 						<div>
 							<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">
-								{isWholesaleSelected ? 'Lot Price Range' : 'Price Range'}
+								{isWholesaleSelected ? 'Bundle Price Range' : 'Price Range'}
 							</label>
 							<select
 								value={priceFilter}
@@ -1003,7 +1003,7 @@ function ProductsPageContent() {
 							<div className="flex items-center gap-2">
 								<Package className="w-4 h-4 text-primary" />
 								<span className="text-sm font-black text-foreground">
-									{brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Lots
+									{brandFilter !== 'all' ? (brandFilter === 'Apple' ? 'iPhone' : brandFilter === 'Samsung' ? 'Samsung Galaxy' : 'Other Brand') : (isPhoneSelected ? 'Phone' : isIpadSelected ? 'iPad' : isLaptopSelected ? 'Laptop' : isTabletSelected ? 'Tablet' : isWatchSelected ? 'Watch' : isSparePartsSelected ? 'Spare Parts' : isAccessoriesSelected ? 'Accessories' : 'Device')} Wholesale Bundles
 								</span>
 								<span className="px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-black uppercase tracking-wider">Bulk</span>
 							</div>
@@ -1047,7 +1047,7 @@ function ProductsPageContent() {
 							return scopedLots.length === 0 ? (
 								<div className="text-center py-20 border border-dashed border-primary/20 rounded-2xl bg-card">
 									<Package className="w-10 h-10 text-primary/30 mx-auto mb-3" />
-									<p className="text-foreground font-bold text-base mb-1">No wholesale lots available for this category.</p>
+									<p className="text-foreground font-bold text-base mb-1">No wholesale bundles available for this category.</p>
 									<p className="text-muted-foreground text-xs">Check back soon or contact us for bulk inquiries.</p>
 								</div>
 							) : (

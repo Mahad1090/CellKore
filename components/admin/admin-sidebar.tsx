@@ -83,7 +83,7 @@ export function AdminSidebar() {
 			)}
 
 			<aside
-				className={`bg-white border-r border-[#E9ECEA] flex flex-col sticky top-0 h-screen font-sans transition-all duration-300 z-40 shrink-0 ${
+				className={`bg-white border-r border-[#E9ECEA] flex flex-col sticky top-0 h-screen font-sans transition-[width] duration-300 z-40 shrink-0 ${
 					sidebarOpen ? 'fixed inset-y-0 left-0 w-72 flex shadow-xl' : 'hidden lg:flex'
 				} ${
 					sidebarCollapsed ? 'lg:w-20' : 'lg:w-64'

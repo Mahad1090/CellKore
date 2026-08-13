@@ -124,7 +124,7 @@ export function Navigation() {
 
 	const navLinks = [
 		{
-			href: '/products?category=phones',
+			href: '/categories',
 			label: 'Shop',
 			icon: Smartphone,
 			subItems: [
@@ -134,6 +134,7 @@ export function Navigation() {
 				{ href: '/products?category=laptops', label: 'Laptops' },
 				{ href: '/products?category=watches', label: 'Smartwatches' },
 				{ href: '/products?category=accessories', label: 'Accessories' },
+				{ href: '/spare-parts', label: 'Spare Parts' },
 				{ href: '/wholesale', label: 'Wholesale Products' },
 			],
 		},
@@ -302,8 +303,8 @@ export function Navigation() {
 
 						{/* Right Block - Actions */}
 						<div className="flex items-center justify-end w-auto md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
-							{/* Persistent marketplace selector (Desktop view only, mobile uses drawer top) */}
-							<div className="relative md:mr-2 hidden md:block">
+							{/* Persistent marketplace selector (shown in header on all breakpoints; also duplicated at the top of the mobile drawer) */}
+							<div className="relative sm:mr-2 block">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
@@ -429,10 +430,10 @@ export function Navigation() {
 			{mobileMenuOpen && (
 				<div className="fixed inset-0 z-[9999]">
 					<div
-						className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+						className="fixed inset-0 bg-black/60 transition-opacity duration-300"
 						onClick={() => setMobileMenuOpen(false)}
 					/>
-					<div className="fixed inset-y-0 left-0 w-[88vw] max-w-[340px] bg-background border-r border-border/60 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.15)] p-6 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300 overflow-y-auto no-scrollbar">
+					<div className="fixed inset-y-0 left-0 w-[88vw] max-w-[340px] bg-background border-r border-border/60 shadow-[25px_0_50px_-15px_rgba(0,0,0,0.15)] p-6 flex flex-col justify-between z-50 animate-in slide-in-from-left duration-300 overflow-y-auto overscroll-contain no-scrollbar will-change-transform">
 						<div>
 							<div className="relative flex flex-col items-center justify-center pb-5 border-b border-border/60">
 								<Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center justify-center">
@@ -490,7 +491,7 @@ export function Navigation() {
 
 								{/* Products */}
 								<Link
-									href="/products?category=phones"
+									href="/categories"
 									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
 									onClick={() => setMobileMenuOpen(false)}
 								>
@@ -596,7 +597,7 @@ export function Navigation() {
 			)}
 			{/* Search Modal Overlay */}
 			{searchModalOpen && (
-				<div className="fixed inset-0 z-[10000] flex items-start justify-center pt-20 px-4 bg-black/65 backdrop-blur-md animate-in fade-in duration-200">
+				<div className="fixed inset-0 z-[10000] flex items-start justify-center pt-20 px-4 bg-black/70 animate-in fade-in duration-200">
 					<div
 						className="fixed inset-0"
 						onClick={() => setSearchModalOpen(false)}

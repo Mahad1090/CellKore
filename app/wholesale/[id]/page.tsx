@@ -71,7 +71,7 @@ export default function WholesaleDetailPage() {
 			<main className="min-h-screen bg-background">
 				<Navigation />
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
-					<h1 className="text-3xl font-bold text-foreground mb-4">Lot Not Found</h1>
+					<h1 className="text-3xl font-bold text-foreground mb-4">Bundle Not Found</h1>
 					<Link href="/wholesale" className="text-primary hover:underline text-sm">
 						Back to Wholesale
 					</Link>
@@ -106,7 +106,7 @@ export default function WholesaleDetailPage() {
 
 	const specChips = [
 		{ icon: ShieldCheck, label: 'Condition', value: conditionLabel },
-		units > 0 ? { icon: Layers, label: 'Units in Lot', value: String(units) } : null,
+		units > 0 ? { icon: Layers, label: 'Units in Bundle', value: String(units) } : null,
 		lockLabel ? { icon: lockLabel === 'locked' ? Lock : Unlock, label: 'Carrier Lock', value: lockLabel } : null,
 		storageLabel !== '—' ? { icon: HardDrive, label: 'Storage', value: storageLabel } : null,
 		colorsLabel ? { icon: Palette, label: 'Color', value: colorsLabel } : null,
@@ -115,7 +115,7 @@ export default function WholesaleDetailPage() {
 	const handleCheckout = () => {
 		if (soldOut) return
 		addToLocalCart({ productId: lot.id, variantId: variants[0]?.id ?? null, quantity: 1 })
-		toast({ title: 'Lot added to cart', description: lot.name, variant: 'success' })
+		toast({ title: 'Bundle added to cart', description: lot.name, variant: 'success' })
 		router.push('/checkout')
 	}
 
@@ -183,7 +183,7 @@ export default function WholesaleDetailPage() {
 								)}
 								<div className="absolute top-4 left-4 bg-background/90 backdrop-blur-md border border-border/80 text-foreground text-[9px] uppercase tracking-[0.16em] font-bold px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5">
 									<span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-									Verified Lot
+									Verified Bundle
 								</div>
 							</div>
 							{images.length > 1 && (
@@ -207,7 +207,7 @@ export default function WholesaleDetailPage() {
 						{/* Purchase card */}
 						<div className="bg-card border border-primary/30 rounded-3xl p-6 shadow-md shadow-black/5 lg:sticky lg:top-28">
 							<p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">
-								Lot Price
+								Bundle Price
 							</p>
 							<div className="flex items-baseline gap-2 mb-2">
 								<span className="text-3xl font-extrabold text-primary tracking-tight">
@@ -220,7 +220,7 @@ export default function WholesaleDetailPage() {
 								)}
 							</div>
 							<p className="text-xs text-muted-foreground mb-6">
-								For the entire lot of {units} unit{units === 1 ? '' : 's'} — sold as one fixed bundle.
+								For all {units} unit{units === 1 ? '' : 's'} in this bundle — sold together as one fixed price.
 							</p>
 
 							<button
@@ -337,7 +337,7 @@ export default function WholesaleDetailPage() {
 						<div className="border border-primary/30 rounded-3xl p-7 bg-[#fdfdfd] shadow-sm">
 							<h2 className="text-xs font-extrabold uppercase tracking-[0.2em] text-foreground mb-4 flex items-center gap-2.5 pb-2 border-b border-border/50">
 								<Layers className="w-4 h-4 text-primary" />
-								Lot Specifications
+								Bundle Specifications
 							</h2>
 							<div className="grid grid-cols-2 gap-2.5">
 								{specChips.map(({ icon: Icon, label, value }) => (

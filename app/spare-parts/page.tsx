@@ -37,7 +37,7 @@ export default function SparePartsPage() {
 					muted
 					playsInline
 					preload="auto"
-					src="/spare_parts_banner.mp4"
+					src="/spare_parts_banner.mp4?v=2"
 					className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none z-0"
 				/>
 				<div className="absolute inset-0 bg-black/45 z-10" />

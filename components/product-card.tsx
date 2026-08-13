@@ -126,7 +126,7 @@ export function ProductCard({ product }: { product: Product }) {
 						</span>
 						{product.is_wholesale && (
 							<span className="px-2.5 py-0.5 rounded-full bg-[#599161] text-white text-[8.5px] font-extrabold uppercase tracking-wider shadow-sm">
-								Wholesale Lot
+								Wholesale Bundle
 							</span>
 						)}
 						{hasDiscount && (
@@ -159,7 +159,7 @@ export function ProductCard({ product }: { product: Product }) {
 				<div className="p-4 flex flex-col flex-1 text-center">
 					{product.is_wholesale && product.lot_quantity ? (
 						<p className="text-[9.5px] uppercase tracking-[0.16em] font-extrabold text-amber-500 mb-1.5">
-							Bulk Lot of {product.lot_quantity} Units
+							Bulk Bundle of {product.lot_quantity} Units
 						</p>
 					) : product.brand ? (
 						<p className="text-[8px] uppercase tracking-[0.2em] font-semibold text-primary mb-1">{product.brand}</p>
