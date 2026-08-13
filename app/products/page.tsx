@@ -199,6 +199,56 @@ const BRAND_SUB_FILTERS: Record<string, { label: string; value: string }[]> = {
 		{ label: 'Apple', value: 'Apple' },
 		{ label: 'Samsung', value: 'Samsung' },
 	],
+	// Matches LAPTOP_MODELS below — MacBook plus the PC brands actually listed there.
+	laptops: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Dell', value: 'Dell' },
+		{ label: 'HP', value: 'HP' },
+		{ label: 'Lenovo', value: 'Lenovo' },
+		{ label: 'ASUS', value: 'ASUS' },
+		{ label: 'Acer', value: 'Acer' },
+	],
+	laptop: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Dell', value: 'Dell' },
+		{ label: 'HP', value: 'HP' },
+		{ label: 'Lenovo', value: 'Lenovo' },
+		{ label: 'ASUS', value: 'ASUS' },
+		{ label: 'Acer', value: 'Acer' },
+	],
+	// Matches TABLET_MODELS below — only iPad and Galaxy Tab models are listed there.
+	tablets: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Samsung', value: 'Samsung' },
+	],
+	tablet: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Samsung', value: 'Samsung' },
+	],
+	// Parts and accessories are stocked for the shop's two phone ecosystems, plus
+	// brand-agnostic items (universal cables, tempered glass, generic parts).
+	'spare-parts': [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Samsung', value: 'Samsung' },
+		{ label: 'Universal / Other', value: 'other' },
+	],
+	spare_parts: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Samsung', value: 'Samsung' },
+		{ label: 'Universal / Other', value: 'other' },
+	],
+	accessories: [
+		{ label: 'All Brands', value: 'all' },
+		{ label: 'Apple', value: 'Apple' },
+		{ label: 'Samsung', value: 'Samsung' },
+		{ label: 'Universal / Other', value: 'other' },
+	],
 }
 
 export default function ProductsPage() {
@@ -893,22 +943,24 @@ function ProductsPageContent() {
 									</select>
 								</div>
 
-								{/* 3. Storage Capacity Dropdown */}
-								<div>
-									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Storage Capacity</label>
-									<select
-										value={storageFilter}
-										onChange={(e) => setStorageFilter(e.target.value)}
-										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-									>
-										<option value="all">All Storage</option>
-										<option value="64GB">64GB</option>
-										<option value="128GB">128GB</option>
-										<option value="256GB">256GB</option>
-										<option value="512GB">512GB</option>
-										<option value="1TB">1TB+</option>
-									</select>
-								</div>
+								{/* 3. Storage Capacity Dropdown — not relevant for accessories or spare parts (cases, chargers, cables, screens, batteries, etc. have no storage) */}
+								{!isAccessoriesSelected && !isSparePartsSelected && (
+									<div>
+										<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Storage Capacity</label>
+										<select
+											value={storageFilter}
+											onChange={(e) => setStorageFilter(e.target.value)}
+											className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+										>
+											<option value="all">All Storage</option>
+											<option value="64GB">64GB</option>
+											<option value="128GB">128GB</option>
+											<option value="256GB">256GB</option>
+											<option value="512GB">512GB</option>
+											<option value="1TB">1TB+</option>
+										</select>
+									</div>
+								)}
 							</>
 						)}
 
@@ -927,22 +979,20 @@ function ProductsPageContent() {
 							</select>
 						</div>
 
-						{!isWholesaleSelected && (
-							<>
-								{/* 5. Carrier Lock Status Dropdown */}
-								<div>
-									<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Carrier Status</label>
-									<select
-										value={lockStatusFilter}
-										onChange={(e) => setLockStatusFilter(e.target.value)}
-										className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
-									>
-										<option value="all">All Statuses</option>
-										<option value="unlocked">Factory Unlocked</option>
-										<option value="locked">Carrier Locked</option>
-									</select>
-								</div>
-							</>
+						{/* 5. Carrier Lock Status Dropdown — not relevant for accessories, spare parts (screens/batteries/etc. aren't SIM-locked), or laptops (never carrier-locked in this catalog) */}
+						{!isWholesaleSelected && !isAccessoriesSelected && !isSparePartsSelected && !isLaptopSelected && (
+							<div>
+								<label className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground mb-1.5">Carrier Status</label>
+								<select
+									value={lockStatusFilter}
+									onChange={(e) => setLockStatusFilter(e.target.value)}
+									className="w-full px-3 py-2.5 border border-border rounded-xl bg-background text-xs font-semibold text-foreground focus:outline-none focus:border-primary cursor-pointer shadow-2xs"
+								>
+									<option value="all">All Statuses</option>
+									<option value="unlocked">Factory Unlocked</option>
+									<option value="locked">Carrier Locked</option>
+								</select>
+							</div>
 						)}
 
 						{/* 6. Price Range Dropdown */}

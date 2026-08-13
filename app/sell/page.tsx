@@ -121,7 +121,7 @@ export default function SellYourPhonePage() {
 		{ id: 'ipad', label: 'Apple iPad', brand: 'Apple', image: '/ipad_category.webp' },
 		{ id: 'laptop', label: 'Laptop', brand: '', image: '/laptop_category.webp' },
 		{ id: 'tablet', label: 'Tablet', brand: '', image: '/tablets_category.webp' },
-		{ id: 'other', label: 'Other', brand: '', image: '/other_phones_category.png' },
+		{ id: 'other', label: 'Other', brand: '', image: '/other_devices_category.webp' },
 	]
 
 	const modelsForSelectedType = (sellModels ?? []).filter((m) => m.device_type === selectedDeviceType)
@@ -396,8 +396,6 @@ export default function SellYourPhonePage() {
 					>
 						{DEVICE_TYPES.map((dt) => {
 							const isActive = selectedDeviceType === dt.id;
-							// "Other" has no title baked into its cover photo, so it needs an overlay label.
-							const hasBakedTitle = dt.id !== 'other';
 							return (
 								<button
 									type="button"
@@ -431,11 +429,6 @@ export default function SellYourPhonePage() {
 												: 'scale-100 group-hover:scale-[1.05]'
 										}`}
 									/>
-									{!hasBakedTitle && (
-										<div className="absolute inset-x-0 bottom-0 pt-8 pb-3 px-2 text-center bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-											<span className="text-xs font-black uppercase tracking-wider text-white">{dt.label}</span>
-										</div>
-									)}
 									{isActive && (
 										<div className="absolute top-[-1px] right-[-1px] w-8 h-8 bg-[#599161] [clip-path:polygon(100%_0,0_0,100%_100%)] rounded-tr-[15px] pointer-events-none z-20">
 											<Check className="absolute top-1 right-1 w-2.5 h-2.5 text-white" />
