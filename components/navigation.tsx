@@ -77,7 +77,7 @@ export function Navigation() {
 	const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 	const [profileMenuOpen, setProfileMenuOpen] = useState(false)
 	const profileMenuRef = useRef<HTMLDivElement>(null)
-	const [drawerCategoriesOpen, setDrawerCategoriesOpen] = useState(false)
+	const [drawerCategoriesOpen, setDrawerCategoriesOpen] = useState(true)
 
 	useEffect(() => {
 		const refreshCounts = () => {
@@ -310,6 +310,7 @@ export function Navigation() {
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
 									className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border/80 hover:border-primary hover:text-primary transition-all text-[10px] sm:text-xs font-extrabold uppercase tracking-[0.12em] whitespace-nowrap cursor-pointer text-foreground bg-background shadow-2xs"
 								>
+									<span className="hidden sm:inline whitespace-nowrap opacity-70">Marketplace</span>
 									{currentMarket ? (
 										<MarketFlag value={currentMarket.value} className="w-4 h-3 sm:w-4.5 sm:h-3.5 mr-0.5 rounded-[2px] shadow-2xs shrink-0" />
 									) : (
@@ -489,48 +490,6 @@ export function Navigation() {
 									<span className="group-hover:translate-x-1 transition-transform duration-300">Home</span>
 								</Link>
 
-								{/* Products */}
-								<Link
-									href="/categories"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Smartphone className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Products</span>
-								</Link>
-
-								{/* Marketplace */}
-								<Link
-									href="/marketplace"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Store className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Marketplace</span>
-								</Link>
-
-								{/* Sell Your Phone */}
-								<Link
-									href="/sell"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<DollarSign className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Phone</span>
-								</Link>
-
-								{/* Device Repair */}
-								<Link
-									href="/repair"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Wrench className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Device Repair</span>
-								</Link>
-
-
-
 								{/* Shop by Category Accordion */}
 								{categories.length > 0 && (
 									<div className="space-y-1">
@@ -560,6 +519,47 @@ export function Navigation() {
 										)}
 									</div>
 								)}
+
+								{/* Products */}
+								<Link
+									href="/categories"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Smartphone className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Products</span>
+								</Link>
+
+								{/* Marketplace */}
+								<Link
+									href="/marketplace"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Store className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Marketplace</span>
+								</Link>
+
+								{/* Sell Your Phone */}
+								<Link
+									href="/sell"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<DollarSign className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Device</span>
+								</Link>
+
+								{/* Device Repair */}
+								<Link
+									href="/repair"
+									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
+									onClick={() => setMobileMenuOpen(false)}
+								>
+									<Wrench className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
+									<span className="group-hover:translate-x-1 transition-transform duration-300">Device Repair</span>
+								</Link>
+
 
 								{/* About Us */}
 								<Link

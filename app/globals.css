@@ -39,6 +39,20 @@ body {
     contain-intrinsic-size: 1px 800px;
 }
 
+/*
+ * One-time "peek" nudge on the homepage's horizontally-scrollable category
+ * strip — a brief tug to the left and back so first-time visitors feel that
+ * it's draggable, without resorting to prev/next arrow buttons.
+ */
+@keyframes shop-category-nudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(-16px); }
+}
+.shop-category-scroll,
+.device-type-scroll {
+    animation: shop-category-nudge 1.1s ease-in-out 0.7s 1;
+}
+
 @theme inline {
     --font-heading: var(--font-heading), "Georgia", serif;
     --font-sans: var(--font-body), "Helvetica Neue", sans-serif;

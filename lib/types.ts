@@ -195,6 +195,29 @@ export interface CmsPage {
 	updated_at: string
 }
 
+export type SellDeviceTypeId = 'iphone' | 'galaxy' | 'ipad' | 'laptop' | 'tablet' | 'other'
+
+export interface SellDeviceModel {
+	id: string
+	device_type: SellDeviceTypeId
+	label: string
+	image_url: string | null
+	storage_options: string[]
+	is_active: boolean
+	sort_order: number
+	created_at: string
+}
+
+export interface SellProblemOption {
+	id: string
+	title: string
+	description: string | null
+	severity: 'excellent' | 'good' | 'fair' | 'poor'
+	is_active: boolean
+	sort_order: number
+	created_at: string
+}
+
 export interface CountryContactInfo {
 	id: string
 	country: string

@@ -10,6 +10,7 @@ export type AdminPermission =
 	| 'orders:write'
 	| 'sell-requests:read'
 	| 'sell-requests:write'
+	| 'sell-config:write'
 	| 'repair-requests:read'
 	| 'repair-requests:write'
 	| 'inquiries:read'
@@ -40,6 +41,7 @@ const MATRIX: Record<AdminPermission, AdminRole[]> = {
 	'orders:write': ['super_admin', 'admin'],
 	'sell-requests:read': ['super_admin', 'admin'],
 	'sell-requests:write': ['super_admin', 'admin'],
+	'sell-config:write': ['super_admin', 'admin'],
 	'repair-requests:read': ['super_admin', 'admin'],
 	'repair-requests:write': ['super_admin', 'admin'],
 	'inquiries:read': ['super_admin', 'admin'],

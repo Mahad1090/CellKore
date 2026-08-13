@@ -8,6 +8,8 @@ import type {
 	Product,
 	ProductReview,
 	RepairSettings,
+	SellDeviceModel,
+	SellProblemOption,
 	SocialLink,
 	StoreTestimonial,
 	WholesalePriceTier,
@@ -29,6 +31,28 @@ const PRODUCT_SELECT = `
 export async function fetchActiveCategories(): Promise<Category[]> {
 	const { data, error } = await supabase
 		.from('categories')
+		.select('*')
+		.eq('is_active', true)
+		.order('sort_order', { ascending: true })
+	if (error) throw error
+	return data ?? []
+}
+
+/** Admin-managed "Sell Your Device" models, active only, grouped by device type on the caller side. */
+export async function fetchSellDeviceModels(): Promise<SellDeviceModel[]> {
+	const { data, error } = await supabase
+		.from('sell_device_models')
+		.select('*')
+		.eq('is_active', true)
+		.order('sort_order', { ascending: true })
+	if (error) throw error
+	return data ?? []
+}
+
+/** Admin-managed "what's wrong with it" options shown on the Sell Your Device form. */
+export async function fetchSellProblemOptions(): Promise<SellProblemOption[]> {
+	const { data, error } = await supabase
+		.from('sell_problem_options')
 		.select('*')
 		.eq('is_active', true)
 		.order('sort_order', { ascending: true })

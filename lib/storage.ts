@@ -137,6 +137,10 @@ export function categoryImagePath(categorySlug: string, filename: string): strin
 	return `categories/${slugify(categorySlug)}/${Date.now()}-${sanitizeFilename(filename)}`
 }
 
+export function sellDeviceModelImagePath(deviceType: string, modelLabel: string, filename: string): string {
+	return `sell-device-models/${slugify(deviceType)}/${slugify(modelLabel)}-${Date.now()}-${sanitizeFilename(filename)}`
+}
+
 /** Admin uploads go through the RBAC-guarded API (service role), not the anon client. */
 export async function uploadViaAdminApi(path: string, file: File): Promise<string> {
 	if (file.size > MAX_UPLOAD_BYTES) {

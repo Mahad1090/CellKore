@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { 
 	Heart, ShoppingCart, ChevronLeft, ChevronRight, Smartphone, Minus, Plus,
 	Cpu, Camera, Battery, HardDrive, Wifi, Volume2, ShieldCheck, Compass, Box, Sparkles, HelpCircle,
@@ -61,9 +61,10 @@ const SPEC_SECTION_ICONS: Record<string, React.ComponentType<any>> = {
 
 export default function ProductDetailPage() {
 	const params = useParams()
+	const router = useRouter()
 	const id = typeof params.id === 'string' ? params.id : ''
 	const { toast } = useToast()
-	const { formatPrice } = useMarketplace()
+	const { formatPrice, marketplace } = useMarketplace()
 
 	const [product, setProduct] = useState<Product | null | undefined>(undefined)
 	const [selectedColor, setSelectedColor] = useState<string | null>(null)
@@ -246,6 +247,28 @@ export default function ProductDetailPage() {
 		]
 	}, [product, selectedStorage])
 
+	// Re-checked live whenever the marketplace selector changes, not just on
+	// initial load — switching marketplace while a product is open must react.
+	const isAvailableInMarketplace = useMemo(() => {
+		if (!product) return true
+		if (marketplace === 'BOTH') return true
+		return (product.product_marketplaces ?? []).some((m) => m.marketplace === marketplace)
+	}, [product, marketplace])
+
+	useEffect(() => {
+		if (!product || isAvailableInMarketplace) return
+		const categorySlug = product.categories?.slug
+		const target = categorySlug ? `/products?category=${categorySlug}` : '/products'
+		toast({
+			title: 'Unavailable in this marketplace',
+			description: `${product.name} isn't offered in the ${marketplace} marketplace. Redirecting you to similar products.`,
+			variant: 'info',
+		})
+		const timer = setTimeout(() => router.push(target), 2200)
+		return () => clearTimeout(timer)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [product, isAvailableInMarketplace, marketplace])
+
 	if (product === undefined) {
 		return (
 			<main className="min-h-screen bg-background">
@@ -264,6 +287,26 @@ export default function ProductDetailPage() {
 					<h1 className="text-3xl font-bold text-foreground mb-4">Product Not Found</h1>
 					<Link href="/products?category=iphones" className="text-primary hover:underline text-sm">
 						Back to Products
+					</Link>
+				</div>
+				<Footer />
+			</main>
+		)
+	}
+
+	if (!isAvailableInMarketplace) {
+		const categorySlug = product.categories?.slug
+		const target = categorySlug ? `/products?category=${categorySlug}` : '/products'
+		return (
+			<main className="min-h-screen bg-background">
+				<Navigation />
+				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+					<h1 className="text-3xl font-bold text-foreground mb-4">Unavailable in This Marketplace</h1>
+					<p className="text-muted-foreground text-sm max-w-md mx-auto mb-6">
+						{product.name} isn't offered in the {marketplace} marketplace. Taking you to similar products…
+					</p>
+					<Link href={target} className="text-primary hover:underline text-sm">
+						Continue Now
 					</Link>
 				</div>
 				<Footer />

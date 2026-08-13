@@ -20,6 +20,7 @@ const navGroups: NavGroup[] = [
 		items: [
 			{ label: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
 			{ label: 'Sell Requests', href: '/admin/sell-requests', icon: Phone, permission: 'sell-requests:read' },
+			{ label: 'Sell Device Options', href: '/admin/sell-config', icon: Smartphone, permission: 'sell-config:write' },
 			{ label: 'Orders', href: '/admin/orders', icon: ShoppingBag, permission: 'orders:read' },
 			{ label: 'Pickups', href: '/admin/pickups', icon: Truck, permission: 'orders:read' },
 			{ label: 'Inbox', href: '/admin/inquiries', icon: Inbox, permission: 'inquiries:read' },

@@ -11,12 +11,14 @@ import { ProductCard } from '@/components/product-card'
 import { GridShimmer } from '@/components/shimmer'
 import { useMarketplace } from '@/contexts/marketplace-context'
 import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
+import { useHorizontalScrollHint } from '@/lib/use-horizontal-scroll-hint'
 import type { Category, Product } from '@/lib/types'
 
 export default function Home() {
 	const { marketplace, loading: marketLoading } = useMarketplace()
 	const [categories, setCategories] = useState<Category[] | null>(null)
 	const [products, setProducts] = useState<Product[] | null>(null)
+	const categoryScroll = useHorizontalScrollHint<HTMLDivElement>([categories])
 
 	useEffect(() => {
 		fetchActiveCategories()
@@ -141,7 +143,12 @@ export default function Home() {
 						))}
 					</div>
 				) : (
-					<div className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth -mx-4 px-4 sm:mx-0 sm:px-0 py-2">
+					<div className="relative">
+						<div
+							ref={categoryScroll.ref}
+							onScroll={categoryScroll.onScroll}
+							className="shop-category-scroll flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth cursor-grab active:cursor-grabbing -mx-4 px-4 sm:mx-0 sm:px-0 py-2"
+						>
 						{categories.map((category) => {
 							const isPhone = category.slug === 'phones'
 							const isIpad = category.slug === 'ipads' || category.slug === 'ipad'
@@ -194,6 +201,20 @@ export default function Home() {
 								</Link>
 							)
 						})}
+						</div>
+
+						{/* Right-edge fade + progress thumb — hints the row is swipeable without arrow buttons */}
+						<div
+							className={`pointer-events-none absolute top-0 right-0 bottom-2 w-14 sm:w-20 bg-gradient-to-l from-background to-transparent transition-opacity duration-300 ${
+								categoryScroll.atEnd ? 'opacity-0' : 'opacity-100'
+							}`}
+						/>
+						<div className="mx-auto mt-3 h-1 w-24 rounded-full bg-border/50 overflow-hidden sm:hidden">
+							<div
+								className="h-full rounded-full bg-primary transition-[left,width] duration-150 ease-out relative"
+								style={{ width: `${categoryScroll.thumb.widthPct}%`, left: `${categoryScroll.thumb.leftPct}%` }}
+							/>
+						</div>
 					</div>
 				)}
 			</section>
