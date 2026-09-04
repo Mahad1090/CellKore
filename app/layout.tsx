@@ -4,6 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ToastProvider } from '@/components/ui/toast'
 import { MarketplaceProvider } from '@/contexts/marketplace-context'
+import { WhatsAppButton } from '@/components/whatsapp-button'
 
 const cormorant = Cormorant_Garamond({
   variable: '--font-heading',
@@ -49,6 +50,7 @@ export default function RootLayout({
           <MarketplaceProvider>
             <AuthProvider>
               {children}
+              <WhatsAppButton />
             </AuthProvider>
           </MarketplaceProvider>
         </ToastProvider>
