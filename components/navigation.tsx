@@ -195,11 +195,15 @@ export function Navigation() {
 				<div className="w-full py-2.5 bg-gradient-to-r from-[#599161] via-[#2d4a32] to-[#111111] text-white border-b border-[#599161]/50 font-semibold relative z-30">
 					<div className="relative flex items-center justify-between max-w-7xl mx-auto px-4">
 						<div className="relative flex-1 overflow-hidden py-0.5">
-							<div className="animate-marquee whitespace-nowrap flex gap-16 text-[10px] tracking-[0.25em] font-sans uppercase font-medium">
+							<div className="animate-marquee whitespace-nowrap flex text-[10px] tracking-[0.25em] font-sans uppercase font-medium">
 								{[0, 1].map((dup) => (
-									<span key={dup} className="flex gap-16">
+									<span
+										key={dup}
+										className="flex gap-16 pr-16 shrink-0 items-center"
+										aria-hidden={dup === 1}
+									>
 										{announcements.map((announcement) => (
-											<span key={announcement.id} className="flex gap-16 items-center">
+											<span key={announcement.id} className="flex items-center">
 												<span>{announcement.text}</span>
 											</span>
 										))}

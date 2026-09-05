@@ -174,7 +174,10 @@ body {
 
 .animate-marquee {
     display: inline-flex;
+    flex-wrap: nowrap;
     white-space: nowrap;
+    min-width: max-content;
+    will-change: transform;
     animation: marquee 30s linear infinite;
 }
 
