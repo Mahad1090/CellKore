@@ -87,6 +87,16 @@ export default function SellYourPhonePage() {
 
 	const allProblems = [NONE_PROBLEM, ...(problemOptions ?? [])]
 
+	// Once the model is confirmed the picker collapses to a summary — nudge the
+	// customer down to the details they still need to fill in.
+	useEffect(() => {
+		if (!isModelConfirmed) return
+		const t = setTimeout(() => {
+			document.getElementById('device-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+		}, 80)
+		return () => clearTimeout(t)
+	}, [isModelConfirmed])
+
 	const selectStorage = (value: string) => {
 		setSelectedStorage(value)
 		setForm((f) => ({ ...f, storage: value }))
@@ -124,6 +134,7 @@ export default function SellYourPhonePage() {
 		{ id: 'other', label: 'Other', brand: '', image: '/other_devices_category.webp' },
 	]
 
+	const selectedDeviceTypeData = DEVICE_TYPES.find((d) => d.id === selectedDeviceType)
 	const modelsForSelectedType = (sellModels ?? []).filter((m) => m.device_type === selectedDeviceType)
 	const selectedModelData = modelsForSelectedType.find((m) => m.label === selectedModel)
 	const storageChoices = selectedModelData?.storage_options?.length ? selectedModelData.storage_options : DEFAULT_STORAGE_OPTIONS
@@ -384,6 +395,7 @@ export default function SellYourPhonePage() {
 			<form id="sell-form" onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-10">
 
 				{/* Step 00: WHAT TYPE OF DEVICE DO YOU HAVE? */}
+				{!isModelConfirmed && (
 				<div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
 					<div className="mb-6">
 						<h2 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-black font-sans">What type of device do you have?</h2>
@@ -453,9 +465,34 @@ export default function SellYourPhonePage() {
 						/>
 					</div>
 				</div>
+				)}
+
+				{/* Collapsed summary — shown once a model is confirmed so the customer
+				    sees a compact selection and knows the form continues below */}
+				{isModelConfirmed && selectedDeviceTypeData && (
+					<div className="bg-card border border-[#599161]/40 rounded-3xl px-6 py-5 shadow-sm flex items-center gap-4">
+						<div className="w-11 h-11 rounded-xl bg-[#599161]/10 flex items-center justify-center shrink-0">
+							<Check className="w-5 h-5 text-[#599161]" />
+						</div>
+						<div className="min-w-0 flex-1">
+							<p className="text-[9.5px] uppercase tracking-[0.22em] text-[#599161] font-black">Selling</p>
+							<p className="text-sm font-extrabold uppercase tracking-wide text-black truncate">
+								{form.brand ? `${form.brand} ` : ''}{form.model}
+							</p>
+							<p className="text-[11px] text-muted-foreground mt-0.5">Complete the details below to get your quote ↓</p>
+						</div>
+						<button
+							type="button"
+							onClick={() => setIsModelConfirmed(false)}
+							className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground hover:text-[#599161] underline underline-offset-4 shrink-0 cursor-pointer"
+						>
+							Change
+						</button>
+					</div>
+				)}
 
 				{/* Step 00b: PLEASE SELECT YOUR DEVICE'S MODEL */}
-				{selectedDeviceType && selectedDeviceType !== 'other' && (
+				{selectedDeviceType && selectedDeviceType !== 'other' && !isModelConfirmed && (
 					<div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
 						<div className="mb-6">
 							<h2 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-black font-sans">Please select your device&apos;s model</h2>
@@ -559,7 +596,7 @@ export default function SellYourPhonePage() {
 				)}
 
 				{/* Step 00b: PLEASE SELECT YOUR DEVICE'S MODEL (Other Brand option) */}
-				{selectedDeviceType === 'other' && (
+				{selectedDeviceType === 'other' && !isModelConfirmed && (
 					<div className="bg-card border border-border rounded-3xl p-8 shadow-sm">
 						<div className="mb-6">
 							<h2 className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-black font-sans">Please select your device&apos;s model</h2>
@@ -636,7 +673,7 @@ export default function SellYourPhonePage() {
 				{isModelConfirmed && (
 					<>
 						{/* Device Details Form */}
-						<div className="bg-card border border-border rounded-3xl p-7">
+						<div id="device-details" className="scroll-mt-24 bg-card border border-border rounded-3xl p-7">
 							<div className="flex items-center gap-3 mb-6 pb-4 border-b border-border/60">
 								<span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs flex items-center justify-center border border-emerald-500/30 shadow-sm">1</span>
 								<div>
