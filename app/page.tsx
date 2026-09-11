@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck, ShoppingBag, Package, ArrowRight } from 'lucide-react'
+import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck, ShoppingBag, Package, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { LazyBackgroundVideo } from '@/components/lazy-background-video'
@@ -203,12 +203,34 @@ export default function Home() {
 						})}
 						</div>
 
-						{/* Right-edge fade + progress thumb — hints the row is swipeable without arrow buttons */}
+						{/* Right-edge fade — hints the row is swipeable */}
 						<div
 							className={`pointer-events-none absolute top-0 right-0 bottom-2 w-14 sm:w-20 bg-gradient-to-l from-background to-transparent transition-opacity duration-300 ${
 								categoryScroll.atEnd ? 'opacity-0' : 'opacity-100'
 							}`}
 						/>
+
+						{/* Simple elegant scroll arrows (desktop) */}
+						<button
+							type="button"
+							aria-label="Scroll categories left"
+							onClick={() => categoryScroll.scrollBy(-1)}
+							className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -left-4 w-9 h-9 rounded-full bg-background border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+								categoryScroll.atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'
+							}`}
+						>
+							<ChevronLeft className="w-4 h-4" />
+						</button>
+						<button
+							type="button"
+							aria-label="Scroll categories right"
+							onClick={() => categoryScroll.scrollBy(1)}
+							className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -right-4 w-9 h-9 rounded-full bg-background border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+								categoryScroll.atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'
+							}`}
+						>
+							<ChevronRight className="w-4 h-4" />
+						</button>
 						<div className="mx-auto mt-3 h-1 w-24 rounded-full bg-border/50 overflow-hidden sm:hidden">
 							<div
 								className="h-full rounded-full bg-primary transition-[left,width] duration-150 ease-out relative"

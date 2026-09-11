@@ -251,7 +251,7 @@ export function Navigation() {
 			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">						{/* Left Block */}
-						<div className="flex items-center w-auto md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-6 lg:gap-8 xl:gap-12 z-10">
+						<div className="flex items-center shrink-0 md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-6 lg:gap-8 xl:gap-12 z-10">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -291,22 +291,20 @@ export function Navigation() {
 							</div>
 						</div>
 
-						{/* Center Block - Logo + tagline (Dead-centered on Mobile & Desktop) */}
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[12%] z-10 pointer-events-auto">
-							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
+						{/* Center Block - Logo + tagline (flexes to fill the space left by the side blocks, so it can never overlap them) */}
+						<div className="flex-1 min-w-0 flex flex-col items-center justify-center md:flex-none md:w-1/3 lg:w-[12%] z-10">
+							<Link href="/" className="group flex flex-col items-center max-w-full">
 								<img
-									src="/cellkore_apple_green.webp"
+									src="/cellkore_logo_new.png"
+									// src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
-									className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-14 sm:h-20 md:h-28 lg:h-32 w-auto max-w-[130px] sm:max-w-[170px] md:max-w-none object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
-								<span className="hidden md:block text-[9px] uppercase tracking-[0.25em] text-muted-foreground mt-1 font-medium whitespace-nowrap text-center">
-									Your Premium Electronics Hub
-								</span>
 							</Link>
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end w-auto md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
+						<div className="flex items-center justify-end shrink-0 md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
 							{/* Persistent marketplace selector (shown in header on all breakpoints; also duplicated at the top of the mobile drawer) */}
 							<div className="relative sm:mr-2 block">
 								<button

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react'
  */
 export function useHorizontalScrollHint<T extends HTMLElement>(deps: React.DependencyList = []) {
 	const ref = useRef<T>(null)
+	const [atStart, setAtStart] = useState(true)
 	const [atEnd, setAtEnd] = useState(false)
 	const [thumb, setThumb] = useState({ widthPct: 100, leftPct: 0 })
 
@@ -20,7 +21,14 @@ export function useHorizontalScrollHint<T extends HTMLElement>(deps: React.Depen
 		const widthPct = Math.min(100, (el.clientWidth / el.scrollWidth) * 100)
 		const leftPct = maxScroll > 0 ? (el.scrollLeft / maxScroll) * (100 - widthPct) : 0
 		setThumb({ widthPct, leftPct })
+		setAtStart(el.scrollLeft <= 4)
 		setAtEnd(maxScroll <= 0 || el.scrollLeft >= maxScroll - 4)
+	}
+
+	const scrollBy = (dir: 1 | -1) => {
+		const el = ref.current
+		if (!el) return
+		el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' })
 	}
 
 	useEffect(() => {
@@ -30,5 +38,5 @@ export function useHorizontalScrollHint<T extends HTMLElement>(deps: React.Depen
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, deps)
 
-	return { ref, atEnd, thumb, onScroll: measure }
+	return { ref, atStart, atEnd, thumb, onScroll: measure, scrollBy }
 }

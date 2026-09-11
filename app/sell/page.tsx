@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Upload, Check, X, ImageIcon, Loader2, MessageCircle, Search, Plus, HardDrive, Smartphone } from 'lucide-react'
+import { Upload, Check, X, ImageIcon, Loader2, MessageCircle, Search, Plus, HardDrive, Smartphone, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { Footer } from '@/components/footer'
 import { useToast } from '@/components/ui/toast'
@@ -451,12 +451,34 @@ export default function SellYourPhonePage() {
 						})}
 					</div>
 
-					{/* Right-edge fade + progress thumb — hints the row is swipeable without arrow buttons */}
+					{/* Right-edge fade — hints the row is swipeable */}
 					<div
 						className={`pointer-events-none absolute top-2 right-0 bottom-4 w-14 sm:w-20 bg-gradient-to-l from-card to-transparent transition-opacity duration-300 ${
 							deviceTypeScroll.atEnd ? 'opacity-0' : 'opacity-100'
 						}`}
 					/>
+
+					{/* Simple elegant scroll arrows (desktop) */}
+					<button
+						type="button"
+						aria-label="Scroll device types left"
+						onClick={() => deviceTypeScroll.scrollBy(-1)}
+						className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -left-4 w-9 h-9 rounded-full bg-card border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+							deviceTypeScroll.atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'
+						}`}
+					>
+						<ChevronLeft className="w-4 h-4" />
+					</button>
+					<button
+						type="button"
+						aria-label="Scroll device types right"
+						onClick={() => deviceTypeScroll.scrollBy(1)}
+						className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -right-4 w-9 h-9 rounded-full bg-card border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+							deviceTypeScroll.atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'
+						}`}
+					>
+						<ChevronRight className="w-4 h-4" />
+					</button>
 					</div>
 					<div className="mx-auto -mt-2 h-1 w-24 rounded-full bg-border/50 overflow-hidden sm:hidden">
 						<div
