@@ -291,22 +291,21 @@ export function Navigation() {
 							</div>
 						</div>
 
-						{/* Center Block - Logo + tagline (flexes to fill the space left by the side blocks, so it can never overlap them) */}
-						<div className="flex-1 min-w-0 flex flex-col items-center justify-center md:flex-none md:w-1/3 lg:w-[12%] z-10">
-							<Link href="/" className="group flex flex-col items-center max-w-full">
+						{/* Center Block - Logo + tagline (dead-centered on mobile now that the header's right block is light enough not to collide with it) */}
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[12%] z-10 pointer-events-auto">
+							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
 								<img
 									src="/cellkore_logo_new.png"
-									// src="/cellkore_apple_green.webp"
 									alt="CellKore Logo"
-									className="h-14 sm:h-20 md:h-28 lg:h-32 w-auto max-w-[130px] sm:max-w-[170px] md:max-w-none object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
 							</Link>
 						</div>
 
 						{/* Right Block - Actions */}
 						<div className="flex items-center justify-end shrink-0 md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
-							{/* Persistent marketplace selector (shown in header on all breakpoints; also duplicated at the top of the mobile drawer) */}
-							<div className="relative sm:mr-2 block">
+							{/* Persistent marketplace selector — hidden in the mobile header (it's already at the top of the mobile drawer) so the logo can sit dead-center; shown from sm up */}
+							<div className="relative sm:mr-2 hidden sm:block">
 								<button
 									onClick={() => setMarketMenuOpen((open) => !open)}
 									onBlur={() => setTimeout(() => setMarketMenuOpen(false), 150)}
