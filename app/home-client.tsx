@@ -1,0 +1,527 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { LayoutGrid, Store, Globe, DollarSign, Wrench, ShieldCheck, ShoppingBag, Package, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Navigation } from '@/components/navigation'
+import { Footer } from '@/components/footer'
+import { LazyBackgroundVideo } from '@/components/lazy-background-video'
+import { TestimonialsPreview } from '@/components/testimonials-preview'
+import { ProductCard } from '@/components/product-card'
+import { GridShimmer } from '@/components/shimmer'
+import { useMarketplace } from '@/contexts/marketplace-context'
+import { fetchActiveCategories, fetchCatalogProducts } from '@/lib/data'
+import { useHorizontalScrollHint } from '@/lib/use-horizontal-scroll-hint'
+import type { Category, Product } from '@/lib/types'
+
+export default function HomeClient() {
+	const { marketplace, loading: marketLoading } = useMarketplace()
+	const [categories, setCategories] = useState<Category[] | null>(null)
+	const [products, setProducts] = useState<Product[] | null>(null)
+	const categoryScroll = useHorizontalScrollHint<HTMLDivElement>([categories])
+
+	useEffect(() => {
+		fetchActiveCategories()
+			.then((list) => {
+				const hasPhones = list.some((c) => c.slug === 'iphones' || c.slug === 'samsungs')
+				if (hasPhones) {
+					const filtered = list.filter((c) => c.slug !== 'iphones' && c.slug !== 'samsungs' && c.slug !== 'iphone' && c.slug !== 'samsung')
+					const phonesCategory: Category = {
+						id: 'phones-merged-id',
+						name: 'Phones',
+						slug: 'phones',
+						image_url: '/iphone_category.webp',
+						is_active: true,
+						sort_order: 1,
+						created_at: new Date().toISOString(),
+					}
+					setCategories([phonesCategory, ...filtered].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)))
+				} else {
+					setCategories(list)
+				}
+			})
+			.catch(() => setCategories([]))
+	}, [])
+
+	useEffect(() => {
+		if (marketLoading) return
+		setProducts(null)
+		fetchCatalogProducts({ marketplace, limit: 10 })
+			.then(setProducts)
+			.catch(() => setProducts([]))
+	}, [marketplace, marketLoading])
+
+	return (
+		<main className="min-h-screen bg-background">
+			<Navigation />
+
+			{/* 1. Main Hero Banner */}
+			<section className="relative text-white w-full min-h-[560px] sm:min-h-[640px] md:min-h-[720px] overflow-hidden flex items-center justify-center">
+				<video
+					autoPlay
+					loop
+					muted
+					playsInline
+					preload="auto"
+					poster="/hero_banner_poster.jpg"
+					className="absolute inset-0 w-full h-full object-cover z-0"
+				>
+					<source src="/hero_banner_video.mp4" type="video/mp4" />
+				</video>
+				<div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/60 to-primary/30 z-10" />
+
+				<div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
+					<h1 className="text-3xl sm:text-5xl md:text-7xl font-bold mb-4 tracking-luxury uppercase drop-shadow-md">
+						Welcome to CellKore
+					</h1>
+					<p className="text-base sm:text-xl md:text-2xl opacity-90 mb-8 font-light max-w-2xl mx-auto drop-shadow-sm leading-relaxed">
+						Your Premium Electronics Hub — buy retail, wholesale bulk, sell devices, and book repairs
+					</p>
+					{/* Hero Actions: Clear Hierarchy (Primary CTA + Unified Secondary Glass Bar) */}
+					<div className="flex flex-col items-center gap-4 sm:gap-5 pt-2 max-w-full px-2">
+						{/* 1. Dominant Signature Primary Button */}
+						<Link
+							href="/categories"
+							className="inline-flex items-center justify-center gap-2.5 px-8 sm:px-10 py-3.5 sm:py-4 rounded-full bg-[#599161] hover:bg-[#46754e] text-white font-extrabold text-xs uppercase tracking-[0.2em] shadow-xl hover:shadow-[#599161]/30 hover:scale-105 active:scale-95 transition-all duration-300 group border border-[#599161]/40 cursor-pointer min-w-[160px]"
+						>
+							<ShoppingBag className="w-4 h-4 text-white/90 group-hover:rotate-12 transition-transform duration-300 shrink-0" />
+							<span>Shop</span>
+						</Link>
+
+						{/* 2. Unified Glassmorphism Secondary Bar (Mobile Optimized) */}
+						<div className="flex items-center justify-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-full bg-black/65 backdrop-blur-xl border border-white/20 shadow-2xl max-w-full overflow-x-auto no-scrollbar">
+							<Link
+								href="/sell"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<DollarSign className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:scale-110 transition-transform shrink-0" />
+								<span>Sell</span>
+							</Link>
+							<Link
+								href="/wholesale"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<Package className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:scale-110 transition-transform shrink-0" />
+								<span>Wholesale</span>
+							</Link>
+							<Link
+								href="/repair"
+								className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full text-white/90 hover:text-white hover:bg-white/10 transition-all font-extrabold text-[9.5px] sm:text-xs uppercase tracking-[0.12em] sm:tracking-[0.16em] group shrink-0 whitespace-nowrap"
+							>
+								<Wrench className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-[#599161] group-hover:-rotate-45 transition-transform shrink-0" />
+								<span>Repair</span>
+							</Link>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			{/* 2. Shop Categories Section */}
+			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+				<div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-5 border-b border-border/60 gap-4">
+					<div>
+						<div className="flex items-center gap-2 mb-2">
+							<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
+							<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">CellKore Catalog</p>
+						</div>
+						<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+							Shop by Device Type
+						</h2>
+					</div>
+					<Link href="/categories" className="glow-outline-btn glow-outline-primary">
+						<span className="glow-outline-beam" />
+						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+							View All Categories
+						</span>
+					</Link>
+				</div>
+
+				{categories === null ? (
+					<div className="flex gap-4 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 py-2">
+						{Array.from({ length: 8 }).map((_, i) => (
+							<div key={i} className="animate-pulse bg-muted rounded-2xl h-40 w-[140px] sm:w-[170px] shrink-0" />
+						))}
+					</div>
+				) : (
+					<div className="relative">
+						<div
+							ref={categoryScroll.ref}
+							onScroll={categoryScroll.onScroll}
+							className="shop-category-scroll flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth cursor-grab active:cursor-grabbing -mx-4 px-4 sm:mx-0 sm:px-0 py-2"
+						>
+						{categories.map((category) => {
+							const isPhone = category.slug === 'phones'
+							const isIpad = category.slug === 'ipads' || category.slug === 'ipad'
+							const isTablet = category.slug === 'tablets' || category.slug === 'tablet'
+							const isWatch = category.slug === 'watches' || category.slug === 'watch'
+							const isLaptop = category.slug === 'laptops' || category.slug === 'laptop'
+							const isSpareParts = category.slug === 'spare-parts' || category.slug === 'spare_parts'
+							const isAccessories = category.slug === 'accessories'
+							const hasCustomCover = isPhone || isIpad || isTablet || isWatch || isLaptop || isSpareParts || isAccessories
+
+							let coverImage = null
+							if (isPhone) coverImage = '/phones.png'
+							else if (isIpad) coverImage = '/ipad_category.webp'
+							else if (isTablet) coverImage = '/tablets_category.webp'
+							else if (isWatch) coverImage = '/watches_category.webp'
+							else if (isLaptop) coverImage = '/laptop_category.webp'
+							else if (isSpareParts) coverImage = '/spare_parts_category.png?v=2'
+							else if (isAccessories) coverImage = '/accessories_category.png?v=1'
+
+							const targetHref = isSpareParts ? '/spare-parts' : `/products?category=${category.slug}`
+
+							return (
+								<Link key={category.id} href={targetHref} className="w-[140px] sm:w-[170px] shrink-0 snap-start snap-always">
+									<div className={`bg-card border border-border/80 rounded-2xl text-center shadow-sm hover:shadow-xl hover:border-primary hover:-translate-y-1.5 transition-all duration-300 cursor-pointer h-full flex flex-col items-center justify-center group relative overflow-hidden ${
+										hasCustomCover ? 'p-0 min-h-[160px]' : 'p-6'
+									}`}>
+										{hasCustomCover ? (
+											<img
+												src={coverImage || ''}
+												alt={category.name}
+												className={`w-full h-full object-cover transition-transform duration-500 ${
+													isTablet ? 'object-bottom scale-105 group-hover:scale-[1.10]' : 'object-center scale-100 group-hover:scale-[1.05]'
+												}`}
+											/>
+										) : (
+											<>
+												<div className="mb-4 w-14 h-14 rounded-full bg-primary/5 flex items-center justify-center group-hover:bg-primary/10 group-hover:scale-105 transition-all duration-300 overflow-hidden">
+													{category.image_url ? (
+														<img src={category.image_url} alt={category.name} className="w-full h-full object-cover" />
+													) : (
+														<LayoutGrid className="w-7 h-7 text-primary" />
+													)}
+												</div>
+												<h3 className="font-semibold text-foreground text-xs uppercase tracking-wider group-hover:text-primary transition-colors">
+													{category.name}
+												</h3>
+											</>
+										)}
+									</div>
+								</Link>
+							)
+						})}
+						</div>
+
+						{/* Right-edge fade — hints the row is swipeable */}
+						<div
+							className={`pointer-events-none absolute top-0 right-0 bottom-2 w-14 sm:w-20 bg-gradient-to-l from-background to-transparent transition-opacity duration-300 ${
+								categoryScroll.atEnd ? 'opacity-0' : 'opacity-100'
+							}`}
+						/>
+
+						{/* Simple elegant scroll arrows (desktop) */}
+						<button
+							type="button"
+							aria-label="Scroll categories left"
+							onClick={() => categoryScroll.scrollBy(-1)}
+							className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -left-4 w-9 h-9 rounded-full bg-background border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+								categoryScroll.atStart ? 'opacity-0 pointer-events-none' : 'opacity-100'
+							}`}
+						>
+							<ChevronLeft className="w-4 h-4" />
+						</button>
+						<button
+							type="button"
+							aria-label="Scroll categories right"
+							onClick={() => categoryScroll.scrollBy(1)}
+							className={`hidden sm:flex items-center justify-center absolute top-1/2 -translate-y-1/2 -right-4 w-9 h-9 rounded-full bg-background border border-border/80 shadow-md text-foreground/70 hover:text-primary hover:border-primary transition-all duration-300 ${
+								categoryScroll.atEnd ? 'opacity-0 pointer-events-none' : 'opacity-100'
+							}`}
+						>
+							<ChevronRight className="w-4 h-4" />
+						</button>
+						<div className="mx-auto mt-3 h-1 w-24 rounded-full bg-border/50 overflow-hidden sm:hidden">
+							<div
+								className="h-full rounded-full bg-primary transition-[left,width] duration-150 ease-out relative"
+								style={{ width: `${categoryScroll.thumb.widthPct}%`, left: `${categoryScroll.thumb.leftPct}%` }}
+							/>
+						</div>
+					</div>
+				)}
+			</section>
+
+			{/* 3. Featured Products Grid */}
+			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+				<div className="flex flex-wrap items-end justify-between gap-4 mb-10 pb-5 border-b border-border/60">
+					<div>
+						<div className="flex items-center gap-2 mb-2">
+							<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
+							<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">Authenticated Stock</p>
+						</div>
+						<h2 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight font-sans bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+							Featured Devices
+						</h2>
+					</div>
+					<Link href="/products" className="glow-outline-btn glow-outline-primary">
+						<span className="glow-outline-beam" />
+						<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+							Explore All
+						</span>
+					</Link>
+				</div>
+				{products === null ? (
+					<GridShimmer count={10} />
+				) : products.length === 0 ? (
+					<div className="text-center py-16 border border-dashed border-border rounded-3xl">
+						<p className="text-muted-foreground text-sm">
+							No products are currently listed for this marketplace. Try switching marketplaces from the header.
+						</p>
+					</div>
+				) : (
+					<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-5">
+						{products.map((product) => (
+							<ProductCard key={product.id} product={product} />
+						))}
+					</div>
+				)}
+			</section>
+
+			{/* ========================================================================= */}
+			{/* DEDICATED FEATURE SECTIONS WITH RUNNING VIDEO BANNERS FOR EACH NAVBAR PORTAL */}
+			{/* ========================================================================= */}
+
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20 py-12">
+
+				{/* FEATURE SECTION 1: WHOLESALE BULK LOTS (Running Video Banner: /bulk_banner.mp4) */}
+				<div className="space-y-5 scroll-lazy">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+								Wholesale & Bulk Bundles
+							</h2>
+						</div>
+						<Link href="/wholesale" className="glow-outline-btn glow-outline-primary">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+								Explore Wholesale
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<LazyBackgroundVideo
+							src="/bulk_banner.mp4?v=2"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						/>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-primary drop-shadow-lg leading-tight">
+								Wholesale Bulk Bundles
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								Gain access to volume pricing, verified grading manifests, and commercial bulk inventory bundles. Built for electronics retailers, repair shops, and distributors.
+							</p>
+							<div className="flex flex-wrap items-center gap-4">
+								<Link
+									href="/wholesale"
+									className="px-7 py-3 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg flex items-center gap-2"
+								>
+									Browse Wholesale Manifests
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+				{/* FEATURE SECTION 2: SELL YOUR DEVICE (Running Video Banner: /sell_ur_phone_banner.mp4) */}
+				<div className="space-y-5 scroll-lazy">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="h-0.5 w-6 bg-emerald-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-emerald-600 dark:text-emerald-400 font-bold">Trade-In & Valuation</p>
+							</div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-emerald-600 dark:to-emerald-400 bg-clip-text text-transparent">
+								Sell Your Device
+							</h2>
+						</div>
+						<Link href="/sell" className="glow-outline-btn glow-outline-emerald">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">
+								Get Valuation Quote
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<LazyBackgroundVideo
+							src="/sell_ur_phone_banner.mp4?v=5"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						/>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
+
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-400 drop-shadow-lg leading-tight">
+								Sell Your Device
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								Turn your pre-owned smartphones, tablets, and laptops into cash. Submit your device details in seconds to receive an official top-dollar quote from our team.
+							</p>
+							<div className="flex flex-wrap items-center justify-start gap-4">
+								<Link
+									href="/sell"
+									className="px-7 py-3 bg-white text-black hover:bg-white/90 transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+								>
+									Get Official Quote
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+				{/* FEATURE SECTION 3: DEVICE REPAIR & RESTORATION (Running Video Banner: /laptop_banner.mp4) */}
+				<div className="space-y-5 scroll-lazy">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="h-0.5 w-6 bg-teal-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-teal-600 dark:text-teal-400 font-bold">Repair Portal</p>
+							</div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-teal-600 bg-clip-text text-transparent">
+								Device Repair & Maintenance
+							</h2>
+						</div>
+						<Link href="/repair" className="glow-outline-btn glow-outline-teal">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-teal-600 dark:text-teal-400">
+								Book Repair Portal
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<LazyBackgroundVideo
+							src="/repair_banner.mp4?v=2"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						/>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
+
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-teal-200 to-teal-400 drop-shadow-lg leading-tight">
+								Device Repair & Service
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								From cracked screen replacement and battery swaps to complex board-level soldering. Book your mail-in or store drop-off service with full diagnostic tracking.
+							</p>
+							<div className="flex flex-wrap items-center gap-4">
+								<Link
+									href="/repair"
+									className="px-7 py-3 bg-teal-600 hover:bg-teal-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+								>
+									Book Repair Service
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+				{/* FEATURE SECTION 3.5: SPARE PARTS & COMPONENTS (Running Video Banner: /spare_parts_banner.mp4) */}
+				<div className="space-y-5 scroll-lazy">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="h-0.5 w-6 bg-amber-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-amber-600 dark:text-amber-400 font-bold">Spare Parts Catalog</p>
+							</div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-amber-600 bg-clip-text text-transparent">
+								Spare Parts & Components
+							</h2>
+						</div>
+						<Link href="/spare-parts" className="glow-outline-btn glow-outline-amber">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-600 dark:text-amber-400">
+								Search Spare Parts
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<LazyBackgroundVideo
+							src="/spare_parts_banner.mp4?v=2"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						/>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto">
+
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-amber-200 to-amber-400 drop-shadow-lg leading-tight">
+								Replacement Parts
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								Procure screen assemblies, replacement batteries, cameras, flex cables, and micro-soldering components. Fully batch-tested and ready for shipping.
+							</p>
+							<div className="flex flex-wrap items-center gap-4">
+								<Link
+									href="/spare-parts"
+									className="px-7 py-3 bg-amber-600 hover:bg-amber-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+								>
+									Explore Parts Catalog
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+				{/* FEATURE SECTION 4: REGIONAL MARKETPLACES (Running Video Banner: /us_marketplace_banner.mp4) */}
+				<div className="space-y-5 scroll-lazy">
+					<div className="flex flex-col sm:flex-row sm:items-end justify-between pb-4 border-b border-border/60 gap-4">
+						<div>
+							<div className="flex items-center gap-2 mb-2">
+								<span className="h-0.5 w-6 bg-blue-500 rounded-full inline-block" />
+								<p className="text-[10px] uppercase tracking-[0.28em] text-blue-600 dark:text-blue-400 font-bold">North America Regional Hub</p>
+							</div>
+							<h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-blue-500 bg-clip-text text-transparent">
+								Regional Marketplaces
+							</h2>
+						</div>
+						<Link href="/marketplace" className="glow-outline-btn glow-outline-blue">
+							<span className="glow-outline-beam" />
+							<span className="glow-outline-inner px-4.5 py-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">
+								View Regional Portals
+							</span>
+						</Link>
+					</div>
+
+					<section className="relative text-white w-full rounded-3xl overflow-hidden min-h-[520px] sm:min-h-[600px] md:min-h-[680px] flex items-center justify-center border border-border shadow-2xl group">
+						<LazyBackgroundVideo
+							src="/us_marketplace_banner.mp4?v=2"
+							className="absolute inset-0 w-full h-full object-cover z-0 transition-transform duration-700 group-hover:scale-105"
+						/>
+						<div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/40 z-10" />
+
+						<div className="relative z-20 p-8 sm:p-12 md:p-16 w-full max-w-3xl mr-auto text-left flex flex-col items-start">
+
+							<h3 className="text-3xl sm:text-5xl md:text-6xl font-extrabold mb-4 tracking-tight font-sans text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-blue-400 drop-shadow-lg leading-tight">
+								Regional Marketplaces
+							</h3>
+							<p className="text-white/90 text-xs sm:text-sm md:text-base font-light mb-8 max-w-xl leading-relaxed">
+								Browse curated inventory tailored specifically to your marketplace region. Enjoy localized pricing, fast regional dispatch, and zero customs hassle.
+							</p>
+							<div className="flex flex-wrap items-center justify-start gap-4">
+								<div className="flex items-center gap-4 text-xs text-white/80 font-medium mr-2">
+									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-blue-400" /> United States</span>
+									<span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-blue-400" /> Canada</span>
+								</div>
+								<Link
+									href="/marketplace"
+									className="px-7 py-3 bg-blue-600 hover:bg-blue-500 text-white transition font-bold text-xs uppercase tracking-[0.16em] shadow-lg rounded-full flex items-center gap-2"
+								>
+									Explore Marketplaces
+								</Link>
+							</div>
+						</div>
+					</section>
+				</div>
+
+			</div>
+
+			<TestimonialsPreview />
+
+			<Footer />
+		</main>
+	)
+}
