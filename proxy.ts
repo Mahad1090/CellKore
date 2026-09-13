@@ -7,6 +7,21 @@ const PUBLIC_ADMIN_APIS = ['/api/admin/auth/login']
 export async function proxy(request: NextRequest) {
 	const { pathname } = request.nextUrl
 
+	// Canonicalize the host: www.cellkore.com (or any other www.* variant)
+	// permanently redirects to the bare apex domain, so search engines and
+	// visitors only ever see one canonical version of the site.
+	const host = request.headers.get('host') || ''
+	if (host.startsWith('www.')) {
+		const url = request.nextUrl.clone()
+		// Set hostname/port separately (not the combined `host` setter) — the
+		// latter can leave a stale port behind depending on how the request
+		// arrived, producing an incorrect redirect like https://apex:3000/.
+		url.hostname = host.slice(4).split(':')[0]
+		url.port = ''
+		url.protocol = 'https'
+		return NextResponse.redirect(url, 308)
+	}
+
 	const isAdminPage = pathname.startsWith('/admin')
 	const isAdminApi = pathname.startsWith('/api/admin')
 	if (!isAdminPage && !isAdminApi) return NextResponse.next()
@@ -34,5 +49,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ['/admin/:path*', '/api/admin/:path*'],
+	// Runs on every request (excluding static assets/Next internals) so the
+	// www-canonicalization redirect above applies site-wide, not just admin
+	// routes; the admin-auth check further up still only acts on admin paths.
+	matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 }
