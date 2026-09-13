@@ -43,7 +43,12 @@ export function ReturnShipmentPayment({
 	const [submittingStripe, setSubmittingStripe] = useState(false)
 	const [viewingLabel, setViewingLabel] = useState(false)
 
-	if (request.status !== 'rejected') return null
+	// Only show the return-shipping/payment flow when we actually received the
+	// device before rejecting it (i.e. it passed through inspection) — a
+	// request rejected while still "submitted" was never shipped to us, so
+	// there's nothing to send back.
+	const deviceWasReceived = (request.sell_phone_status_history ?? []).some((h) => h.status === 'under_inspection')
+	if (request.status !== 'rejected' || !deviceWasReceived) return null
 
 	const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' }
 	if (accessToken) authHeaders.Authorization = `Bearer ${accessToken}`

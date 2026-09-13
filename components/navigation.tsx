@@ -6,7 +6,7 @@ import {
 	Package, Info, Mail, User, Globe, ChevronDown, BookOpen, Wrench, Briefcase,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/auth-context'
 import { useMarketplace, type Marketplace } from '@/contexts/marketplace-context'
@@ -61,6 +61,8 @@ function MarketFlag({ value, className }: { value: Marketplace; className?: stri
 
 export function Navigation() {
 	const router = useRouter()
+	const pathname = usePathname()
+	const isCategoriesPage = pathname === '/categories'
 	const { user, signOut } = useAuth()
 	const { marketplace, setMarketplace, isInternational } = useMarketplace()
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -202,11 +204,13 @@ export function Navigation() {
 										className="flex gap-16 pr-16 shrink-0 items-center"
 										aria-hidden={dup === 1}
 									>
-										{announcements.map((announcement) => (
-											<span key={announcement.id} className="flex items-center">
-												<span>{announcement.text}</span>
-											</span>
-										))}
+										{Array.from({ length: 6 }).map((_, rep) =>
+											announcements.map((announcement) => (
+												<span key={`${rep}-${announcement.id}`} className="flex items-center">
+													<span>{announcement.text}</span>
+												</span>
+											))
+										)}
 									</span>
 								))}
 							</div>
@@ -248,10 +252,10 @@ export function Navigation() {
 				</div>
 			)}
 
-			<nav className="sticky top-0 z-50 bg-[#fdfdfd] border-b border-border shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
+			<nav className="sticky top-0 z-50 mt-4 mb-4 bg-[#fdfdfd] shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] text-foreground">
 				<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-					<div className="flex items-center justify-between min-h-[76px] md:min-h-[136px] py-2 md:py-4 gap-2 md:gap-4 relative">						{/* Left Block */}
-						<div className="flex items-center shrink-0 md:w-1/3 lg:w-[44%] justify-start gap-2 md:gap-6 lg:gap-8 xl:gap-12 z-10">
+					<div className="flex items-center justify-between min-h-[72px] md:min-h-[100px] py-2 md:py-3 gap-2 md:gap-4 relative">						{/* Left Block */}
+						<div className="flex items-center shrink-0 justify-start gap-2 md:gap-6 lg:gap-8 xl:gap-12 z-10 md:w-1/3 lg:w-[36%]">
 							<button
 								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
 								className="p-1.5 sm:p-2 hover:bg-muted rounded-full transition-colors text-foreground cursor-pointer"
@@ -261,49 +265,52 @@ export function Navigation() {
 							</button>
 
 							<div className="hidden md:flex items-center space-x-6 lg:space-x-8 xl:space-x-12">
-								{navLinks.map((link) => (
-									<div key={link.label} className="relative group py-3">
-										<Link
-											href={link.href}
-											className="flex items-center gap-1.5 text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] xl:text-[12px] font-extrabold tracking-[0.12em] lg:tracking-[0.14em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
-										>
-											<span>{link.label}</span>
-											{link.subItems && (
-												<ChevronDown className="w-3 h-3 lg:w-3.5 lg:h-3.5 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
-											)}
-										</Link>
+									{navLinks.map((link) => (
+										<div key={link.label} className="relative group py-3">
+											<Link
+												href={link.href}
+												className="flex items-center gap-1.5 text-foreground/80 hover:text-primary transition-all duration-300 text-[10px] lg:text-[11px] xl:text-[12px] font-extrabold tracking-[0.12em] lg:tracking-[0.14em] xl:tracking-[0.16em] uppercase whitespace-nowrap cursor-pointer py-1"
+											>
+												<span>{link.label}</span>
+												{link.subItems && (
+													<ChevronDown className="w-3 h-3 lg:w-3.5 lg:h-3.5 transition-transform duration-300 group-hover:rotate-180 opacity-60 shrink-0" />
+												)}
+											</Link>
 
-										{link.subItems && (
-											<div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-[#fdfdfd]/95 backdrop-blur-md border border-border rounded-2xl shadow-xl p-1.5 min-w-[200px] invisible opacity-0 translate-y-2 scale-95 origin-top group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 transition-all duration-200 z-50">
-												{link.subItems.map((sub) => (
-													<Link
-														key={sub.href}
-														href={sub.href}
-														className="block px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/75 hover:bg-secondary hover:text-primary transition-all duration-200 cursor-pointer whitespace-nowrap"
-													>
-														{sub.label}
-													</Link>
-												))}
-											</div>
-										)}
-									</div>
-								))}
+											{link.subItems && (
+												<div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-[#fdfdfd]/95 backdrop-blur-md border border-border rounded-2xl shadow-xl p-1.5 min-w-[200px] invisible opacity-0 translate-y-2 scale-95 origin-top group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 transition-all duration-200 z-50">
+													{link.subItems.map((sub) => (
+														<Link
+															key={sub.href}
+															href={sub.href}
+															className="block px-4 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-[0.12em] text-foreground/75 hover:bg-secondary hover:text-primary transition-all duration-200 cursor-pointer whitespace-nowrap"
+														>
+															{sub.label}
+														</Link>
+													))}
+												</div>
+											)}
+										</div>
+									))}
 							</div>
 						</div>
 
 						{/* Center Block - Logo + tagline (dead-centered on mobile now that the header's right block is light enough not to collide with it) */}
-						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center md:w-1/3 lg:w-[12%] z-10 pointer-events-auto">
-							<Link href="/" className="flex-shrink-0 group flex flex-col items-center">
+						<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 md:static md:translate-x-0 md:translate-y-0 flex flex-col items-center justify-center flex-shrink-0 z-10 pointer-events-auto">
+							<Link href="/" className="flex-shrink-0 group flex flex-col items-center -translate-x-[20px]">
 								<img
-									src="/cellkore_logo_new.png"
+									src="/cellkore_logo_new.png?v=4"
 									alt="CellKore Logo"
-									className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+									className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
 								/>
+								<span className="hidden md:block text-[9px] uppercase tracking-[0.25em] text-primary mt-3 font-bold whitespace-nowrap text-center">
+									Premium Devices. Trusted Essentials.
+								</span>
 							</Link>
 						</div>
 
 						{/* Right Block - Actions */}
-						<div className="flex items-center justify-end shrink-0 md:w-1/3 lg:w-[44%] space-x-0.5 sm:space-x-2 lg:space-x-3 z-10">
+						<div className="flex items-center justify-end shrink-0 space-x-0.5 sm:space-x-2 lg:space-x-3 z-10 md:w-1/3 lg:w-[36%]">
 							{/* Persistent marketplace selector — hidden in the mobile header (it's already at the top of the mobile drawer) so the logo can sit dead-center; shown from sm up */}
 							<div className="relative sm:mr-2 hidden sm:block">
 								<button
@@ -520,26 +527,6 @@ export function Navigation() {
 										)}
 									</div>
 								)}
-
-								{/* Products */}
-								<Link
-									href="/categories"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Smartphone className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Products</span>
-								</Link>
-
-								{/* Marketplace */}
-								<Link
-									href="/marketplace"
-									className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-muted transition-all duration-300 text-foreground/75 hover:text-primary group text-xs font-semibold tracking-[0.18em] uppercase"
-									onClick={() => setMobileMenuOpen(false)}
-								>
-									<Store className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors duration-300" />
-									<span className="group-hover:translate-x-1 transition-transform duration-300">Marketplace</span>
-								</Link>
 
 								{/* Sell Your Phone */}
 								<Link

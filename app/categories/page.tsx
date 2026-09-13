@@ -40,12 +40,8 @@ export default function CategoriesPage() {
 
 			{/* Page Header */}
 			<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8">
-				<div className="flex items-center gap-2 mb-2">
-					<span className="h-0.5 w-6 bg-primary rounded-full inline-block" />
-					<p className="text-[10px] uppercase tracking-[0.28em] text-primary font-bold">CellKore Catalog</p>
-				</div>
 				<div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-5 border-b border-border/60">
-					<h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-primary/80 bg-clip-text text-transparent">
+					<h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight font-sans bg-gradient-to-r from-foreground via-primary to-foreground bg-clip-text text-transparent animate-text-gradient">
 						All Categories
 					</h1>
 					<Link href="/products" className="glow-outline-btn glow-outline-primary">

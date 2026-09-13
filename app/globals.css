@@ -178,11 +178,25 @@ body {
     white-space: nowrap;
     min-width: max-content;
     will-change: transform;
-    animation: marquee 30s linear infinite;
+    animation: marquee 70s linear infinite;
 }
 
 .animate-marquee:hover {
     animation-play-state: paused;
+}
+
+@keyframes text-gradient-move {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+.animate-text-gradient {
+    background-size: 200% auto;
+    animation: text-gradient-move 4s linear infinite;
 }
 
 .admin-theme-wrapper {
