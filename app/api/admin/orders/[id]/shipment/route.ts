@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
-import { createCanadaPostShipment } from '@/lib/shipping/canada-post'
-import { createUpsShipment } from '@/lib/shipping/ups'
+import { createShipmentWithCarrier } from '@/lib/shipping/create-shipment'
 import { uploadShippingLabel } from '@/lib/shipping/label-storage'
 import { computePackageForItems } from '@/lib/shipping/package'
 import { getShipFromAddress } from '@/lib/shipping/ship-from'
+import type { ShippingCarrier } from '@/lib/types'
 
 // Admin manually triggers real label generation for whichever
 // carrier/service the customer selected and paid for at checkout. Also
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 		return NextResponse.json({ success: true })
 	}
 
-	const carrier = order.shipping_carrier as 'canada_post' | 'ups' | null
+	const carrier = order.shipping_carrier as ShippingCarrier | null
 	const serviceCode = order.shipping_service_code as string | null
 	const address = order.shipping_address as any
 	if (!carrier || !serviceCode || !address) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 			},
 		}
 
-		const result = carrier === 'ups' ? await createUpsShipment(shipmentRequest) : await createCanadaPostShipment(shipmentRequest)
+		const result = await createShipmentWithCarrier(carrier, shipmentRequest)
 		const labelUrl = await uploadShippingLabel(`orders/${id}`, result.labelBytes, result.labelContentType)
 
 		const { error } = await service

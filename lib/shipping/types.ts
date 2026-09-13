@@ -1,5 +1,18 @@
 import type { ShippingCarrier } from '@/lib/types'
 
+const CARRIER_DISPLAY_NAMES: Record<ShippingCarrier, string> = {
+	canada_post: 'Canada Post',
+	ups: 'UPS',
+	stallion: 'Stallion Express',
+}
+
+/** Single source of truth for a carrier's human-readable name — every UI
+ *  label/badge should go through this instead of its own ternary, so
+ *  adding a carrier only ever means updating this one map. */
+export function carrierDisplayName(carrier: ShippingCarrier): string {
+	return CARRIER_DISPLAY_NAMES[carrier] ?? carrier
+}
+
 export interface ShippingParty {
 	name: string
 	company?: string

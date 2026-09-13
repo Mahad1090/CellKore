@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase-server'
 import { markReturnShipmentPaid } from '@/lib/sell-request-return'
 import { markRepairPaid } from '@/lib/repair-payment'
 import { stripeSecretKey, stripeWebhookSecret } from '@/lib/payments-env'
+import type { ShippingCarrier } from '@/lib/types'
 
 export async function POST(request: NextRequest) {
 	const stripeSecret = stripeSecretKey()
@@ -131,7 +132,7 @@ async function finalizeStripeSession(session: Stripe.Checkout.Session): Promise<
 				deliveryNotes: meta.delivery_notes || undefined,
 			},
 			shipping: {
-				carrier: meta.shipping_carrier === 'ups' ? 'ups' : 'canada_post',
+				carrier: (['ups', 'canada_post', 'stallion'].includes(meta.shipping_carrier) ? meta.shipping_carrier : 'canada_post') as ShippingCarrier,
 				serviceCode: meta.shipping_service_code || '',
 				serviceName: meta.shipping_service_name || '',
 				cost: Number(meta.shipping_cost || 0),

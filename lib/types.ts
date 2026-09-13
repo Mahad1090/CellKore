@@ -420,7 +420,7 @@ export interface ContactInquiry {
 	submitted_at: string
 }
 
-export type ShippingCarrier = 'canada_post' | 'ups'
+export type ShippingCarrier = 'canada_post' | 'ups' | 'stallion'
 export type ShippingLabelStatus = 'not_generated' | 'generated' | 'failed'
 
 export interface OrderRecord {

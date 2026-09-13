@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
-import { createCanadaPostShipment } from '@/lib/shipping/canada-post'
-import { createUpsShipment } from '@/lib/shipping/ups'
+import { createShipmentWithCarrier } from '@/lib/shipping/create-shipment'
 import { uploadShippingLabel } from '@/lib/shipping/label-storage'
 import { computePackageForItems } from '@/lib/shipping/package'
 import { getShipFromAddress } from '@/lib/shipping/ship-from'
+import type { ShippingCarrier } from '@/lib/types'
 
 // Interim manual path (carrier/tracking_number/label_url all provided) or
 // a retry of the real carrier call (empty body) if the automatic
@@ -67,8 +67,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 				country: shipment.country,
 			},
 		}
-		const result =
-			shipment.carrier === 'ups' ? await createUpsShipment(shipmentRequest) : await createCanadaPostShipment(shipmentRequest)
+		const result = await createShipmentWithCarrier(shipment.carrier as ShippingCarrier, shipmentRequest)
 		const labelUrl = await uploadShippingLabel(`sell-returns/${id}`, result.labelBytes, result.labelContentType)
 
 		const { error } = await service

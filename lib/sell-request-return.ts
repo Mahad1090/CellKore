@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createCanadaPostShipment } from '@/lib/shipping/canada-post'
-import { createUpsShipment } from '@/lib/shipping/ups'
+import { createShipmentWithCarrier } from '@/lib/shipping/create-shipment'
 import { uploadShippingLabel } from '@/lib/shipping/label-storage'
 import { computePackageForItems } from '@/lib/shipping/package'
 import { getShipFromAddress } from '@/lib/shipping/ship-from'
+import type { ShippingCarrier } from '@/lib/types'
 
 /**
  * Marks a return shipment as paid and attempts real label generation via
@@ -68,8 +68,7 @@ export async function markReturnShipmentPaid(
 				country: shipment.country,
 			},
 		}
-		const result =
-			shipment.carrier === 'ups' ? await createUpsShipment(shipmentRequest) : await createCanadaPostShipment(shipmentRequest)
+		const result = await createShipmentWithCarrier(shipment.carrier as ShippingCarrier, shipmentRequest)
 		const labelUrl = await uploadShippingLabel(`sell-returns/${requestId}`, result.labelBytes, result.labelContentType)
 
 		await service

@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, X, MapPin, Users, ShoppingBag, CreditCard, Ship
 import { PageTitle, StatusBadge, EmptyState, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
+import { carrierDisplayName } from '@/lib/shipping/types'
 import { useAdmin } from '@/contexts/admin-context'
 import { PickupScheduleModal } from '@/components/admin/pickup-schedule-modal'
 
@@ -582,7 +583,7 @@ function OrderRow({
 											<div className="flex justify-between items-center">
 												<span className="text-muted-foreground">Carrier</span>
 												<span className="font-extrabold text-[#111111] uppercase">
-													{order.shipping_carrier === 'ups' ? 'UPS' : 'Canada Post'}
+													{order.shipping_carrier ? carrierDisplayName(order.shipping_carrier) : '—'}
 												</span>
 											</div>
 											<div className="flex justify-between items-center">

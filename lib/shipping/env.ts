@@ -50,6 +50,22 @@ export function upsCredentials(): { clientId: string; clientSecret: string; acco
 	return { clientId, clientSecret, accountNumber }
 }
 
+// Stallion issues a single bearer token per account — no separate
+// sandbox/live token pair like Canada Post. STALLION_ENV only switches
+// which host that same token is sent to, since sandbox and production are
+// fully separate hosts (not just a key prefix) on Stallion's V5 API.
+export function stallionApiBase(): string {
+	return isLive(process.env.STALLION_ENV) ? 'https://ship.stallion.ca/api/v5' : 'https://sandbox.stallion.ca/api/v5'
+}
+
+export function stallionApiKey(): string {
+	const key = process.env.STALLION_API_KEY
+	if (!key) {
+		throw new Error('Stallion is not configured (missing STALLION_API_KEY)')
+	}
+	return key
+}
+
 export function shippingLabelsBucket(): string {
 	return process.env.SHIPPING_LABELS_BUCKET || 'shipping-labels'
 }

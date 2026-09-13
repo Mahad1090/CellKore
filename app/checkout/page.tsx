@@ -59,6 +59,23 @@ function CanadaPostBadge() {
 	)
 }
 
+function StallionBadge() {
+	return (
+		<svg width="72" height="20" viewBox="0 0 72 20" aria-label="Stallion Express" role="img" className="shrink-0">
+			<rect width="72" height="20" rx="3" fill="#1E2A3A" />
+			<text x="36" y="13.5" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="800" fontSize="7.5" letterSpacing="0.2" fill="#fff">
+				STALLION
+			</text>
+		</svg>
+	)
+}
+
+function CarrierBadge({ carrier }: { carrier: NormalizedRate['carrier'] }) {
+	if (carrier === 'canada_post') return <CanadaPostBadge />
+	if (carrier === 'stallion') return <StallionBadge />
+	return <UpsBadge />
+}
+
 /** Skeleton row shown for a carrier whose rates haven't arrived yet — UPS and Canada Post are fetched independently so one carrier's latency never delays the other's rates from appearing. */
 function ShippingRateLoadingRow({ label }: { label: string }) {
 	return (
@@ -134,6 +151,7 @@ export default function CheckoutPage() {
 	const [checkingPromo, setCheckingPromo] = useState(false)
 	const [upsRateState, setUpsRateState] = useState<CarrierRateState>(EMPTY_CARRIER_STATE)
 	const [canadaPostRateState, setCanadaPostRateState] = useState<CarrierRateState>(EMPTY_CARRIER_STATE)
+	const [stallionRateState, setStallionRateState] = useState<CarrierRateState>(EMPTY_CARRIER_STATE)
 	const [selectedShippingRate, setSelectedShippingRate] = useState<NormalizedRate | null>(null)
 	const prefillStage = useRef(0)
 	const paypalRendered = useRef(false)
@@ -266,6 +284,7 @@ export default function CheckoutPage() {
 			setSelectedShippingRate(null)
 			setUpsRateState({ rates: [], loading: true, requested: true })
 			setCanadaPostRateState({ rates: [], loading: true, requested: true })
+			setStallionRateState({ rates: [], loading: true, requested: true })
 
 			const payload = {
 				cartItems: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
@@ -359,6 +378,7 @@ export default function CheckoutPage() {
 			}
 
 			fetchCarrier('/api/checkout/shipping-rates/ups', setUpsRateState)
+			fetchCarrier('/api/checkout/shipping-rates/stallion', setStallionRateState)
 			fetchCanadaPostWithRetry()
 		}, 500)
 
@@ -370,8 +390,8 @@ export default function CheckoutPage() {
 	}, [items, form.line1, form.line2, form.city, form.stateProvince, form.postalCode, form.country, form.phone, form.firstName, form.lastName])
 
 	const shippingRates = useMemo(
-		() => [...upsRateState.rates, ...canadaPostRateState.rates].sort((a, b) => a.cost - b.cost),
-		[upsRateState.rates, canadaPostRateState.rates]
+		() => [...upsRateState.rates, ...canadaPostRateState.rates, ...stallionRateState.rates].sort((a, b) => a.cost - b.cost),
+		[upsRateState.rates, canadaPostRateState.rates, stallionRateState.rates]
 	)
 
 	// Auto-picks the cheapest rate available so far as carriers resolve, but
@@ -751,7 +771,7 @@ export default function CheckoutPage() {
 									Shipping Method
 								</h2>
 
-								{!upsRateState.requested && !canadaPostRateState.requested ? (
+								{!upsRateState.requested && !canadaPostRateState.requested && !stallionRateState.requested ? (
 									<p className="text-xs text-muted-foreground font-medium">Enter your full shipping address and phone number to see live rates.</p>
 								) : (
 									<div className="space-y-2.5">
@@ -763,6 +783,11 @@ export default function CheckoutPage() {
 										{canadaPostRateState.error && (
 											<div className="p-3 bg-[#F8FAF8] border border-[#E0E6E1] rounded-xl text-[11px] text-[#0f172a]/70 font-medium">
 												Canada Post rates unavailable — showing other carriers only.
+											</div>
+										)}
+										{stallionRateState.error && (
+											<div className="p-3 bg-[#F8FAF8] border border-[#E0E6E1] rounded-xl text-[11px] text-[#0f172a]/70 font-medium">
+												Stallion rates unavailable — showing other carriers only.
 											</div>
 										)}
 
@@ -786,7 +811,7 @@ export default function CheckoutPage() {
 														className="w-4 h-4 accent-[#599161] cursor-pointer"
 													/>
 													<div className="flex items-center gap-2.5">
-														{rate.carrier === 'canada_post' ? <CanadaPostBadge /> : <UpsBadge />}
+														<CarrierBadge carrier={rate.carrier} />
 														<div>
 															<p className="text-xs font-bold text-[#0f172a]">{rate.serviceName}</p>
 															{rate.transitDays && (
@@ -805,8 +830,9 @@ export default function CheckoutPage() {
 
 										{upsRateState.loading && <ShippingRateLoadingRow label="UPS" />}
 										{canadaPostRateState.loading && <ShippingRateLoadingRow label="Canada Post" />}
+										{stallionRateState.loading && <ShippingRateLoadingRow label="Stallion" />}
 
-										{!upsRateState.loading && !canadaPostRateState.loading && shippingRates.length === 0 && (
+										{!upsRateState.loading && !canadaPostRateState.loading && !stallionRateState.loading && shippingRates.length === 0 && (
 											<div className="p-4 bg-[#F8FAF8] border border-[#E0E6E1] rounded-2xl text-xs text-[#0f172a]/70 font-medium">
 												No shipping rates are available for this address yet.
 											</div>

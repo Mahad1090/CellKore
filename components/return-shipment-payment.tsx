@@ -6,6 +6,7 @@ import { PayPalButton } from '@/components/paypal-button'
 import { useToast } from '@/components/ui/toast'
 import type { SellPhoneRequest } from '@/lib/types'
 import type { NormalizedRate } from '@/lib/shipping/types'
+import { carrierDisplayName } from '@/lib/shipping/types'
 
 /**
  * Shown when a sell request was rejected after we already received the
@@ -223,8 +224,8 @@ export function ReturnShipmentPayment({
 			{ratesRequested && !loadingRates && (
 				rates.length === 0 ? (
 					<p className="text-xs text-red-900/80">
-						{rateErrors.canada_post || rateErrors.ups
-							? `Unable to fetch rates: ${rateErrors.canada_post ?? rateErrors.ups}`
+						{rateErrors.canada_post || rateErrors.ups || rateErrors.stallion
+							? `Unable to fetch rates: ${rateErrors.canada_post ?? rateErrors.ups ?? rateErrors.stallion}`
 							: 'No shipping rates are available for this address.'}
 					</p>
 				) : (
@@ -245,7 +246,7 @@ export function ReturnShipmentPayment({
 										onChange={() => setSelectedRate(rate)}
 										className="accent-red-600 cursor-pointer"
 									/>
-									{rate.carrier === 'ups' ? 'UPS' : 'Canada Post'} — {rate.serviceName}
+									{carrierDisplayName(rate.carrier)} — {rate.serviceName}
 								</span>
 								<span className="font-mono text-xs font-bold">${rate.cost.toFixed(2)} {rate.currency}</span>
 							</label>

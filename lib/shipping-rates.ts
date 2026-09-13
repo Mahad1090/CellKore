@@ -1,5 +1,6 @@
 import { getShippingRates } from '@/lib/shipping/aggregator'
 import { computePackageForItems } from '@/lib/shipping/package'
+import { carrierDisplayName } from '@/lib/shipping/types'
 import type { RepairShippingOption } from '@/lib/types'
 
 export interface ShippingRateAddress {
@@ -33,7 +34,7 @@ export async function getRepairShippingRateOptions(address: ShippingRateAddress)
 	})
 
 	return rates.map((r) => ({
-		label: `${r.carrier === 'ups' ? 'UPS' : 'Canada Post'} — ${r.serviceName}`,
+		label: `${carrierDisplayName(r.carrier)} — ${r.serviceName}`,
 		cost: r.cost,
 		carrier: r.carrier,
 		serviceCode: r.serviceCode,

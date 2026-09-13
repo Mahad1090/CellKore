@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin/session'
 import { createServiceClient } from '@/lib/supabase-server'
 import { notifyRepairStatusChange } from '@/lib/repair-notifications'
-import { createCanadaPostShipment } from '@/lib/shipping/canada-post'
-import { createUpsShipment } from '@/lib/shipping/ups'
+import { createShipmentWithCarrier } from '@/lib/shipping/create-shipment'
+import { carrierDisplayName } from '@/lib/shipping/types'
 import { uploadShippingLabel } from '@/lib/shipping/label-storage'
 import { computePackageForItems } from '@/lib/shipping/package'
 import { getShipFromAddress } from '@/lib/shipping/ship-from'
@@ -69,10 +69,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 					country: existing.country ?? '',
 				},
 			}
-			const result =
-				option.carrier === 'ups' ? await createUpsShipment(shipmentRequest) : await createCanadaPostShipment(shipmentRequest)
+			const result = await createShipmentWithCarrier(option.carrier, shipmentRequest)
 			labelUrl = await uploadShippingLabel(`repair/${id}`, result.labelBytes, result.labelContentType)
-			carrier = option.carrier === 'ups' ? 'UPS' : 'Canada Post'
+			carrier = carrierDisplayName(option.carrier)
 			trackingNumber = result.trackingNumber
 		} catch (err) {
 			await service

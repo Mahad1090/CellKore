@@ -1,7 +1,9 @@
 import { createServiceClient } from '@/lib/supabase-server'
 import { getCanadaPostRates } from '@/lib/shipping/canada-post'
 import { getUpsRates } from '@/lib/shipping/ups'
+import { getStallionRates } from '@/lib/shipping/stallion'
 import { getShipFromAddress } from '@/lib/shipping/ship-from'
+import { getCarrierSettings, isCarrierEnabledForCountry } from '@/lib/shipping/carrier-settings'
 import type { NormalizedRate, PackageInput, RateQuoteResult, ShippingParty } from '@/lib/shipping/types'
 
 export interface RateDestination {
@@ -29,13 +31,15 @@ function toShippingParty(destination: RateDestination): ShippingParty {
 }
 
 /**
- * Queries Canada Post and UPS in parallel and returns a merged,
- * cost-sorted rate list. Both carriers are queried regardless of
- * destination marketplace (CA/US) — let price/ETA decide, rather than
- * hardcoding carrier-by-marketplace. If one carrier errors, the other's
- * rates are still returned; if both error, an empty rate list is
- * returned so checkout can block placing the order rather than
- * fabricating a flat-rate fallback.
+ * Queries Canada Post, UPS, and Stallion in parallel and returns a merged,
+ * cost-sorted rate list. All three are queried regardless of destination
+ * marketplace (CA/US) — let price/ETA decide, rather than hardcoding
+ * carrier-by-marketplace — except a carrier the admin has switched off for
+ * that destination's region (see lib/shipping/carrier-settings.ts), which
+ * is skipped entirely rather than queried and discarded. If a queried
+ * carrier errors, the others' rates are still returned; if all error, an
+ * empty rate list is returned so checkout can block placing the order
+ * rather than fabricating a flat-rate fallback.
  */
 export async function getShippingRates(pkg: PackageInput, destination: RateDestination): Promise<RateQuoteResult> {
 	let origin: ShippingParty
@@ -43,13 +47,19 @@ export async function getShippingRates(pkg: PackageInput, destination: RateDesti
 		origin = await getShipFromAddress()
 	} catch (err) {
 		const message = err instanceof Error ? err.message : 'Ship-from address is not configured'
-		return { rates: [], errors: { canada_post: message, ups: message } }
+		return { rates: [], errors: { canada_post: message, ups: message, stallion: message } }
 	}
 	const destParty = toShippingParty(destination)
+	const settings = await getCarrierSettings()
 
-	const [canadaPostResult, upsResult] = await Promise.allSettled([
-		getCanadaPostRates(pkg, { postalCode: origin.postalCode }, destParty),
-		getUpsRates(pkg, toShippingParty(origin), destParty),
+	const canadaPostEnabled = isCarrierEnabledForCountry(settings, 'canada_post', destination.country)
+	const upsEnabled = isCarrierEnabledForCountry(settings, 'ups', destination.country)
+	const stallionEnabled = isCarrierEnabledForCountry(settings, 'stallion', destination.country)
+
+	const [canadaPostResult, upsResult, stallionResult] = await Promise.allSettled([
+		canadaPostEnabled ? getCanadaPostRates(pkg, { postalCode: origin.postalCode }, destParty) : Promise.resolve([]),
+		upsEnabled ? getUpsRates(pkg, toShippingParty(origin), destParty) : Promise.resolve([]),
+		stallionEnabled ? getStallionRates(pkg, toShippingParty(origin), destParty) : Promise.resolve([]),
 	])
 
 	const rates: NormalizedRate[] = []
@@ -71,6 +81,14 @@ export async function getShippingRates(pkg: PackageInput, destination: RateDesti
 		await logShippingError('ups', message)
 	}
 
+	if (stallionResult.status === 'fulfilled') {
+		rates.push(...stallionResult.value)
+	} else {
+		const message = stallionResult.reason instanceof Error ? stallionResult.reason.message : 'Stallion rates unavailable'
+		errors.stallion = message
+		await logShippingError('stallion', message)
+	}
+
 	rates.sort((a, b) => a.cost - b.cost)
 	return { rates, errors }
 }
@@ -82,13 +100,15 @@ export interface CarrierRateResult {
 
 /**
  * Single-carrier variants of getShippingRates(), for the checkout page's
- * progressive rate display — called as two independent requests so UPS
- * (consistently fast) can show up immediately while Canada Post (which has
- * shown highly variable latency since its 2026 platform migration) is
- * still loading, rather than the whole shipping-method list waiting on
- * whichever carrier is slowest.
+ * progressive rate display — called as independent requests so a fast
+ * carrier can show up immediately while a slower one is still loading,
+ * rather than the whole shipping-method list waiting on the slowest.
+ * Each silently returns no rates (not an error) when the admin has
+ * disabled that carrier for the destination's region.
  */
 export async function getUpsShippingRates(pkg: PackageInput, destination: RateDestination): Promise<CarrierRateResult> {
+	const settings = await getCarrierSettings()
+	if (!isCarrierEnabledForCountry(settings, 'ups', destination.country)) return { rates: [] }
 	try {
 		const origin = await getShipFromAddress()
 		const rates = await getUpsRates(pkg, toShippingParty(origin), toShippingParty(destination))
@@ -101,6 +121,8 @@ export async function getUpsShippingRates(pkg: PackageInput, destination: RateDe
 }
 
 export async function getCanadaPostShippingRates(pkg: PackageInput, destination: RateDestination): Promise<CarrierRateResult> {
+	const settings = await getCarrierSettings()
+	if (!isCarrierEnabledForCountry(settings, 'canada_post', destination.country)) return { rates: [] }
 	try {
 		const origin = await getShipFromAddress()
 		const rates = await getCanadaPostRates(pkg, { postalCode: origin.postalCode }, toShippingParty(destination))
@@ -112,7 +134,21 @@ export async function getCanadaPostShippingRates(pkg: PackageInput, destination:
 	}
 }
 
-async function logShippingError(source: 'canada_post' | 'ups', message: string): Promise<void> {
+export async function getStallionShippingRates(pkg: PackageInput, destination: RateDestination): Promise<CarrierRateResult> {
+	const settings = await getCarrierSettings()
+	if (!isCarrierEnabledForCountry(settings, 'stallion', destination.country)) return { rates: [] }
+	try {
+		const origin = await getShipFromAddress()
+		const rates = await getStallionRates(pkg, toShippingParty(origin), toShippingParty(destination))
+		return { rates }
+	} catch (err) {
+		const message = err instanceof Error ? err.message : 'Stallion rates unavailable'
+		await logShippingError('stallion', message)
+		return { rates: [], error: message }
+	}
+}
+
+async function logShippingError(source: 'canada_post' | 'ups' | 'stallion', message: string): Promise<void> {
 	await createServiceClient()
 		.from('admin_logs')
 		.insert({ level: 'warning', source, message: `Shipping rate quote failed: ${message}` })

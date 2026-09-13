@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Trash2, Loader2, Globe, ExternalLink, Copy, MapPin } from 'lucide-react'
+import { Trash2, Loader2, Globe, ExternalLink, Copy, MapPin, Truck, Flag } from 'lucide-react'
 import { PageTitle, EmptyState, adminInput } from '@/components/admin/ui'
 import { TableShimmer } from '@/components/shimmer'
 import { useToast } from '@/components/ui/toast'
@@ -24,8 +24,27 @@ function renderPlatformIcon(platform: string) {
 const TABS = [
 	{ id: 'social', label: 'STORE LINKS' },
 	{ id: 'repair', label: 'REPAIR SERVICE' },
+	{ id: 'shipping', label: 'SHIPPING CARRIERS' },
 ] as const
 type TabId = (typeof TABS)[number]['id']
+
+interface CarrierSettingsState {
+	canadaPostCa: boolean
+	canadaPostUs: boolean
+	upsCa: boolean
+	upsUs: boolean
+	stallionCa: boolean
+	stallionUs: boolean
+}
+
+const EMPTY_CARRIER_SETTINGS: CarrierSettingsState = {
+	canadaPostCa: true,
+	canadaPostUs: true,
+	upsCa: true,
+	upsUs: true,
+	stallionCa: true,
+	stallionUs: true,
+}
 
 function AdminSettingsContent() {
 	const searchParams = useSearchParams()
@@ -36,7 +55,7 @@ function AdminSettingsContent() {
 	const [tab, setTab] = useState<TabId>('social')
 
 	useEffect(() => {
-		if (tabQuery && ['social', 'repair'].includes(tabQuery)) {
+		if (tabQuery && ['social', 'repair', 'shipping'].includes(tabQuery)) {
 			setTab(tabQuery)
 		}
 	}, [tabQuery])
@@ -69,6 +88,54 @@ function AdminSettingsContent() {
 			toast({ title: 'Save failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
 		} finally {
 			setSavingRepair(false)
+		}
+	}
+
+	const [carrierSettings, setCarrierSettings] = useState<CarrierSettingsState>(EMPTY_CARRIER_SETTINGS)
+	const [carrierSettingsOriginal, setCarrierSettingsOriginal] = useState<CarrierSettingsState>(EMPTY_CARRIER_SETTINGS)
+	const [loadingCarrierSettings, setLoadingCarrierSettings] = useState(true)
+	const [savingCarrierSettings, setSavingCarrierSettings] = useState(false)
+
+	const loadCarrierSettings = useCallback(() => {
+		setLoadingCarrierSettings(true)
+		fetch('/api/admin/shipping-carrier-settings')
+			.then((res) => res.json())
+			.then((json) => {
+				const loaded: CarrierSettingsState = {
+					canadaPostCa: json.canadaPostCa !== false,
+					canadaPostUs: json.canadaPostUs !== false,
+					upsCa: json.upsCa !== false,
+					upsUs: json.upsUs !== false,
+					stallionCa: json.stallionCa !== false,
+					stallionUs: json.stallionUs !== false,
+				}
+				setCarrierSettings(loaded)
+				setCarrierSettingsOriginal(loaded)
+			})
+			.catch(() => undefined)
+			.finally(() => setLoadingCarrierSettings(false))
+	}, [])
+
+	useEffect(loadCarrierSettings, [loadCarrierSettings])
+
+	const carrierSettingsDirty = JSON.stringify(carrierSettings) !== JSON.stringify(carrierSettingsOriginal)
+
+	const saveCarrierSettings = async () => {
+		setSavingCarrierSettings(true)
+		try {
+			const res = await fetch('/api/admin/shipping-carrier-settings', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(carrierSettings),
+			})
+			const json = await res.json()
+			if (!res.ok) throw new Error(json.error)
+			toast({ title: 'Shipping carrier settings saved', variant: 'success' })
+			setCarrierSettingsOriginal(carrierSettings)
+		} catch (err) {
+			toast({ title: 'Save failed', description: err instanceof Error ? err.message : undefined, variant: 'error' })
+		} finally {
+			setSavingCarrierSettings(false)
 		}
 	}
 
@@ -309,7 +376,127 @@ function AdminSettingsContent() {
 					)}
 				</section>
 			)}
+
+			{/* TAB 3: SHIPPING CARRIERS */}
+			{tab === 'shipping' && (
+				<section className="bg-card border border-border/80 rounded-3xl p-6 shadow-sm space-y-6 font-sans">
+					<div className="flex items-center gap-2.5 pb-4 border-b border-border/80">
+						<Truck className="w-5 h-5 text-primary" />
+						<div>
+							<h2 className="text-lg font-serif font-bold text-foreground tracking-tight">Shipping Carriers</h2>
+							<p className="text-xs text-muted-foreground">
+								Turn carrier rate + label sources on or off, independently for Canada (domestic) and US/International destinations.
+							</p>
+						</div>
+					</div>
+
+					{loadingCarrierSettings ? (
+						<div className="py-12 flex flex-col items-center justify-center text-muted-foreground gap-2">
+							<Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" />
+							<p className="text-xs">Loading shipping carrier settings...</p>
+						</div>
+					) : (
+						<>
+							<div className="text-[11px] text-muted-foreground bg-secondary/40 border border-border/60 rounded-xl p-3.5 leading-relaxed">
+								A disabled carrier stops appearing at checkout within about a minute, and is rejected server-side even if
+								a stale request still names it.
+							</div>
+
+							<div className="grid sm:grid-cols-2 gap-5">
+								{/* Canada (domestic) */}
+								<div className="space-y-2.5">
+									<p className="text-[10px] uppercase font-extrabold tracking-[0.16em] text-muted-foreground flex items-center gap-1.5">
+										<Flag className="w-3.5 h-3.5" />
+										Canada (Domestic)
+									</p>
+									<CarrierToggle
+										label="Canada Post"
+										checked={carrierSettings.canadaPostCa}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, canadaPostCa: v }))}
+									/>
+									<CarrierToggle
+										label="UPS"
+										checked={carrierSettings.upsCa}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, upsCa: v }))}
+									/>
+									<CarrierToggle
+										label="Stallion Express"
+										checked={carrierSettings.stallionCa}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, stallionCa: v }))}
+									/>
+								</div>
+
+								{/* US / International */}
+								<div className="space-y-2.5">
+									<p className="text-[10px] uppercase font-extrabold tracking-[0.16em] text-muted-foreground flex items-center gap-1.5">
+										<Globe className="w-3.5 h-3.5" />
+										US / International
+									</p>
+									<CarrierToggle
+										label="Canada Post"
+										checked={carrierSettings.canadaPostUs}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, canadaPostUs: v }))}
+									/>
+									<CarrierToggle
+										label="UPS"
+										checked={carrierSettings.upsUs}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, upsUs: v }))}
+									/>
+									<CarrierToggle
+										label="Stallion Express"
+										checked={carrierSettings.stallionUs}
+										disabled={!writable}
+										onChange={(v) => setCarrierSettings((p) => ({ ...p, stallionUs: v }))}
+									/>
+								</div>
+							</div>
+
+							{writable && (
+								<button
+									type="button"
+									onClick={saveCarrierSettings}
+									disabled={!carrierSettingsDirty || savingCarrierSettings}
+									className="px-6 py-3.5 bg-[#599161] hover:bg-[#46754e] text-white font-extrabold text-xs uppercase tracking-[0.16em] rounded-2xl transition-all cursor-pointer shadow-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+								>
+									{savingCarrierSettings && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+									Save Shipping Carrier Settings
+								</button>
+							)}
+						</>
+					)}
+				</section>
+			)}
 		</div>
+	)
+}
+
+function CarrierToggle({
+	label,
+	checked,
+	disabled,
+	onChange,
+}: {
+	label: string
+	checked: boolean
+	disabled?: boolean
+	onChange: (v: boolean) => void
+}) {
+	return (
+		<label className={`flex items-center justify-between gap-3 border border-border/70 rounded-xl p-3.5 ${disabled ? '' : 'cursor-pointer hover:border-primary/50'} transition-colors select-none`}>
+			<span className="text-xs font-semibold text-foreground">{label}</span>
+			<input
+				type="checkbox"
+				checked={checked}
+				disabled={disabled}
+				onChange={(e) => onChange(e.target.checked)}
+				className="w-4 h-4 accent-[#599161] cursor-pointer disabled:cursor-not-allowed"
+			/>
+		</label>
 	)
 }
 
